@@ -249,7 +249,18 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                     for (int ctr = 0; ctr < num_of_columns - 2; ctr++) {
                     	//msaber: todo, need to check the projection operator construction
                     	//and modify it to allow selecting graph vertex attributes
-                        NValue value = projectionNode->getOutputColumnExpressions()[ctr]->eval(&tuple, NULL);
+                        
+                        // LX: add workaround to solve inconsistent column index issue: given a ctr index, find the column name
+                        string t_coln = projectionNode->getOutputColumnNames()[ctr];
+                        int tbl_ctr;
+                        for (tbl_ctr = 0; tbl_ctr < num_of_columns - 2; tbl_ctr++){
+                            string c_coln = graphView->getVertexAttributeName(tbl_ctr);
+                            if (t_coln.compare(c_coln) == 0)
+                                break;
+                        }
+                        
+                        int newctr = graphView->getColumnIdInVertexTable(tbl_ctr);
+                        NValue value = projectionNode->getOutputColumnExpressions()[newctr]->eval(&tuple, NULL);
                         temp_tuple.setNValue(ctr, value);
                         LogManager::GLog("VertexScanExecutor", "p_execute", 254, projectionNode->getOutputColumnExpressions()[ctr]->debug(true).c_str());
                     }
