@@ -677,6 +677,15 @@ public abstract class CatalogSchemaTools {
                     }
                 }
 
+                // Implement LX to support multiple graph views
+                CatalogMap<GraphView> graphViews = db.getGraphviews();
+                if (! graphViews.isEmpty()) {
+                    for (GraphView graphView : graphViews) {
+                        toSchema(sb, graphView);
+                    }
+                }
+                // LX
+
                 CatalogMap<Procedure> procedures = db.getProcedures();
                 if (! procedures.isEmpty()) {
                     for (Procedure proc : procedures) {
