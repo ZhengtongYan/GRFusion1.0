@@ -36,10 +36,17 @@ Vertex* GraphView::getVertex(int id)
 	return this->m_vertexes[id];
 }
 
+// LX FEAT2
+Table* GraphView::getVertexTableById(int id)
+{
+	return this->m_idToVTableMap[id];
+}
+
 TableTuple* GraphView::getVertexTuple(int id)
 {
 	Vertex* v = this->getVertex(id);
-	return new TableTuple(v->getTupleData(), this->m_vertexTable->schema());
+	Table* t = this->getVertexTableById(id);
+	return new TableTuple(v->getTupleData(), t->schema());
 }
 
 Edge* GraphView::getEdge(int id)
@@ -70,8 +77,14 @@ void GraphView::addEdge(int id, Edge* edge)
 
 Table* GraphView::getVertexTable()
 {
-	return this->m_vertexTable;
+	return this->m_vertexTables[0]; // LX FEAT2 keep for debugging purpose
 }
+
+// LX FEAT2
+// vector<Table*> getVertexTables()
+// {
+// 	return this->m_vertexTables;
+// }
 
 Table* GraphView::getEdgeTable()
 {
@@ -215,7 +228,7 @@ void GraphView::constructPathTempTable()
 	m_pathTable = TableFactory::buildTempTable(m_pathTableName, m_pathSchema, m_pathColumnNames, NULL);
 }
 
-PathIterator& GraphView::iteratorDeletingAsWeGo(GraphOperationType opType)
+PathIterator* GraphView::iteratorDeletingAsWeGo(GraphOperationType opType) // LX
 {
 	//empty the paths table, which is the staging memory for the paths to be explored
 	dummyPathExapansionState = 0;
@@ -223,12 +236,15 @@ PathIterator& GraphView::iteratorDeletingAsWeGo(GraphOperationType opType)
 	m_pathTable->deleteAllTempTupleDeepCopies();
 	//set the iterator for the temp table
 	//create new tuple in the paths temp table
-	//m_pathTableIterator = &(m_pathTable->iteratorDeletingAsWeGo());
-	m_pathTableIterator = NULL;
-	return *m_pathIterator;
+	TableIterator tempByLu = m_pathTable->iteratorDeletingAsWeGo();
+	m_pathTableIterator = &tempByLu;
+	this->queryType = opType;// LX
+	// m_pathTableIterator = &(m_pathTable->iteratorDeletingAsWeGo());
+	// m_pathTableIterator = NULL;
+	return m_pathIterator;
 }
 
-PathIterator& GraphView::iteratorDeletingAsWeGo()
+PathIterator* GraphView::iteratorDeletingAsWeGo() // LX
 {
 	//empty the paths table, which is the staging memory for the paths to be explored
 	dummyPathExapansionState = 0;
@@ -236,9 +252,11 @@ PathIterator& GraphView::iteratorDeletingAsWeGo()
 	m_pathTable->deleteAllTempTupleDeepCopies();
 	//set the iterator for the temp table
 	//create new tuple in the paths temp table
-	//m_pathTableIterator = &(m_pathTable->iteratorDeletingAsWeGo());
+	// TableIterator tempByLu = m_pathTable->iteratorDeletingAsWeGo();
+	// m_pathTableIterator = &tempByLu;
+	// m_pathTableIterator = &(m_pathTable->iteratorDeletingAsWeGo());
 	m_pathTableIterator = NULL;
-	return *m_pathIterator;
+	return m_pathIterator;
 }
 
 void GraphView::expandCurrentPathOperation()
@@ -268,6 +286,10 @@ void GraphView::expandCurrentPathOperation()
 		dummyPathExapansionState++;
 	}
 	*/
+	LogManager::GLog("GraphView.cpp", "expandCurrentPathOperation", 271, to_string(this->queryType));
+	cout << this->fromVertexId << ", " << this->toVertexId << "," << this->pathLength << endl;
+	// this->queryType = 1;
+	// this->fromVertexId = 1;
 	if(executeTraversal)
 	{
 		switch(this->queryType)
@@ -976,19 +998,11 @@ void GraphView::SubGraphLoop(int startVertexId, int length)
 
 void GraphView::fillGraphFromRelationalTables()
 {
-
 	this->m_vertexes.clear();
 	this->m_edges.clear();
-	//fill the vertex collection
-	TableIterator iter = this->m_vertexTable->iterator();
-	const TupleSchema* schema = this->m_vertexTable->schema();
-	TableTuple tuple(schema);
-	int id, from, to;
-	from = -1;
-	to = -1;
-	Vertex* vertex = NULL;
-	Edge* edge = NULL;
 
+	const TupleSchema* schema;
+	int id, from, to;
 
 	std::stringstream paramsToPrint;
 	paramsToPrint << " vertex column names = ";
@@ -1013,39 +1027,62 @@ void GraphView::fillGraphFromRelationalTables()
 		paramsToPrint << m_columnIDsInEdgeTable[i] << ", ";
 	}
 
-	paramsToPrint << " ##### vertexId= " << m_vertexIdColumnIndex << ", edgeId= " << m_edgeIdColumnIndex
-			<< "from = " << m_edgeFromColumnIndex << ", to = " << m_edgeToColumnIndex
-			<< "vPropColIndex = " << m_vPropColumnIndex << ", ePropColIndex = " << m_ePropColumnIndex;
+	// paramsToPrint << " ##### vertexId= " << m_vertexIdColumnIndex << ", edgeId= " << m_edgeIdColumnIndex
+	// 		<< "from = " << m_edgeFromColumnIndex << ", to = " << m_edgeToColumnIndex
+	// 		<< "vPropColIndex = " << m_vPropColumnIndex << ", ePropColIndex = " << m_ePropColumnIndex;
 
-	LogManager::GLog("GraphView", "fill", 785, paramsToPrint.str());
+	// LogManager::GLog("GraphView", "fill", 785, paramsToPrint.str());
+	// cout << "graphView:1035:" << paramsToPrint.str() << endl;
 
-	assert(m_vertexIdColumnIndex >= 0 && m_edgeIdColumnIndex >= 0 && m_edgeFromColumnIndex >= 0 && m_edgeToColumnIndex >=0);
+	// assert(m_vertexIdColumnIndex >= 0 && m_edgeIdColumnIndex >= 0 && m_edgeFromColumnIndex >= 0 && m_edgeToColumnIndex >=0);
 
 	bool vPropExists = (m_vPropColumnIndex >= 0);
 	bool ePropExists = (m_ePropColumnIndex >= 0);
 
-	if (this->m_vertexTable->activeTupleCount() != 0)
-	{
-		while (iter.next(tuple))
+	//fill the vertex collection
+	// LX FEAT2
+	for (int i = 0; i < this->m_vertexTables.size(); i++){
+		Table* curTable = this->m_vertexTables[i];
+		string curLabel = this->m_vertexLabels[i];
+		// cout << "GraphView:1046:" << m_vertexIdColumnIndex << endl;
+		TableIterator iter = curTable->iterator();
+		schema = curTable->schema();
+		TableTuple tuple(schema);
+		Vertex* vertex = NULL;
+		if (curTable->activeTupleCount() != 0)
 		{
-			if (tuple.isActive())
+			while (iter.next(tuple))
 			{
-				id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColumnIndex));
-				vertex = new Vertex();
-				vertex->setGraphView(this);
-				vertex->setId(id);
-				vertex->setTupleData(tuple.address());
-				if(vPropExists)
+				if (tuple.isActive())
 				{
-					vertex->vProp = ValuePeeker::peekInteger(tuple.getNValue(m_vPropColumnIndex));
+					// id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColumnIndex));
+					id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel]));
+					vertex = new Vertex();
+					vertex->setGraphView(this);
+					vertex->setId(id);
+					vertex->setTupleData(tuple.address());
+					if(vPropExists)
+					{
+						// cout << "GraphView.cpp:1066:vPropExists!" << endl;
+						vertex->vProp = ValuePeeker::peekInteger(tuple.getNValue(m_vPropColumnIndex));
+					}
+					this->addVertex(id, vertex);
+					this->m_idToVTableMap[id] = curTable;
+					//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 77, "vertex: " + vertex->toString());
 				}
-				this->addVertex(id, vertex);
-				//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 77, "vertex: " + vertex->toString());
 			}
 		}
 	}
+		
+	
+	from = -1;
+	to = -1;
+	
+	Edge* edge = NULL;
+
+		
 	//fill the edge collection
-	iter = this->m_edgeTable->iterator();
+	TableIterator iter = this->m_edgeTable->iterator();
 	schema = this->m_edgeTable->schema();
 	TableTuple edgeTuple(schema);
 	Vertex* vFrom = NULL;

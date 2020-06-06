@@ -685,6 +685,7 @@ public class Tokens {
     static final String        T_ISREADONLYDATABASE  = "ISREADONLYDATABASE";
     static final String T_ISREADONLYDATABASEFILES = "ISREADONLYDATABASEFILES";
     static final String        T_ISREADONLYSESSION   = "ISREADONLYSESSION";
+    static final String        T_LABEL               = "LABEL";// implement LX FEAT2
     static final String        T_LIMIT               = "LIMIT";
     static final String        T_LOCK                = "LOCK";
     static final String        T_LOCKS               = "LOCKS";
@@ -1671,6 +1672,7 @@ public class Tokens {
     public static final int ENDVERTEX                  = 749;
     public static final int STARTVERTEX                = 750;
     public static final int HINT                       = 751;
+    public static final int LABEL                      = 752;// implement LX FEAT2
     // End LX
 
     public static final int X_UNKNOWN_TOKEN = -1;
@@ -1839,6 +1841,7 @@ public class Tokens {
         reservedKeys.put(Tokens.T_IS, IS);
         reservedKeys.put(Tokens.T_ITERATE, ITERATE);
         reservedKeys.put(Tokens.T_JOIN, JOIN);
+        reservedKeys.put(Tokens.T_LABEL, LABEL); // IMPLEMENT LX FEAT2
         reservedKeys.put(Tokens.T_LAG, LAG);
         reservedKeys.put(Tokens.T_LANGUAGE, LANGUAGE);
         reservedKeys.put(Tokens.T_LARGE, LARGE);

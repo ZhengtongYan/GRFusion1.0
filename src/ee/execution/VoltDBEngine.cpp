@@ -54,6 +54,7 @@
 #include "catalog/function.h"
 #include "catalog/functionparameter.h"
 #include "catalog/graphview.h" // Added by LX
+#include "catalog/vertexlabel.h" // Implement LX FEAT2
 #include "catalog/index.h"
 #include "catalog/materializedviewhandlerinfo.h"
 #include "catalog/materializedviewinfo.h"
@@ -134,6 +135,7 @@ typedef std::pair<std::string, catalog::Column*> LabeledColumn;
 typedef std::pair<std::string, catalog::Index*> LabeledIndex;
 typedef std::pair<std::string, catalog::Table*> LabeledTable;
 typedef std::pair<std::string, catalog::GraphView*> LabeledGraphView; // Added by LX
+typedef std::pair<std::string, catalog::VertexLabel*> LabeledVertexLabel; // Implement LX FEAT2
 typedef std::pair<std::string, catalog::MaterializedViewInfo*> LabeledView;
 typedef std::pair<std::string, catalog::Function*> LabeledFunction;
 typedef std::pair<std::string, StreamedTable*> LabeledStream;
@@ -1711,21 +1713,34 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             // add a completely new graph view
             //////////////////////////////////////////
             LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1117, "adding a completely new graph view for " + catalogGraphView->name());
-            gcd = new GraphViewCatalogDelegate(catalogGraphView->signature(),
-                                           m_compactionThreshold);
+            gcd = new GraphViewCatalogDelegate(catalogGraphView->signature(), m_compactionThreshold);
+
+            // LX FEAT2
+            Table *vTable = NULL;
+            vector<Table*> vTables;
+            vector<std::string> vLabels;
+            for (LabeledVertexLabel vertexLabel : catalogGraphView->vertexLabels()) {
+                catalog::VertexLabel *vlabel = vertexLabel.second;
+                vTable = findInMapOrNull(vlabel->VTable()->path(), m_catalogDelegates)->getTable();
+                vTables.push_back(vTable);
+                vLabels.push_back(vlabel->name());
+                // cout << "VoltDBEngine:1723:add table"<< vTable->name() << endl;
+            }
+
             // use the delegate to init the table and create indexes n' stuff
-            Table* vTable = findInMapOrNull(catalogGraphView->VTable()->path(), m_catalogDelegates)->getTable();
+            // Table* vTable = findInMapOrNull(catalogGraphView->VTable()->path(), m_catalogDelegates)->getTable();
             Table* eTable = findInMapOrNull(catalogGraphView->ETable()->path(), m_catalogDelegates)->getTable();
             string pathsTableName = "TEMPPATHS";
-            if (vTable == NULL || eTable == NULL)
-            {
-                LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1125, "unable to get vTable or eTable or both");
-                continue;
-            }
+            // if (vTable == NULL || eTable == NULL)
+            // {
+            //     LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1125, "unable to get vTable or eTable or both");
+            //     continue;
+            // }
             LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1128, "before calling gcd.init");
             //TODO: pTable is not used as we assume one path table schema. The parameter may allow varying the path schema according to the view definition in the future
             Table* pTable = NULL;
-            gcd->init(*m_database, *catalogGraphView, vTable, eTable, pTable);
+            // gcd->init(*m_database, *catalogGraphView, vTable, eTable, pTable);
+            gcd->init(*m_database, *catalogGraphView, vLabels, vTables, eTable, pTable); // LX FEAT2
             m_graphViewCatalogDelegates[catalogGraphView->path()] = gcd;
             GraphView* graphView = gcd->getGraphView();
             m_graphViewDelegatesByName[graphView->name()] = gcd;

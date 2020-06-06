@@ -113,6 +113,7 @@ import org.voltdb.utils.SQLCommand;
 import org.voltdb.catalog.GraphView; // Add LX
 import org.voltdb.planner.ParsedColInfo; // Add LX
 import org.voltdb.types.ExpressionType; // Add LX
+import org.voltdb.catalog.VertexLabel; // Implement LX FEAT2
 
 /**
  * Compiles schema (SQL DDL) text files and stores the results in a given catalog.
@@ -435,12 +436,13 @@ public class DDLCompiler {
     void loadSchema(Reader reader, Database db, Database prevDb, DdlProceduresToLoad whichProcs, boolean newDdl)
             throws VoltCompilerException {
         int currLineNo = 1;
-
         DDLStatement stmt = getNextStatement(reader, m_compiler, currLineNo, newDdl);
         final StringBuilder ddls = new StringBuilder();
         boolean isBatch = false;        // When reader contains multiple stmts, set it to indicate we are in batch mode.
+        int counter = 1;
         while (stmt != null) {
-            if (isBatch || ! AdHocNTBase.USING_CALCITE) {      // We cannot query previous database for existing tables in batch mode, as
+            if (isBatch || ! AdHocNTBase.USING_CALCITE) {      
+                // We cannot query previous database for existing tables in batch mode, as
                 // current DDL batch may contain CREATE statements, that is later dropped.
                 processVoltDBStatements(db, whichProcs, stmt);
             } else {        // ENG-17075: Until Calcite can handle all DDL statements,
@@ -454,9 +456,9 @@ public class DDLCompiler {
             }
             stmt = getNextStatement(reader, m_compiler, stmt.endLineNo, newDdl);
             isBatch = true;
+            counter = counter + 1;
         }
         m_fullDDL += ddls;
-
         try {
             reader.close();
         } catch (IOException e) {
@@ -931,8 +933,7 @@ public class DDLCompiler {
         for (Entry<String, NavigableSet<String>> e : exportsByTargetName.entrySet()) {
             for (String tableName : e.getValue()) {
                 exportTableNames.add(tableName);
-                // System.out.println("table" + tableName);
-                // System.out.println("---");
+
             }
         }
         return exportTableNames;
@@ -943,9 +944,8 @@ public class DDLCompiler {
         String binDDL = CompressionService.compressAndBase64Encode(m_fullDDL);
         db.setSchema(binDDL);
         // output the xml catalog to disk
-        //* enable to debug */ System.out.println("DEBUG: " + m_schema);
+        /* enable to debug */ System.out.println("DEBUG: DDLCompiler:946" + m_schema);
         BuildDirectoryUtils.writeFile("schema-xml", "hsql-catalog-output.xml", m_schema.toString(), true);
-
         // Build the local catalog from the xml catalog.  Note that we've already
         // saved the previous user defined function set, so we don't need
         // to save it here.
@@ -965,6 +965,7 @@ public class DDLCompiler {
                 addUserDefinedFunctionToCatalog(db, node);
             }
         }
+
         // push down parsing schema for catalog
         db.getCatalog().parse(m_schema.toXML());
         for (VoltXMLElement node : m_schema.children) {
@@ -981,9 +982,7 @@ public class DDLCompiler {
         fillTrackerFromXML();
         handlePartitions(db);
         handleTTL(db);
-        // System.out.println("222");
         m_mvProcessor.startProcessing(db, m_matViewMap, getExportTableNames());
-        // System.out.println("111");
     }
 
     private void addUserDefinedFunctionToCatalog(Database db, VoltXMLElement XMLfunc) {
@@ -1373,6 +1372,7 @@ public class DDLCompiler {
         }
         // create a table node in the catalog
         final Table table = db.getTables().add(name);
+
         // set max value before return for view table
         table.setTuplelimit(Integer.MAX_VALUE);
         table.setTabletype(TableType.PERSISTENT.get());
@@ -1579,10 +1579,6 @@ public class DDLCompiler {
     }
     // Add LX
     private void processGraphPropMaterializer(Database db, Table table, String query, List<Column> destColumnArray) throws VoltCompilerException {
-        // System.out.println("in ddlCompiler:");
-        // System.out.println(query);
-        //org.voltdb.VLog.GLog("DDLCompiler", "processGraphPropMaterializer", 1858, 
-        //      "query = "+ query);
         
         // get the xml for the query
         VoltXMLElement xmlquery = null;
@@ -1603,18 +1599,10 @@ public class DDLCompiler {
             throw m_compiler.new VoltCompilerException(e.getMessage());
         }
         assert(stmt != null);
-        System.out.println("in ddlcompiler 1606");
+        
         for (int i = 0; i < stmt.m_displayColumns.size(); i++) {
             TupleValueExpression col = (TupleValueExpression)stmt.m_displayColumns.get(i).m_expression;
-            System.out.println(col.getColumnIndex() + "-" + col.getColumnName() + "-" + col.getTableName());
             Column destColumn = destColumnArray.get(i);
-            // System.out.println("{");
-            // String[] tmp_dest = destColumn.getFields();
-            // int ii;
-            // for ( ii = 0; ii < tmp_dest.length; ii++){
-            //     System.out.println(destColumn.getField(tmp_dest[ii]));
-            // }
-            // System.out.println("}");
 
             if (col != null) {
                 //org.voltdb.VLog.GLog("DDLCompiler", "processGraphPropMaterializer", 1885, 
@@ -1622,31 +1610,9 @@ public class DDLCompiler {
                 assert(col.getTableName().equalsIgnoreCase(table.getTypeName()));
                 String srcColName = col.getColumnName();
 
-                // System.out.println(srcColName);
-                // System.out.println("+++");
-
                 Column srcColumn = table.getColumns().getIgnoreCase(srcColName);
-                // System.out.println("1620");
-                //System.out.println(srcColumn.getMatviewsource());
-                //System.out.println()
-                
-                // System.out.println("{{");
-                // String[] tmp_src = srcColumn.getFields();
-                // for ( ii = 0; ii < tmp_src.length; ii++){
-                //     System.out.println(srcColumn.getField(tmp_src[ii]));
-                // }
-                // System.out.println("}}");
-                destColumn.setMatviewsource(srcColumn);
-                // String[] tmp_dest1 = destColumn.getFields();
-                // //for t2 in tmp_dest:
-                // System.out.println("{{{");
-                // for ( ii = 0; ii < tmp_dest.length; ii++){
-                //     System.out.println(destColumn.getField(tmp_dest1[ii]));
-                // }
-                // System.out.println("}}}");
 
-                // System.out.println(destColumn.getName()+"..."+srcColumn.getName());
-                // System.out.println("++++++");
+                destColumn.setMatviewsource(srcColumn);
             }
             //else {
                 //org.voltdb.VLog.GLog("DDLCompiler", "processGraphPropMaterializer", 1893, 
@@ -1657,36 +1623,87 @@ public class DDLCompiler {
     }
     // End LX
 
+    // Implement LX FEAT2
+    private void processGraphPropMaterializerWithType(Database db, HashMap<String, Table> tables, HashMap<String, String> querys, List<Column> destColumnArray) throws VoltCompilerException {
+        int j = 0;
+        while (j < destColumnArray.size()){
+            // extract the label info from the dest col
+            Column destColumn = destColumnArray.get(j);
+            String destColName = destColumn.getName();
+            int t = destColName.indexOf(".");
+            String prefix = destColName.substring(0, t);
+            // get table and query based on this prefix
+            Table table = tables.get(prefix);
+            String query = querys.get(prefix);
+            VoltXMLElement xmlquery = null;
+            try {
+                xmlquery = m_hsql.getXMLCompiledStatement(query);
+            }
+            catch (HSQLParseException e) {
+                e.printStackTrace();
+            }
+            assert(xmlquery != null);
+            System.out.println();
+
+            // parse the xml like any other sql statement
+            ParsedSelectStmt stmt = null;
+            try {
+                stmt = (ParsedSelectStmt) AbstractParsedStmt.parse(null, query, xmlquery, null, db, null);
+            }
+            catch (Exception e) {
+                throw m_compiler.new VoltCompilerException(e.getMessage());
+            }
+            assert(stmt != null);
+            for (int i = 0; i < stmt.m_displayColumns.size(); i++) {
+                TupleValueExpression col = (TupleValueExpression)stmt.m_displayColumns.get(i).m_expression;
+                destColumn = destColumnArray.get(i + j);
+
+                if (col != null) {
+                    System.out.println("DDLCompiler:1655:table=" + table.getTypeName() +", src_column=" + col.getColumnName() + ", dest_col=" + destColumn.getName());
+                    assert(col.getTableName().equalsIgnoreCase(table.getTypeName()));
+                    String srcColName = col.getColumnName();
+
+                    Column srcColumn = table.getColumns().getIgnoreCase(srcColName);
+
+                    destColumn.setMatviewsource(srcColumn);
+                }
+                //else {
+                    //org.voltdb.VLog.GLog("DDLCompiler", "processGraphPropMaterializer", 1893, 
+                    //      "table =  " + table.getTypeName() +", column = null");
+                //}
+            }
+            j = j + stmt.m_displayColumns.size() + 2; // include FANIN and FANOUT for each label
+        }
+         
+    }
+
     // Add LX
     private void addGraphToCatalog(Database db, VoltXMLElement node) throws VoltCompilerException {
         assert node.name.equals("graph");
-        // System.out.println("...." + node.attributes.get("column") + "....");
         // Construct table-specific maps
         HashMap<String, Column> columnMap = new HashMap<String, Column>();
+        HashMap<String, Table> vtableMap = new HashMap<String, Table>(); // LX FEAT2
+        HashMap<String, String> vqueryMap = new HashMap<String, String>(); // LX FEAT2
         HashMap<String, Index> indexMap = new HashMap<String, Index>();
 
         String name = node.attributes.get("name");
 
-        //org.voltdb.VLog.GLog("DDLCompiler", "addGraphToCatalog", 1857, 
-        //      "graph =  " + name);
-        
-        // create a table node in the catalog
+        // create a graph node in the catalog
         GraphView graph = db.getGraphviews().add(name);
-        
-        String vtablename = node.attributes.get("Vtable");
+
+        // String vtablename = node.attributes.get("Vtable");
         String etablename = node.attributes.get("Etable");
-        assert(vtablename != null);
+        // assert(vtablename != null);
         assert(etablename != null);
         
-        Table Vtable = db.getTables().get(vtablename);
+        // Table Vtable = db.getTables().get(vtablename);
         Table Etable = db.getTables().get(etablename);
-        graph.setVtable(Vtable);
+        // graph.setVtable(Vtable);
         graph.setEtable(Etable);
         
-        String Vquery  = node.attributes.get("Vquery");
-        // System.out.println("<<<"+Vquery+">>>");
+        // String Vquery  = node.attributes.get("Vquery");
         String Equery  = node.attributes.get("Equery");
-        assert(Vquery != null);
+        // assert(Vquery != null);
         assert(Equery != null);
         
         boolean isdirected = Boolean.parseBoolean((node.attributes.get("isdirected")));
@@ -1711,14 +1728,24 @@ public class DDLCompiler {
         
         for (VoltXMLElement subNode : node.children) {
             if (subNode.name.equals("vertex")) {
+                // LX FEAT2 need to dissect each vertex type
+                String label = subNode.attributes.get("label");
+                VertexLabel vLabel = graph.getVertexlabels().add(label);
+                vLabel.setLabel(label); // this may not be needed
+                String Vquery = subNode.attributes.get("Vquery");
+                assert(Vquery != null);
+                String vtablename = subNode.attributes.get("Vtable");
+                assert(vtablename != null);
+                Table Vtable = db.getTables().get(vtablename);
+                vLabel.setVtable(Vtable);
+                System.out.println(label);
+                vtableMap.put(label, Vtable);
+                vqueryMap.put(label, Vquery);
                 int colIndex = 0;
                 for (VoltXMLElement columnNode : subNode.children) {
                     if (columnNode.name.equals("column")) {
-                        addPropertyToCatalog(graph, columnNode, columnTypes,
+                        addVertexPropertyToCatalog(graph, columnNode, columnTypes,
                                 columnMap, m_compiler, "vertex");
-                        // System.out.println("in if");
-                        System.out.println(">>"+columnNode.attributes.get("name")+"<<<");
-                        // System.out.println();
                         colIndex++;
                     }
                 }
@@ -1750,8 +1777,7 @@ public class DDLCompiler {
         
         // Set materializer for properties
         List<Column> destColumnArray = CatalogUtil.getSortedCatalogItems(graph.getVertexprops(), "index");
-        // System.out.println()
-        processGraphPropMaterializer(db, Vtable, Vquery, destColumnArray);
+        processGraphPropMaterializerWithType(db, vtableMap, vqueryMap, destColumnArray);
         destColumnArray = CatalogUtil.getSortedCatalogItems(graph.getEdgeprops(), "index");
         processGraphPropMaterializer(db, Etable, Equery, destColumnArray);
         destColumnArray = null;
@@ -1799,24 +1825,168 @@ public class DDLCompiler {
     }  
     // End LX
 
-    // Add LX
-    private static void addPropertyToCatalog(GraphView graph, VoltXMLElement node, SortedMap<Integer, VoltType> columnTypes, Map<String, Column> columnMap, VoltCompiler compiler, String proptype) throws VoltCompilerException
+    // LX FEAT2
+    private static void addVertexPropertyToCatalog(GraphView graph, VoltXMLElement node, SortedMap<Integer, VoltType> columnTypes, Map<String, Column> columnMap, VoltCompiler compiler, String proptype) throws VoltCompilerException
     {
         assert node.name.equals("column");
 
-        String name = node.attributes.get("name");
+        String name = node.attributes.get("name"); // LX label.colName
         String typename = node.attributes.get("valuetype");
         String nullable = node.attributes.get("nullable");
         String sizeString = node.attributes.get("size");
-        int index = Integer.valueOf(node.attributes.get("index0"));
-        // System.out.println("in addProperty");
-        // System.out.println(index);
+        int index = Integer.valueOf(node.attributes.get("index")); // FEAT2: use index instead of original index0
+
         String defaultvalue = null;
         String defaulttype = null;
 
         int defaultFuncID = -1;
         
-     // Default Value
+        // Default Value
+        for (VoltXMLElement child : node.children) {
+            if (child.name.equals("default")) {
+                for (VoltXMLElement inner_child : child.children) {
+                    // Value
+                    if (inner_child.name.equals("value")) {
+                        assert(defaulttype == null); // There should be only one default value/type.
+                        defaultvalue = inner_child.attributes.get("value");
+                        defaulttype = inner_child.attributes.get("valuetype");
+                        assert(defaulttype != null);
+                    } else if (inner_child.name.equals("function")) {
+                        assert(defaulttype == null); // There should be only one default value/type.
+                        defaultFuncID = Integer.parseInt(inner_child.attributes.get("function_id"));
+                        defaultvalue = inner_child.attributes.get("name");
+                        defaulttype = inner_child.attributes.get("valuetype");
+                        assert(defaulttype != null);
+                    }
+                }
+            }
+        }
+        if (defaulttype != null) {
+            // fyi: Historically, VoltType class initialization errors get reported on this line (?).
+            defaulttype = Integer.toString(VoltType.typeFromString(defaulttype).getValue());
+        }
+
+        // replace newlines in default values
+        if (defaultvalue != null) {
+            defaultvalue = defaultvalue.replace('\n', ' ');
+            defaultvalue = defaultvalue.replace('\r', ' ');
+        }
+
+        // fyi: Historically, VoltType class initialization errors get reported on this line (?).
+        VoltType type = VoltType.typeFromString(typename);
+        columnTypes.put(index, type);
+        if (defaultFuncID == -1) {
+            if (defaultvalue != null && (type == VoltType.DECIMAL || type == VoltType.NUMERIC)) {
+                // Until we support deserializing scientific notation in the EE, we'll
+                // coerce default values to plain notation here.  See ENG-952 for more info.
+                BigDecimal temp = new BigDecimal(defaultvalue);
+                defaultvalue = temp.toPlainString();
+            }
+        } else {
+            // Concat function name and function id, format: NAME:ID
+            // Used by PlanAssembler:getNextInsertPlan().
+            defaultvalue = defaultvalue + ":" + String.valueOf(defaultFuncID);
+        }
+
+        Column column;
+        
+        if (proptype == "vertex") {
+            column = graph.getVertexprops().add(name);
+        }
+        else if (proptype == "path") {
+            column = graph.getPathprops().add(name);
+        }
+        else { // "edge"
+            column = graph.getEdgeprops().add(name);
+        }
+        
+        // need to set other column data here (default, nullable, etc)
+        column.setName(name);
+        column.setIndex(index);
+        column.setType(type.getValue());
+        column.setNullable(Boolean.valueOf(nullable));
+        int size = type.getMaxLengthInBytes();
+
+        boolean inBytes = false;
+        if (node.attributes.containsKey("bytes")) {
+            inBytes = Boolean.valueOf(node.attributes.get("bytes"));
+        }
+
+        // Determine the length of columns with a variable-length type
+        if (type.isVariableLength()) {
+            int userSpecifiedSize = 0;
+            if (sizeString != null) {
+                userSpecifiedSize = Integer.parseInt(sizeString);
+            }
+
+            if (userSpecifiedSize == 0) {
+                // So size specified in the column definition.  Either:
+                // - the user-specified size is zero (unclear how this would happen---
+                //   if someone types VARCHAR(0) HSQL will complain)
+                // - or the sizeString was null, meaning that the size specifier was
+                //   omitted.
+                // Choose an appropriate default for the type.
+                size = type.defaultLengthForVariableLengthType();
+            }
+            else {
+                if (userSpecifiedSize < 0 || (inBytes && userSpecifiedSize > VoltType.MAX_VALUE_LENGTH)) {
+                    String msg = type.toSQLString() + " column " + name +
+                            " in table " + graph.getTypeName() + " has unsupported length " + sizeString;
+                    throw compiler.new VoltCompilerException(msg);
+                }
+
+                if (!inBytes && type == VoltType.STRING) {
+                    if (userSpecifiedSize > VoltType.MAX_VALUE_LENGTH_IN_CHARACTERS) {
+                        String msg = String.format("The size of VARCHAR column %s in table %s greater than %d " +
+                                "will be enforced as byte counts rather than UTF8 character counts. " +
+                                "To eliminate this warning, specify \"VARCHAR(%d BYTES)\"",
+                                name, graph.getTypeName(),
+                                VoltType.MAX_VALUE_LENGTH_IN_CHARACTERS, userSpecifiedSize);
+                        compiler.addWarn(msg);
+                        inBytes = true;
+                    }
+                }
+
+                if (userSpecifiedSize < type.getMinLengthInBytes()) {
+                    String msg = type.toSQLString() + " column " + name +
+                            " in table " + graph.getTypeName() + " has length of " + sizeString
+                            + " which is shorter than " + type.getMinLengthInBytes() + ", "
+                            + "the minimum allowed length for the type.";
+                    throw compiler.new VoltCompilerException(msg);
+                }
+
+
+                size = userSpecifiedSize;
+            }
+        }
+
+        column.setInbytes(inBytes);
+        column.setSize(size);
+
+        column.setDefaultvalue(defaultvalue);
+        if (defaulttype != null)
+            column.setDefaulttype(Integer.parseInt(defaulttype));
+
+        columnMap.put(name, column);
+    }
+
+    // Add LX
+    private static void addPropertyToCatalog(GraphView graph, VoltXMLElement node, SortedMap<Integer, VoltType> columnTypes, Map<String, Column> columnMap, VoltCompiler compiler, String proptype) throws VoltCompilerException
+    {
+        assert node.name.equals("column");
+
+        String name = node.attributes.get("name"); // LX label.colName
+        String typename = node.attributes.get("valuetype");
+        String nullable = node.attributes.get("nullable");
+        String sizeString = node.attributes.get("size");
+        int index = Integer.valueOf(node.attributes.get("index0"));
+
+        String defaultvalue = null;
+        String defaulttype = null;
+
+        int defaultFuncID = -1;
+        
+        // Default Value
         for (VoltXMLElement child : node.children) {
             if (child.name.equals("default")) {
                 for (VoltXMLElement inner_child : child.children) {
@@ -2593,7 +2763,7 @@ public class DDLCompiler {
     }
 
     private void processVoltDBStatements(
-            final Database db, final DdlProceduresToLoad whichProcs,DDLStatement stmt) throws VoltCompilerException {
+            final Database db, final DdlProceduresToLoad whichProcs, DDLStatement stmt) throws VoltCompilerException {
         boolean processed = false;
         try {
             // Process a VoltDB-specific DDL statement, like PARTITION, REPLICATE,
@@ -2629,11 +2799,11 @@ public class DDLCompiler {
                     processCreateStreamStatement(stmt, db, whichProcs);
                 }
 
-                boolean createTable = ddlStmtInfo.verb.equals(HSQLDDLInfo.Verb.CREATE) &&
-                        ddlStmtInfo.noun.equals(HSQLDDLInfo.Noun.TABLE);
-                if (createTable) {
+                boolean createTable = ddlStmtInfo.verb.equals(HSQLDDLInfo.Verb.CREATE) && ddlStmtInfo.noun.equals(HSQLDDLInfo.Noun.TABLE);
+                if (createTable ) {
                     processCreateTableStatement(stmt);
                 }
+
             } catch (HSQLParseException e) {
                 String msg = "DDL Error: \"" + e.getMessage() + "\" in statement starting on lineno: " + stmt.lineNo;
                 throw m_compiler.new VoltCompilerException(msg, stmt.lineNo);

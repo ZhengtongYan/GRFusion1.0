@@ -19,16 +19,29 @@ GraphView* GraphViewFactory::createGraphView(string graphViewName, bool isDirect
 	return vw;
 }
 
-GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, const bool isDirected,
-		   Table* vTable, Table* eTable, Table* pTable, TupleSchema* vSchema, TupleSchema* eSchema,
+GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, const bool isDirected, 
+			vector<std::string> vLabels,
+		   vector<Table*> vTables, Table* eTable, Table* pTable, TupleSchema* vSchema, TupleSchema* eSchema,
 		   vector<std::string> vertexColumnNames, vector<std::string> edgeColumnNames,
 		   vector<int> columnIdsInVertexTable, vector<int> columnIdsInEdgeTable,
-           voltdb::CatalogId databaseId, char *signature)
+           voltdb::CatalogId databaseId, char *signature) // LX FEAT2
 {
 	GraphView* vw = new GraphView();
 	vw->m_name = graphViewName;
 	vw->m_isDirected = isDirected;
-	vw->m_vertexTable = vTable;
+	// vw->m_vertexTable = vTable;
+	// LX FEAT2
+	int vLableCount = vLabels.size();
+	vw->m_vertexLabels.resize(vLableCount);
+	for (int i = 0; i < vLableCount; i++){
+		vw->m_vertexLabels[i] = vLabels[i];
+	}
+	int vTableCount = vTables.size();
+	vw->m_vertexTables.resize(vTableCount);
+	for (int i = 0; i < vTableCount; i++){
+		vw->m_vertexTables[i] = vTables[i];
+	}
+
 	vw->m_edgeTable = eTable;
 	//construct the path schema
 	vw->constructPathSchema();
@@ -52,7 +65,7 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 	{
 		vw->m_columnIDsInVertexTable[i] = columnIdsInVertexTable[i];
 	}
-
+	LogManager::GLog("GraphViewFactory", "create", 55, to_string(colCountInVTable));
 	//set the edges columns
 	//int eColumnCount = eSchema->columnCount();
 	int eColumnCount = edgeColumnNames.size();
@@ -76,10 +89,20 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 
 	for(int i = 0; i < vw->m_vertexColumnNames.size(); i++)
 	{
-		if (vw->m_vertexColumnNames[i] == "ID")
+		// if (vw->m_vertexColumnNames[i] == "ID")
+		// LX FEAT2
+		int d = vw->m_vertexColumnNames[i].find(".");
+		int s = vw->m_vertexColumnNames[i].size();
+		if (d == -1) // currently FANIN FANOUT are not given col names 
+			continue;
+		// cout << "GraphViewFactory:96:" << vw->m_vertexColumnNames[i] << ", " << d << ", " << s << endl;
+		if (vw->m_vertexColumnNames[i].substr(d, s-d) == ".ID")
 		{
-			vw->m_vertexIdColumnIndex = vw->m_columnIDsInVertexTable[i];
+			// vw->m_vertexIdColumnIndex = vw->m_columnIDsInVertexTable[i];
+			std::string label = vw->m_vertexColumnNames[i].substr(0, d);
+			vw->m_vertexIdColIdxList.insert(std::pair<std::string, int>(label, vw->m_columnIDsInVertexTable[i]));
 		}
+		
 		else if (vw->m_vertexColumnNames[i] == "VPROP")
 		{
 			vw->m_vPropColumnIndex = vw->m_columnIDsInVertexTable[i];
@@ -87,7 +110,7 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 	}
 	//TODO: fix issue by setting vw->m_vertexIdColumnIndex dynamically
 	//Fixed
-	//vw->m_vertexIdColumnIndex = 0;
+	// vw->m_vertexIdColumnIndex = 0;
 
 	for(int i = 0; i < vw->m_edgeColumnNames.size(); i++)
 	{

@@ -37,8 +37,8 @@ public:
 
 	    void deleteCommand();
 
-	    void init(catalog::Database const &catalogDatabase,
-	            catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable);
+	    // void init(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable); 
+	    void init(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, Table* eTable, Table* pTable); // LX FEAT2
 
 
 	    void processSchemaChanges(catalog::Database const &catalogDatabase,
@@ -87,10 +87,12 @@ public:
 
 
 	  private:
-	    GraphView *constructGraphViewFromCatalog(catalog::Database const &catalogDatabase,
-	                                     catalog::GraphView const &catalogGraphView,
-	                                     Table* vTable, Table* eTable, Table* pTable);
-
+	    // GraphView *constructGraphViewFromCatalog(catalog::Database const &catalogDatabase,
+	    //                                  catalog::GraphView const &catalogGraphView,
+	    //                                  Table* vTable, Table* eTable, Table* pTable);
+	  	GraphView *constructGraphViewFromCatalog(catalog::Database const &catalogDatabase,
+	                                     catalog::GraphView const &catalogGraphView, vector<std::string> vLabels,
+	                                     vector<Table*> vTables, Table* eTable, Table* pTable); // LX FEAT2
 
 	    voltdb::GraphView *m_graphView;
 	    const std::string m_signature;

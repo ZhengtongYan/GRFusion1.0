@@ -46,11 +46,12 @@ GraphView *GraphViewCatalogDelegate::getGraphView() const {
 	return m_graphView;
 }
 
+// void GraphViewCatalogDelegate::init(catalog::Database const &catalogDatabase,
+	            // catalog::GraphView const &catalogGraphView, Table vTables, Table* eTable, Table* pTable)
 void GraphViewCatalogDelegate::init(catalog::Database const &catalogDatabase,
-	            catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable)
+	            catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, Table* eTable, Table* pTable)// LX FEAT2
 {
-	m_graphView = constructGraphViewFromCatalog(catalogDatabase,
-	                                        catalogGraphView, vTable, eTable, pTable);
+	m_graphView = constructGraphViewFromCatalog(catalogDatabase, catalogGraphView, vLabels, vTables, eTable, pTable);
 	if (!m_graphView) {
 	        return;
 	}
@@ -67,9 +68,8 @@ void GraphViewCatalogDelegate::init(catalog::Database const &catalogDatabase,
 	m_graphView->incrementRefcount();
 }
 
-GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase,
-	                                     catalog::GraphView const &catalogGraphView,
-	                                     Table* vTable, Table* eTable, Table* pTable)
+// GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable)
+GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, Table* eTable, Table* pTable) // LX FEAT2
 {
 	LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 71, "graphViewName = " + catalogGraphView.name());
 	// Create a persistent graph view for this table in our catalog
@@ -82,32 +82,39 @@ GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Data
 	int numColumns = catalogGraphView.VertexProps().size();
 	map<string, catalog::Column*>::const_iterator col_iterator;
 	vector<string> columnNamesVertex(numColumns);
-	vector<int> columnIdsInVertexTable(catalogGraphView.VTable()->columns().size());
+	// vector<int> columnIdsInVertexTable(catalogGraphView.VTable()->columns().size());
+	// LX FEAT2
+	// int colCounts = 0;
+	// for (int i = 0; i < vTables.size(); i++){
+	// 	colCounts = colCounts + vTables[i]->columns().size();
+	// }
+	vector<int> columnIdsInVertexTable(numColumns);
+	
 	int colIndex = 0;
 	for (col_iterator = catalogGraphView.VertexProps().begin();
 		 col_iterator != catalogGraphView.VertexProps().end();
 		 col_iterator++)
 	{
 		const catalog::Column *catalog_column = col_iterator->second;
-		if(catalog_column->matviewsource())
+		if(catalog_column->matviewsource()) // columns except FANIN and FANOUT
 		{
 			//colIndex = catalog_column->index();
-			columnNamesVertex[colIndex] = catalog_column->name();
+			columnNamesVertex[colIndex] = catalog_column->name(); // LX label.colName
 
 			std::stringstream params;
 			params << "Graph vCol Index = " << colIndex
 					<< ", Graph vCol Name = " << catalog_column->name();
 
-
-
 			columnIdsInVertexTable[colIndex] = catalog_column->matviewsource()->index();
 
 			params << ", VertexTable Column Index = " << catalog_column->matviewsource()->index();
 
-
-			LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 108, params.str());
+			// cout << "GraphViewCatalogDelegate:108:" << "Graph vCol Index = " << colIndex
+			// 		<< ", Graph vCol Name = " << catalog_column->name()  << ", VertexTable Column Index = " << catalog_column->matviewsource()->index() << endl;
+			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 108, params.str());
 			colIndex++;
 		}
+		// TODO: FEAT2 check when FANIN FANOUT are added to columns, maybe move it here?
 	}
 
 
@@ -157,40 +164,29 @@ GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Data
 	SHA1Final(reinterpret_cast<unsigned char *>(m_signatureHash), &shaCTX);
 	// Persistent table will use default size (2MB) if tableAllocationTargetSize is zero.
 
-	GraphView *graphView = GraphViewFactory::createGraphView(catalogGraphView.name(), catalogGraphView.isDirected(),
-			vTable, eTable, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable,
+	GraphView *graphView = GraphViewFactory::createGraphView(catalogGraphView.name(), catalogGraphView.isDirected(), vLabels,
+			vTables, eTable, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable,
 			columnIdsInEdgeTable, databaseId, m_signatureHash);
 
 	return graphView;
 }
 
-void GraphViewCatalogDelegate::processSchemaChanges(catalog::Database const &catalogDatabase,
-	                             catalog::GraphView const &catalogGraphView,
-	                             std::map<std::string, GraphViewCatalogDelegate*> const &graphViewsByName)
+void GraphViewCatalogDelegate::processSchemaChanges(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, std::map<std::string, GraphViewCatalogDelegate*> const &graphViewsByName)
 {
 
 }
 
-void GraphViewCatalogDelegate::initVertexTupleWithDefaultValues(Pool* pool,
-	    								catalog::GraphView const *catalogGraphView,
-	                                    const std::set<int>& fieldsExplicitlySet,
-	                                    TableTuple& tbTuple,
-	                                    std::vector<int>& nowFields)
+void GraphViewCatalogDelegate::initVertexTupleWithDefaultValues(Pool* pool, catalog::GraphView const *catalogGraphView, const std::set<int>& fieldsExplicitlySet, TableTuple& tbTuple, std::vector<int>& nowFields)
 {
 
 }
 
-void GraphViewCatalogDelegate::initEdgeTupleWithDefaultValues(Pool* pool,
-	    	                                    catalog::GraphView const *catalogGraphView,
-	    	                                    const std::set<int>& fieldsExplicitlySet,
-	    	                                    TableTuple& tbTuple,
-	    	                                    std::vector<int>& nowFields)
+void GraphViewCatalogDelegate::initEdgeTupleWithDefaultValues(Pool* pool, catalog::GraphView const *catalogGraphView, const std::set<int>& fieldsExplicitlySet, TableTuple& tbTuple, std::vector<int>& nowFields)
 {
 
 }
 
-TupleSchema *GraphViewCatalogDelegate::createOutputVertexTupleSchema(catalog::Database const &catalogDatabase,
-	                                          catalog::GraphView const &catalogGraphView)
+TupleSchema *GraphViewCatalogDelegate::createOutputVertexTupleSchema(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView)
 {
 	// Columns:
 	// Column is stored as map<String, Column*> in Catalog. We have to
@@ -208,11 +204,7 @@ TupleSchema *GraphViewCatalogDelegate::createOutputVertexTupleSchema(catalog::Da
 
 		const catalog::Column *catalog_column = col_iterator->second;
 		colIndex = catalog_column->index();
-		schemaBuilder.setColumnAtIndex(colIndex,
-									   static_cast<ValueType>(catalog_column->type()),
-									   static_cast<int32_t>(catalog_column->size()),
-									   catalog_column->nullable(),
-									   catalog_column->inbytes());
+		schemaBuilder.setColumnAtIndex(colIndex,static_cast<ValueType>(catalog_column->type()),static_cast<int32_t>(catalog_column->size()),catalog_column->nullable(),catalog_column->inbytes());
 	}
 
 	//msaber: the column names should be kept in a separate array per VoltDB design

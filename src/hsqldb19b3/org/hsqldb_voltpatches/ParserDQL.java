@@ -709,9 +709,7 @@ public class ParserDQL extends ParserBase {
                 colNames = new HsqlName[queryNames.length];
                 for (int idx = 0; idx < queryNames.length; idx += 1) {
                     String queryColumnName = queryNames[idx];
-                    colNames[idx] = database.nameManager.newHsqlName(queryColumnName,
-                                                                     false,
-                                                                     SchemaObject.COLUMN);
+                    colNames[idx] = database.nameManager.newHsqlName(queryColumnName, false, SchemaObject.COLUMN);
                 }
             }
             Type[] colTypes = baseQueryExpression.getColumnTypes();
@@ -1039,12 +1037,9 @@ public class ParserDQL extends ParserBase {
     }
     // End LX
     void XreadFromClause(QuerySpecification select) {
-
         readThis(Tokens.FROM);
-
         while (true) {
             XreadTableReference(select);
-
             if (readIfThis(Tokens.COMMA)) {
                 continue;
             }
@@ -1057,7 +1052,6 @@ public class ParserDQL extends ParserBase {
 
         boolean       natural = false;
         RangeVariable range   = readTableOrSubquery();
-
         select.addRangeVariable(range);
 
         while (true) {
@@ -1585,7 +1579,6 @@ public class ParserDQL extends ParserBase {
         int            graphtype = -1;
         String         hint      = null;
         // End LX
-
         if (token.tokenType == Tokens.OPENBRACKET) {
             Expression e = XreadTableSubqueryOrJoinedTable();
 
@@ -1609,7 +1602,7 @@ public class ParserDQL extends ParserBase {
                 
                 read();                
                 
-            } else {                
+            } else {     
                 table = readTableName();
     
                 if (table.isView()) {
@@ -1679,7 +1672,8 @@ public class ParserDQL extends ParserBase {
         // End LX
         // Add LX
         // System.out.println(token.tokenType);
-        if (token.tokenType != Tokens.EDGES) {
+        if (token.tokenType != Tokens.EDGES && token.tokenType != Tokens.VERTEXES) {
+            // LX FEAT2
         
             if (isNonCoreReservedIdentifier()) {
                 boolean limit = token.tokenType == Tokens.LIMIT
@@ -4949,7 +4943,6 @@ public class ParserDQL extends ParserBase {
         if (token.namePrePrefix != null) {
             throw Error.error(ErrorCode.X_42551, token.tokenString);
         }
-
         Table table = database.schemaManager.getTable(session,
             token.tokenString, token.namePrefix);
 

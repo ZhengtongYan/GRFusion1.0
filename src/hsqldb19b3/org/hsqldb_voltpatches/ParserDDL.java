@@ -282,139 +282,133 @@ public class ParserDDL extends ParserRoutine {
     private StatementSchema compileCreateGraph(int type) {
     // TODO
         HsqlName schema = readNewSchemaObjectNameNoCheck(SchemaObject.GRAPHVIEW);
-        //HsqlArrayList tempConstraints = new HsqlArrayList();
-
         schema.setSchemaIfNull(session.getCurrentSchemaHsqlName());
 
         GraphView graph = new GraphView(database, schema, type);
         graph.setSQL(session.parser.getScanner().sqlString);
 
-        readThis(Tokens.VERTEXES);
-        
-        //Vertex vertex = new VetrexSchema(graph);
-        
-        readThis(Tokens.OPENBRACKET);
-        
-        HsqlName propName;
-        HsqlName colName;
-        
-        //boolean start     = true;
-        //boolean startPart = true;
-        boolean end       = false;
-        ArrayList<HsqlName> props = new ArrayList<HsqlName>();
-        ArrayList<HsqlName> cols = new ArrayList<HsqlName>();
-        
         // Add Def Path Properties
         graph.addDefPathProps(schema, isDelimitedIdentifier());
-        
-        // Read ID property
-        readThis(Tokens.ID);
-        propName = database.nameManager.newColumnHsqlName(schema, "ID", isDelimitedIdentifier());
-        props.add(propName);        
-        readThis(Tokens.EQUALS);        
-        colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());       
-        cols.add(colName);
-        read();
-        
-        // Read other propertires
-        while (!end) {
-            switch (token.tokenType) {
 
-                case Tokens.COMMA :
-                    //if (startPart) {
-                    //    throw unexpectedToken();
-                    //}
+        HsqlName propName;
+        HsqlName colName;
+        StringBuilder br;
+        String partsql;
+        int position;
+        // ArrayList<ArrayList<HsqlName>> vertexProps = new ArrayList<ArrayList<HsqlName>>();// LX FEAT2
+        // ArrayList<ArrayList<HsqlName>> vertexCols = new ArrayList<ArrayList<HsqlName>>();// LX FEAT2
+        boolean hasLabel = false; // LX FEAT2
+        int vertexCount = 0; // LX FEAT2
+        boolean endVertex = false; // LX FEAT2
+        // ArrayList<String> labelList = new ArrayList<String>(); // LX FEAT2
 
-                    read();
-
-                    //startPart = true;
-                    break;
-
-                case Tokens.CLOSEBRACKET :
-                    read();
-
-                    end = true;
-                    break;
-                    
-                default :
-                    //if (!startPart) {
-                    //    throw unexpectedToken();
-                    //}
-
-                    propName =
-                            database.nameManager.newColumnHsqlName(schema,
-                                    token.tokenString, isDelimitedIdentifier());
-                    props.add(propName);
-                    read();
-                    readThis(Tokens.EQUALS);
-                    
-                    colName =
-                            database.nameManager.newColumnHsqlName(schema,
-                                token.tokenString, isDelimitedIdentifier());
-                    
-                    cols.add(colName);
-                    read();
-                    //start     = false;
-                    //startPart = false;
+        // LX FEAT2
+        while (!endVertex){
+            if (! readIfThis(Tokens.VERTEXES)){
+                endVertex = true;
+                break;
             }
-        }
-        /*
-        graph.VertexProperties = new HsqlName[props.size()];
-        graph.VertexColumns =  new HsqlName[cols.size()];
-        for (int i = 0; i < props.size(); i++) {
-            graph.VertexProperties[i] = props.get(i);
-            graph.VertexColumns[i] = cols.get(i);
-        }
-        */
-        
-        int position = getPosition();
-        
-        QuerySpecification selectVertices = new QuerySpecification(compileContext);
-        // TODO NO SELECT statement in select
-        XreadTableExpression(selectVertices);
-        
-        String partsql = getLastPartAndCurrent(position);
-        
-        // System.out.println(partsql);
-        // System.out.println("===");
-        
-        StringBuilder br = new StringBuilder("SELECT ");
-        
-        // Import columns as properties from the vertex-source table
-        selectVertices.resolveReferences(session);
-        Table Vtable = selectVertices.rangeVariables[0].rangeTable;
-        graph.VTableName = Vtable.getName();
-        for (int i = 0; i < props.size(); i++) {
-            ColumnSchema column = Vtable.getColumn(Vtable.findColumn(cols.get(i).name)).duplicate();
+            vertexCount++;
+            readThis(Tokens.OPENBRACKET);
+            ArrayList<HsqlName> curProps = new ArrayList<HsqlName>();
+            ArrayList<HsqlName> curCols = new ArrayList<HsqlName>();
+            boolean end       = false;
+            // LX FEAT2
+            String curLabel;
+            if (readIfThis(Tokens.LABEL)){
+                hasLabel = true;
+                readThis(Tokens.EQUALS);
+                // TODO set label into the graphview
+                graph.addVertexLabel(token.tokenString);
+                curLabel = token.tokenString;
+                read();
+                readThis(Tokens.COMMA);
+            }
+            else{
+                graph.addVertexLabel("");
+                curLabel = "";
+            }
+            // Read ID property
+            readThis(Tokens.ID);
+            propName = database.nameManager.newColumnHsqlName(schema, curLabel + ".ID", isDelimitedIdentifier());
+            curProps.add(propName);        
+            readThis(Tokens.EQUALS);
+            colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());       
+            curCols.add(colName);
+            read();
 
-            // System.out.println(cols.get(i).name);
-            // System.out.println(Vtable.findColumn(cols.get(i).name));
+            while (!end) {
+                switch (token.tokenType) {
+                    case Tokens.COMMA :
+                        read();
+                        break;
+
+                    case Tokens.CLOSEBRACKET :
+                        read();
+                        end = true;
+                        break;
+
+                    default :
+                        propName =database.nameManager.newColumnHsqlName(schema, curLabel + "." + token.tokenString, isDelimitedIdentifier());
+                        curProps.add(propName);
+                        read();
+                        readThis(Tokens.EQUALS);
+                        
+                        colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
+                        
+                        curCols.add(colName);
+                        read();
+                        
+                }
+            }
+            // vertexProps.add(curProps);
+            // vertexCols.add(curCols);
+            position = getPosition();
+            QuerySpecification selectVertices = new QuerySpecification(compileContext);
+            // TODO NO SELECT statement in select
+            XreadTableExpression(selectVertices);
+            partsql = getLastPartAndCurrent(position);
+            br = new StringBuilder("SELECT ");
             
-            column.setName(props.get(i));
-            graph.addVertexPropNoCheck(column);
-            br.append(cols.get(i).name);
-            if (i < props.size()-1) br.append(", ");
-            else br.append(" ");
-            // System.out.println(br);
+            // Import columns as properties from the vertex-source table
+            selectVertices.resolveReferences(session);
+            // TODO set multiple vtables in graphview
+            Table Vtable = selectVertices.rangeVariables[0].rangeTable;
+            graph.addVTableName(Vtable.getName(), curLabel);// LX FEAT2
+            // graph.VTableName = Vtable.getName();
+            for (int i = 0; i < curProps.size(); i++) {
+                ColumnSchema column = Vtable.getColumn(Vtable.findColumn(curCols.get(i).name)).duplicate();
+                
+                column.setName(curProps.get(i));
+                graph.addVertexPropNoCheck(column, curLabel);//LX FEAT2
+                br.append(curCols.get(i).name);
+                if (i < curProps.size()-1) br.append(", ");
+                else br.append(" ");
+            }
+            
+            graph.addDefVertexProps(schema, isDelimitedIdentifier(), curLabel);
+            
+            br.append(partsql);
+            
+            graph.addVSubQuery(br.toString(), curLabel);
+
         }
-        
-        graph.addDefVertexProps(schema, isDelimitedIdentifier());
-        
-        br.append(partsql);
-        // System.out.println(".....");
-        // System.out.println(br);
-        
-        graph.VSubQuery = br.toString();
-        //
+        // LX FEAT2
+        if (vertexCount > 1 && !hasLabel){
+            // TODO: throw some error
+            System.out.println("Error");
+            throw new RuntimeException("more than one vertex types without specifying label. Error");
+        }       
+
         
         readThis(Tokens.EDGES);
         readThis(Tokens.OPENBRACKET);
         
         //start     = true;
         //startPart = true;
-        end       = false;
-        props = new ArrayList<HsqlName>();
-        cols = new ArrayList<HsqlName>();
+        boolean end       = false;
+        ArrayList<HsqlName> props = new ArrayList<HsqlName>();
+        ArrayList<HsqlName> cols = new ArrayList<HsqlName>();
         // Read ID
         readThis(Tokens.ID);
         propName = database.nameManager.newColumnHsqlName(schema, "ID", isDelimitedIdentifier());
@@ -499,7 +493,6 @@ public class ParserDDL extends ParserRoutine {
 
         partsql = getLastPartAndCurrent(position);
         
-        //System.out.println(partsql);
         
         br = new StringBuilder("SELECT ");
         

@@ -71,7 +71,8 @@ public:
 	string name();
 	string debug();
 	bool isDirected();
-	Table* getVertexTable();
+	Table* getVertexTable(); // TODO: remove after fixing vertexscan
+	Table* getVertexTableById(int id); // LX FEAT2
 	Table* getEdgeTable();
 	Table* getPathTable();
 	TupleSchema* getVertexSchema();
@@ -94,8 +95,8 @@ public:
 	//path related members
 	//Notice that VoltDB allows one operation or query / one thread per time
 	//Hence, we assume that a single path traversal query is active at any point in time
-	PathIterator& iteratorDeletingAsWeGo(GraphOperationType opType);
-	PathIterator& iteratorDeletingAsWeGo();
+	PathIterator* iteratorDeletingAsWeGo(GraphOperationType opType); // LX
+	PathIterator* iteratorDeletingAsWeGo(); // LX
 
 	void expandCurrentPathOperation();
 
@@ -122,7 +123,10 @@ protected:
 	void constructPathTempTable();
 	std::map<int, Vertex* > m_vertexes;
 	std::map<int, Edge* > m_edges;
-	Table* m_vertexTable;
+	// Table* m_vertexTable;
+	std::vector<Table*> m_vertexTables; // LX FEAT2
+	std::vector<std::string> m_vertexLabels; // LX FEAT2
+	std::map<int, Table*> m_idToVTableMap; // LX FEAT2
 	Table* m_edgeTable;
 	TempTable* m_pathTable;
 	TableIterator* m_pathTableIterator;
@@ -137,6 +141,8 @@ protected:
 	std::vector<int> m_columnIDsInVertexTable;
 	std::vector<int> m_columnIDsInEdgeTable;
 	int m_vertexIdColumnIndex;
+	std::map<std::string, int> m_vertexIdColIdxList;// LX FEAT2: store the id col index for each label
+
 	int m_edgeIdColumnIndex;
 	int m_edgeFromColumnIndex;
 	int m_edgeToColumnIndex;

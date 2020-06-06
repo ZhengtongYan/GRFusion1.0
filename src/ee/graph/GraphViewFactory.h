@@ -24,11 +24,16 @@ public:
 	~GraphViewFactory(void);
 
 	static GraphView* createGraphView(string graphViewName, bool isDirected);
-	static GraphView* createGraphView(const std::string &graphViewName, const bool isDirected,
-			  Table* vTable, Table* eTable, Table* pTable, TupleSchema* vSchema, TupleSchema* eSchema,
+	// static GraphView* createGraphView(const std::string &graphViewName, const bool isDirected,
+	// 		  Table* vTable, Table* eTable, Table* pTable, TupleSchema* vSchema, TupleSchema* eSchema,
+	// 		  vector<std::string> vertexColumnNames, vector<std::string> edgeColumnNames,
+	// 		  vector<int> columnIdsInVertexTable, vector<int> columnIdsInEdgeTable,
+	//           voltdb::CatalogId databaseId, char *signature);
+	static GraphView* createGraphView(const std::string &graphViewName, const bool isDirected, vector<std::string> vLabels,
+			  vector<Table*> vTables, Table* eTable, Table* pTable, TupleSchema* vSchema, TupleSchema* eSchema,
 			  vector<std::string> vertexColumnNames, vector<std::string> edgeColumnNames,
 			  vector<int> columnIdsInVertexTable, vector<int> columnIdsInEdgeTable,
-	          voltdb::CatalogId databaseId, char *signature);
+	          voltdb::CatalogId databaseId, char *signature); //LX FEAT2
 	static void loadGraph(GraphView* vw, vector<Vertex* > vertexes, vector<Edge* > edges);
 	static void printGraphView(GraphView* gview);
 };

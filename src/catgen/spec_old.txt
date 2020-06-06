@@ -186,18 +186,13 @@ begin GraphView                              "A graph view in the database"
   Column* EdgeProps                          "The set of properties of the edge"
   Column* PathProps                          "The set of properties of the path"
   Index* indexes                             "The set of indexes on the columns in the table"
-  VertexLabel* vertexLabels                  "The set of labels and tables of the vertex"
+  Table? VTable                              "The reference of the vertexes table or materialized view (equivalent to materializer in Table)"
   Table? ETable                              "The reference of the edges table or materialized view (equivalent to materializer in Table)"
   bool isDirected                            "Is the graph view directed?"
   bool isreplicated                          "Is the graph view replicated?"
   int estimatedvertexescount                 "A rough estimate of the number of vertexes in the graph view; used for planning"
   int estimatededgescount                    "A rough estimate of the number of edges in the graph view; used for planning"
   string signature                           "Catalog version independent signature of the graph view consisting of name and schema"
-end
-
-begin VertexLabel                            "A vertex type in the graph"
-  string label                               "The label of this vertex type"
-  Table? VTable                              "The reference of the vertex table or materialized view (equivalent to materializer in Table)"
 end
 
 begin TimeToLive javaonly             "Time to Live (TTL), limits the life span of data"
