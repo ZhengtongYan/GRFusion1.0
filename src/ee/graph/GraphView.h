@@ -71,7 +71,8 @@ public:
 	string name();
 	string debug();
 	bool isDirected();
-	Table* getVertexTable(); // TODO: remove after fixing vertexscan
+	// Table* getVertexTable(); // TODO: remove after fixing vertexscan
+	Table* getVertexTableFromLabel(std::string vlabel); // LX FEAT2
 	Table* getVertexTableById(int id); // LX FEAT2
 	Table* getEdgeTable();
 	Table* getPathTable();

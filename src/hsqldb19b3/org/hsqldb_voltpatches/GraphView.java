@@ -43,9 +43,9 @@ public class GraphView implements SchemaObject {
     private ArrayList<HsqlName> AllVTableList;// LX FEAT2
     private ArrayList<String> AllVSubQueryList;// LX FEAT2
 
-    private ArrayList idxToIdx0; // LX FEAT2
+    private HashMappedList idxToIdx0; // LX FEAT2
     private HashMappedList idxToPropTypeList;// map global index to proptype (edge/vertex/path)LX FEAT2
-    private HashMappedList idxToLabelIdxList; // map global index to hasLabel boolean LX FEAT2
+    private HashMappedList idxToLabelIdxList; // map global index to label index LX FEAT2
     
     private HashMappedList VertexPropList; // maps vertex: name - id 
     // private ArrayList VertexPropList; // LX FEAT2 store all the vertex props
@@ -84,7 +84,7 @@ public class GraphView implements SchemaObject {
     	AllPropList     = new ArrayList();
         AllVTableList   = new ArrayList<HsqlName>();// LX FEAT2
         AllVSubQueryList = new ArrayList<String>();// LX FEAT2
-        idxToIdx0           = new ArrayList(); // LX FEAT2
+        idxToIdx0           = new HashMappedList(); // LX FEAT2
     	idxToPropTypeList    = new HashMappedList();
         idxToLabelIdxList    = new HashMappedList();//LX FEAT2
     	VertexPropList  = new HashMappedList();
@@ -267,7 +267,7 @@ public class GraphView implements SchemaObject {
             vertex.attributes.put("Vtable", AllVTableList.get((int)VTableNameList.get(curLabel)).name);
             vertex.attributes.put("Vquery", AllVSubQueryList.get((int)VSubQueryList.get(curLabel)));
             
-            int countCurLabelProp = 0;
+            // int countCurLabelProp = 0;
             for (int j = 0; j < getAllPropCount(); j++){
                 if (idxToPropTypeList.get(j) == VERTEX ){
                     if ((int)idxToLabelIdxList.get(j) == VLabelList.indexOf(curLabel)){
@@ -276,8 +276,8 @@ public class GraphView implements SchemaObject {
                         propChild.attributes.put("index", Integer.toString(j));
                         // Index Vertex props from 0 ... 
                         // propChild.attributes.put("index0", Integer.toString(VertexPropList.getIndex(property.getNameString())));
-                        propChild.attributes.put("index0", Integer.toString(countCurLabelProp));
-                        countCurLabelProp++;
+                        propChild.attributes.put("index0", Integer.toString((int)idxToIdx0.get(j)));
+                        // countCurLabelProp++;
                         vertex.children.add(propChild);
                         assert(propChild != null);
                     }
@@ -356,6 +356,11 @@ public class GraphView implements SchemaObject {
     }
 
     // LX FEAT2
+    public int getVLabelIdxByIndex(int idx) {
+        return (int)idxToLabelIdxList.get(idx);
+    }
+
+    // LX FEAT2
     public void addVertexLabel(String newLabel) {
         // should check the label to be unique
         for (int i = 0; i < VLabelList.size(); i++){
@@ -385,15 +390,18 @@ public class GraphView implements SchemaObject {
     }
 
     public int getPropIndex0(int i) {
-        return (int)idxToIdx0.get(i); // LX FEAT2
-    	// if (idxToPropTypeList.get(i) == VERTEX) {
-    	// 	return VertexPropList.getIndex(getVertexProp(i).getNameString());
-    	// }
-    	// else if (idxToPropTypeList.get(i) == EDGE) {
-    	// 	return EdgePropList.getIndex(getEdgeProp(i).getNameString());
-    	// }
-    	// else
-    	// 	return PathPropList.getIndex(getPathProp(i).getNameString());
+        // System.out.println("GraphView:388:" + i + "," + idxToIdx0.size());
+        // return (int)idxToIdx0.get(i); 
+        
+    	if (idxToPropTypeList.get(i) == VERTEX) {
+    		// return VertexPropList.getIndex(getVertexProp(i).getNameString());
+            return (int)idxToIdx0.get(i); // LX FEAT2
+    	}
+    	else if (idxToPropTypeList.get(i) == EDGE) {
+    		return EdgePropList.getIndex(getEdgeProp(i).getNameString());
+    	}
+    	else
+    		return PathPropList.getIndex(getPathProp(i).getNameString());
     }
     
 	public ColumnSchema getVertexProp(int i) {
@@ -434,7 +442,9 @@ public class GraphView implements SchemaObject {
      *  Returns the index of given column name or -1 if not found.
      */
     public int findVertexProp(String name) { // format: label.colName LX FEAT2
+        // System.out.println("GraphView:437:" + name);
         int index = (Integer)VertexPropList.get(name);
+        // System.out.println("GraphView:439:" + index + ", " + idxToIdx0.size() + ", " + getAllPropCount() + ", " + VertexPropList.size());
         return index; 
     }
     
@@ -444,6 +454,15 @@ public class GraphView implements SchemaObject {
         int vlabidx = VLabelList.indexOf(label);
     	VertexPropList.add(property.getName().name, idx);
     	idxToPropTypeList.add(idx, VERTEX);
+        
+        int idx0 = 0;
+        for (int i = 0 ; i < getAllPropCount(); i++){
+            if (idxToPropTypeList.get(i) == VERTEX)
+                if ((int)idxToLabelIdxList.get(i) == vlabidx)
+                    idx0++;
+        }
+        // System.out.println("GraphView:456:" + idx);
+        idxToIdx0.add(idx, idx0);
         idxToLabelIdxList.add(idx, vlabidx);
         vertexPropCount++;
     }
@@ -513,6 +532,8 @@ public class GraphView implements SchemaObject {
     	idxToPropTypeList.add(idx, EDGE);
         idxToLabelIdxList.add(idx, ""); // TODO: fix the edge label later
         edgePropCount++;
+
+        idxToIdx0.add(idx, -1); // TODO: fix this issue later
     }
     // Path
     /**
@@ -557,6 +578,7 @@ public class GraphView implements SchemaObject {
     	idxToPropTypeList.add(idx, PATH);
         idxToLabelIdxList.add(idx, ""); // path doesn't have a label
         pathPropCount++;
+        idxToIdx0.add(idx, -1); // TODO: fix this issue later
     }
     
     /**

@@ -67,6 +67,7 @@ public class ParserDQL extends ParserBase {
     HsqlException                  lastError;
     boolean                        strictSQLNames;
     boolean                        strictSQLIdentifierParts;
+    String                         vertexLabel; // LX FEAT2
     // A VoltDB extension to reject quoted (delimited) names.
     // TODO: Set flag from property?
     boolean rejectQuotedSchemaObjectNames = true;
@@ -92,6 +93,7 @@ public class ParserDQL extends ParserBase {
             HsqlDatabaseProperties.sql_enforce_keywords);
         strictSQLIdentifierParts = database.getProperties().isPropertyTrue(
             HsqlDatabaseProperties.sql_enforce_keywords);
+        vertexLabel = null; // LX FEAT2
     }
 
     /**
@@ -777,7 +779,7 @@ public class ParserDQL extends ParserBase {
     private QueryExpression XreadQueryExpressionBodyAndSortAndSlice() {
         QueryExpression queryExpression = XreadQueryExpressionBody();
         SortAndSlice    sortAndSlice    = XreadOrderByExpression();
-
+        // System.out.println("parserDQL:780");
         if (queryExpression.sortAndSlice == null) {
             queryExpression.addSortAndSlice(sortAndSlice);
         } else {
@@ -801,7 +803,7 @@ public class ParserDQL extends ParserBase {
     QueryExpression XreadQueryExpressionBody() {
 
         QueryExpression queryExpression = XreadQueryTerm();
-
+        // System.out.println("parserDQL:804");
         while (true) {
             switch (token.tokenType) {
 
@@ -822,7 +824,7 @@ public class ParserDQL extends ParserBase {
     QueryExpression XreadQueryTerm() {
 
         QueryExpression queryExpression = XreadQueryPrimary();
-
+        // System.out.println("ParserDQL:825");
         while (true) {
             if (token.tokenType == Tokens.INTERSECT) {
                 queryExpression = XreadSetOperation(queryExpression);
@@ -844,7 +846,7 @@ public class ParserDQL extends ParserBase {
         QueryExpression rightQueryExpression = XreadQueryTerm();
 
         queryExpression.addUnion(rightQueryExpression, unionType);
-
+        // System.out.println("parserDQL:847");
         return queryExpression;
     }
 
@@ -864,7 +866,7 @@ public class ParserDQL extends ParserBase {
 
                 QueryExpression queryExpression = XreadQueryExpressionBody();
                 SortAndSlice    sortAndSlice    = XreadOrderByExpression();
-
+                // System.out.println("parserDQL:867");
                 readThis(Tokens.CLOSEBRACKET);
 
                 if (queryExpression.sortAndSlice == null) {
@@ -1594,12 +1596,12 @@ public class ParserDQL extends ParserBase {
                 graphtype = token.tokenType;
                 
                 checkIsIdentifier();
-                // System.out.println("in parserDQL");
+                // System.out.println("parserDQL:1597:" + token.namePrefix + ", " + token.namePrePrefix + ", " + token.tokenType);
                 graph = database.schemaManager.getGraph(session,
                     token.namePrefix, token.namePrePrefix, token.tokenType);
                 
                 if (graph != null) isGraph = true;
-                
+                // System.out.println("parserDQL:1602:" + isGraph);
                 read();                
                 
             } else {     
@@ -1718,8 +1720,9 @@ public class ParserDQL extends ParserBase {
         }
     
         RangeVariable range;
-        if (isGraph)
-            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint);
+        if (isGraph){
+            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint, vertexLabel); // LX FEAT2
+        }
         else
             range = new RangeVariable(table, alias, columnList, columnNameList, compileContext);
         // End LX
@@ -1796,7 +1799,7 @@ public class ParserDQL extends ParserBase {
                     }
 
                     e.opType = OpTypes.ASTERISK;
-
+                    System.out.println("parserDQL:1802");
                     break;
                 } else {
                     break;
@@ -1822,6 +1825,7 @@ public class ParserDQL extends ParserBase {
 
             default :
                 if (e.getType() == OpTypes.ASTERISK) {
+                    System.out.println("parserDQL:1828");
                     throw unexpectedToken();
                 }
         }
@@ -2074,7 +2078,7 @@ public class ParserDQL extends ParserBase {
             default :
                 e = XreadSimpleValueExpressionPrimary();
         }
-
+        // System.out.println("parserDQL:2077");
         if (e == null && token.tokenType == Tokens.OPENBRACKET) {
             read();
 
@@ -2098,7 +2102,7 @@ public class ParserDQL extends ParserBase {
         Expression e;
 
         e = XreadSimpleValueExpressionPrimary();
-
+        // System.out.println("ParserDQL:2101");
         if (e != null) {
             return e;
         }
@@ -2194,8 +2198,14 @@ public class ParserDQL extends ParserBase {
                         return null;
                 }
             case Tokens.ASTERISK :
-                e = new ExpressionColumn(token.namePrePrefix,
-                                         token.namePrefix);
+                System.out.println("parserDQL:2200:" + token.namePrePrefix + ", " + token.namePrefix);
+                // LX FEAT2
+                if (token.namePrePrefix != null && token.namePrePrefix.equals("VERTEXES")) {
+                    vertexLabel = token.namePrefix;
+                    e = new ExpressionColumn(null, null, token.namePrePrefix, token.namePrefix);
+                }
+                else    
+                    e = new ExpressionColumn(token.namePrePrefix, token.namePrefix);
 
                 recordExpressionForToken((ExpressionColumn) e);
                 read();
@@ -2488,6 +2498,7 @@ public class ParserDQL extends ParserBase {
             switch (token.tokenType) {
 
                 case Tokens.ASTERISK :
+                    System.out.println("parserDQL:2495");
                     type  = OpTypes.MULTIPLY;
                     boole = false;
                     break;
@@ -2724,6 +2735,7 @@ public class ParserDQL extends ParserBase {
 
         while (true) {
             if (token.tokenType == Tokens.ASTERISK) {
+                System.out.println("parserDQL:2732");
                 type = OpTypes.MULTIPLY;
             } else if (token.tokenType == Tokens.DIVIDE) {
                 type = OpTypes.DIVIDE;
@@ -3084,7 +3096,7 @@ public class ParserDQL extends ParserBase {
     Expression XreadBooleanPredicand() {
 
         Expression e;
-
+        // System.out.println("ParserDQL:3087");
         if (token.tokenType == Tokens.OPENBRACKET) {
             read();
 
@@ -3608,6 +3620,7 @@ public class ParserDQL extends ParserBase {
     }
 
     Expression XreadRowValueSpecialCase() {
+        // System.out.println("parserDQL:3611");
         return XreadSimpleValueExpressionPrimary();
     }
 
@@ -3846,7 +3859,7 @@ public class ParserDQL extends ParserBase {
         compileContext.subQueryDepth++;
 
         QueryExpression queryExpression = XreadQueryExpression();
-
+        // System.out.println("parserDQL:3850");
         if (resolve) {
             queryExpression.resolve(session);
         } else {
@@ -3871,6 +3884,7 @@ public class ParserDQL extends ParserBase {
 
         try {
             queryExpression = XreadQueryExpression();
+            // System.out.println("3875");
         } catch (HsqlException e) {
             queryExpression = XreadJoinedTable();
         }
@@ -4248,6 +4262,7 @@ public class ParserDQL extends ParserBase {
         String  prefix         = token.namePrefix;
         String  prePrefix      = token.namePrePrefix;
         String  postfix        = token.namePrefixInfo;// Added by LX
+        // System.out.println("ParserDQL:4251:" + prePrefix + "," + prefix + "," + postfix + "," + name);
         //org.voltdb.VLog.GLog("ParserDQL", "readColumnOrFunctionExpression", 3935, "prePrefix = "+prePrefix + " prefix = "+prefix + " name = "+name);
 
         if (isUndelimitedSimpleName()) {
@@ -4308,12 +4323,14 @@ public class ParserDQL extends ParserBase {
         }
 
         read();
-
+        // System.out.println("parserDQL:4312:" + token.tokenType);
         if (token.tokenType != Tokens.OPENBRACKET) {
             // Expression column = new ExpressionColumn(prePrefix, prefix, name); comment LX
             // Added by LX
             // TODO 15 Mar 2017 parse IDX of Edge or Vertex and send as parameter 
             Expression column;
+            // System.out.println("parserDQL:4318:" + prefix);
+            vertexLabel = "";// LX FEAT2
             if (prefix != null && 
                      (prefix.equals(Tokens.getKeyword(Tokens.EDGES)) || 
                       prefix.equals(Tokens.getKeyword(Tokens.VERTEXES)) ||
@@ -4327,8 +4344,18 @@ public class ParserDQL extends ParserBase {
                 else if (postfix != null) {
                     index = Character.getNumericValue(postfix.charAt(1));
                 } 
-                //System.out.println("ParserDQL ln 4056: "+prePrefix+'.'+prefix+'.'+name+'.'+index);
+                // System.out.println("ParserDQL:4331: "+prePrefix+'.'+prefix+'.'+name+'.'+index);
                 column = new ExpressionColumn(null, prePrefix, prefix, name, index);
+            }
+            // LX FEAT2
+            // TODO: hard-code for now. Need to find better way to distinguish schema.table.col in relation table
+            // from table.label.col in graphview
+            // two thoughts: delay calling ExpressionColumn() until we know it is graph or not;
+            // Or in ExpressionColumn(), delay assign schema until we know it is graph or not
+            else if (prePrefix != null && prePrefix.equals("VERTEXES")) {
+                // System.out.println("ParserDQL:4337: "+prePrefix+'.'+prefix+'.'+name);
+                vertexLabel = prefix; 
+                column = new ExpressionColumn(null, null, prePrefix, prefix, name);    
             }
             else {
                 column = new ExpressionColumn(prePrefix, prefix, name);
@@ -4375,6 +4402,7 @@ public class ParserDQL extends ParserBase {
         }
 
         if (routineSchema == null) {
+            // System.out.println("parserDQL:4379");
             throw Error.error(ErrorCode.X_42501, name);
         }
 
@@ -4898,6 +4926,7 @@ public class ParserDQL extends ParserBase {
 
         if (token.namePrePrefix != null) {
             if (!token.namePrePrefix.equals(database.getCatalogName().name)) {
+                // System.out.println("parserDQL:4902");
                 throw Error.error(ErrorCode.X_42505, token.namePrefix);
             }
         }
@@ -4971,7 +5000,7 @@ public class ParserDQL extends ParserBase {
 
             return column;
         }
-
+        // System.out.println("parserDQL:4977");
         throw Error.error(ErrorCode.X_42501, token.tokenString);
     }
 
@@ -4986,6 +5015,7 @@ public class ParserDQL extends ParserBase {
         int index = table.findColumn(token.tokenString);
 
         if (index == -1) {
+            // System.out.println("parserDQL:4992");
             throw Error.error(ErrorCode.X_42501, token.tokenString);
         }
 
@@ -5018,7 +5048,7 @@ public class ParserDQL extends ParserBase {
                 return column;
             }
         }
-
+        // System.out.println("parserDQL:5025");
         throw Error.error(ErrorCode.X_42501, token.tokenString);
     }
 
@@ -5092,7 +5122,7 @@ public class ParserDQL extends ParserBase {
         }
 
         StatementDMQL cs = compileCursorSpecification();
-
+        // System.out.println("5111");
         return cs;
     }
 
@@ -5102,9 +5132,11 @@ public class ParserDQL extends ParserBase {
     StatementDMQL compileCursorSpecification() {
 
         QueryExpression queryExpression = XreadQueryExpression();
-
+        // System.out.println("5121");
         queryExpression.setAsTopLevel();
+        // System.out.println("5121mid");
         queryExpression.resolve(session);
+        // System.out.println("5121end");
         if (token.tokenType == Tokens.FOR) {
             read();
 
@@ -5157,6 +5189,7 @@ public class ParserDQL extends ParserBase {
     void checkValidCatalogName(String name) {
 
         if (name != null && !name.equals(database.getCatalogName().name)) {
+            // System.out.println("parserDQL:5164");
             throw Error.error(ErrorCode.X_42501, name);
         }
     }

@@ -677,7 +677,7 @@ public abstract class CatalogSchemaTools {
                     }
                 }
 
-                // Implement LX to support multiple graph views
+                // Implement LX to support multiple graph views (FEAT1)
                 CatalogMap<GraphView> graphViews = db.getGraphviews();
                 if (! graphViews.isEmpty()) {
                     for (GraphView graphView : graphViews) {
