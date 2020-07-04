@@ -31,6 +31,8 @@
 #include "common/SerializableEEException.h"
 #include "common/MiscUtil.h"
 #include "common/debuglog.h"
+// Added by LX
+#include "logging/LogManager.h"
 
 using namespace voltdb;
 using namespace catalog;
@@ -132,6 +134,12 @@ static void parse(const string &stmt,
     // cout << "Ref: " << ref << endl;
     // cout << "A: " << coll << endl;
     // cout << "B: " << child << endl;
+    /*
+    std::stringstream params;
+    params << "stmt = " << stmt << ", command = " << command << ", ref = "
+               << ref << ", coll = " << coll << ", child " << child;
+    voltdb::LogManager::GLog("Catalog", "parse", 135, params.str());
+    */
 }
 
 /*
@@ -168,6 +176,15 @@ void Catalog::executeOne(const string &stmt) {
     // execute
     if (command.compare("add") == 0) {
         CatalogType *type = item->addChild(coll, child);
+
+        // Added by LX
+        std::stringstream params;
+        params << "collection = " << coll << ", child = " << child;
+        if (coll == "tables" || coll == "graphViews")
+           params << ", relative index = " << type->relativeIndex();
+        voltdb::LogManager::GLog("Catalog", "executeOne", 177, params.str());
+        //End LX
+
         if (type == NULL) {
             // Silently ignore failures -- these are indicative of commands for types
             // that the EE doesn't need/support (hopefully).

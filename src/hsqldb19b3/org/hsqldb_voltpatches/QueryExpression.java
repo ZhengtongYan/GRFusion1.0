@@ -219,8 +219,11 @@ public class QueryExpression {
 
     public void resolve(Session session) {
         resolveWithClause(session);
+// System.out.println("queryExpression:222");
         resolveReferences(session);
+// System.out.println("queryExpression:224");
         ExpressionColumn.checkColumnsResolved(unresolvedExpressions);
+// System.out.println("queryExpression:226");
         resolveTypes(session);
     }
 
@@ -251,7 +254,6 @@ public class QueryExpression {
 
         if (!unionCorresponding) {
             columnCount = leftQueryExpression.getColumnCount();
-
             int rightCount = rightQueryExpression.getColumnCount();
 
             if (columnCount != rightCount) {
@@ -273,7 +275,6 @@ public class QueryExpression {
 
         if (unionCorrespondingColumns == null) {
             unionCorrespondingColumns = new OrderedHashSet();
-
             OrderedIntHashSet leftColumns  = new OrderedIntHashSet();
             OrderedIntHashSet rightColumns = new OrderedIntHashSet();
 
@@ -299,7 +300,6 @@ public class QueryExpression {
                 new int[unionCorrespondingColumns.size()];
             rightQueryExpression.unionColumnMap =
                 new int[unionCorrespondingColumns.size()];
-
             for (int i = 0; i < unionCorrespondingColumns.size(); i++) {
                 String name  = (String) unionCorrespondingColumns.get(i);
                 int    index = ArrayUtil.find(leftNames, name);

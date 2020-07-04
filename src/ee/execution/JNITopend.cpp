@@ -267,27 +267,21 @@ JNITopend::JNITopend(JNIEnv *env, jobject caller) : m_jniEnv(env), m_javaExecuti
     }
     // End LX
 
-    m_storeLargeTempTableBlockMID = m_jniEnv->GetMethodID(m_jniClass,
-                                                          "storeLargeTempTableBlock",
-                                                          "(JJLjava/nio/ByteBuffer;)Z");
+    m_storeLargeTempTableBlockMID = m_jniEnv->GetMethodID(m_jniClass,"storeLargeTempTableBlock","(JJLjava/nio/ByteBuffer;)Z");
     if (m_storeLargeTempTableBlockMID == NULL) {
         m_jniEnv->ExceptionDescribe();
         vassert(m_storeLargeTempTableBlockMID != 0);
         throw std::exception();
     }
 
-    m_loadLargeTempTableBlockMID = m_jniEnv->GetMethodID(m_jniClass,
-                                                         "loadLargeTempTableBlock",
-                                                          "(JJLjava/nio/ByteBuffer;)Z");
+    m_loadLargeTempTableBlockMID = m_jniEnv->GetMethodID(m_jniClass,"loadLargeTempTableBlock","(JJLjava/nio/ByteBuffer;)Z");
     if (m_loadLargeTempTableBlockMID == NULL) {
         m_jniEnv->ExceptionDescribe();
         vassert(m_loadLargeTempTableBlockMID != 0);
         throw std::exception();
     }
 
-    m_releaseLargeTempTableBlockMID = m_jniEnv->GetMethodID(m_jniClass,
-                                                            "releaseLargeTempTableBlock",
-                                                            "(JJ)Z");
+    m_releaseLargeTempTableBlockMID = m_jniEnv->GetMethodID(m_jniClass,"releaseLargeTempTableBlock","(JJ)Z");
     if (m_releaseLargeTempTableBlockMID == NULL) {
         m_jniEnv->ExceptionDescribe();
         vassert(m_releaseLargeTempTableBlockMID != 0);
@@ -325,9 +319,7 @@ int JNITopend::loadNextDependency(int32_t dependencyId, voltdb::Pool *stringPool
         throw std::exception();
     }
 
-    jbyteArray jbuf = (jbyteArray)(m_jniEnv->CallObjectMethod(m_javaExecutionEngine,
-                                                              m_nextDependencyMID,
-                                                              dependencyId));
+    jbyteArray jbuf = (jbyteArray)(m_jniEnv->CallObjectMethod(m_javaExecutionEngine,m_nextDependencyMID,dependencyId));
 
     if (!jbuf) {
         return 0;
@@ -411,9 +403,7 @@ std::string JNITopend::planForFragmentId(int64_t fragmentId) {
         throw std::exception();
     }
 
-    jbyteArray jbuf = (jbyteArray)(m_jniEnv->CallObjectMethod(m_javaExecutionEngine,
-                                                              m_planForFragmentIdMID,
-                                                              fragmentId));
+    jbyteArray jbuf = (jbyteArray)(m_jniEnv->CallObjectMethod(m_javaExecutionEngine, m_planForFragmentIdMID,fragmentId));
     // jbuf might be NULL or might have 0 length here.  In that case
     // we'll return a 0-length string to the caller, who will return
     // an appropriate error.
@@ -438,9 +428,7 @@ std::string JNITopend::decodeBase64AndDecompress(const std::string& base64Str) {
         throw std::exception();
     }
 
-    jbyteArray jbuf = (jbyteArray)m_jniEnv->CallStaticObjectMethod(m_decompressionClass,
-                                                                   m_decodeBase64AndDecompressToBytesMID,
-                                                                   jBase64Str);
+    jbyteArray jbuf = (jbyteArray)m_jniEnv->CallStaticObjectMethod(m_decompressionClass,m_decodeBase64AndDecompressToBytesMID,jBase64Str);
     return jbyteArrayToStdString(m_jniEnv, jni_frame, jbuf);
 }
 
@@ -499,10 +487,7 @@ bool JNITopend::loadLargeTempTableBlock(LargeTempTableBlock* block) {
 }
 
 bool JNITopend::releaseLargeTempTableBlock(LargeTempTableBlockId blockId) {
-    jboolean success = (jboolean)m_jniEnv->CallBooleanMethod(m_javaExecutionEngine,
-                                                             m_releaseLargeTempTableBlockMID,
-                                                             blockId.getSiteId(),
-                                                             blockId.getBlockCounter());
+    jboolean success = (jboolean)m_jniEnv->CallBooleanMethod(m_javaExecutionEngine, m_releaseLargeTempTableBlockMID,blockId.getSiteId(), blockId.getBlockCounter());
     return success;
 }
 
@@ -704,8 +689,7 @@ static boost::shared_array<char> serializeToDirectByteBuffer(JNIEnv *jniEngine, 
         boost::shared_array<char> backingArray(new char[serializeSize]);
         ReferenceSerializeOutput conflictSerializeOutput(backingArray.get(), serializeSize);
         table->serializeToWithoutTotalSize(conflictSerializeOutput);
-        byteBuffer = jniEngine->NewDirectByteBuffer(static_cast<void*>(backingArray.get()),
-                                                            static_cast<int32_t>(serializeSize));
+        byteBuffer = jniEngine->NewDirectByteBuffer(static_cast<void*>(backingArray.get()), static_cast<int32_t>(serializeSize));
         if (byteBuffer == NULL) {
             jniEngine->ExceptionDescribe();
             throw std::exception();
@@ -725,47 +709,30 @@ int JNITopend::reportDRConflict(int32_t partitionId, int32_t remoteClusterId, in
 
     // prepare input buffer for delete conflict
     jobject existingMetaRowsBufferForDelete = NULL;
-    boost::shared_array<char> existingMetaArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                       existingMetaTableForDelete,
-                                                                                       existingMetaRowsBufferForDelete);
+    boost::shared_array<char> existingMetaArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,existingMetaTableForDelete,existingMetaRowsBufferForDelete);
 
     jobject existingTupleRowsBufferForDelete = NULL;
-    boost::shared_array<char> existingTupleArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                        existingTupleTableForDelete,
-                                                                                        existingTupleRowsBufferForDelete);
+    boost::shared_array<char> existingTupleArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,existingTupleTableForDelete,existingTupleRowsBufferForDelete);
 
     jobject expectedMetaRowsBufferForDelete = NULL;
-    boost::shared_array<char> expectedMetaArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                       expectedMetaTableForDelete,
-                                                                                       expectedMetaRowsBufferForDelete);
+    boost::shared_array<char> expectedMetaArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,expectedMetaTableForDelete,expectedMetaRowsBufferForDelete);
 
     jobject expectedTupleRowsBufferForDelete = NULL;
-    boost::shared_array<char> expectedTupleArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                        expectedTupleTableForDelete,
-                                                                                        expectedTupleRowsBufferForDelete);
+    boost::shared_array<char> expectedTupleArrayForDelete = serializeToDirectByteBuffer(m_jniEnv,expectedTupleTableForDelete,expectedTupleRowsBufferForDelete);
 
     jobject existingMetaRowsBufferForInsert = NULL;
-    boost::shared_array<char> existingMetaArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                       existingMetaTableForInsert,
-                                                                                       existingMetaRowsBufferForInsert);
+    boost::shared_array<char> existingMetaArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,existingMetaTableForInsert,existingMetaRowsBufferForInsert);
 
     jobject existingTupleRowsBufferForInsert = NULL;
-    boost::shared_array<char> existingTupleArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                        existingTupleTableForInsert,
-                                                                                        existingTupleRowsBufferForInsert);
+    boost::shared_array<char> existingTupleArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,existingTupleTableForInsert,existingTupleRowsBufferForInsert);
 
     jobject newMetaRowsBufferForInsert = NULL;
-    boost::shared_array<char> newMetaArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                  newMetaTableForInsert,
-                                                                                  newMetaRowsBufferForInsert);
+    boost::shared_array<char> newMetaArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,newMetaTableForInsert,newMetaRowsBufferForInsert);
 
     jobject newTupleRowsBufferForInsert = NULL;
-    boost::shared_array<char> newTupleArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,
-                                                                                   newTupleTableForInsert,
-                                                                                   newTupleRowsBufferForInsert);
+    boost::shared_array<char> newTupleArrayForInsert = serializeToDirectByteBuffer(m_jniEnv,newTupleTableForInsert,newTupleRowsBufferForInsert);
 
-    int32_t retval = m_jniEnv->CallStaticIntMethod(m_partitionDRGatewayClass,
-                                            m_reportDRConflictMID,
+    int32_t retval = m_jniEnv->CallStaticIntMethod(m_partitionDRGatewayClass,m_reportDRConflictMID,
                                             partitionId,
                                             remoteClusterId,
                                             remoteTimestamp,

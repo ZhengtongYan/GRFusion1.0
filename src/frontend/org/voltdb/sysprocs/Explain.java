@@ -55,7 +55,7 @@ public class Explain extends AdHocNTBase {
             // We do not need to worry about the ParameterSet,
             // AdHocAcceptancePolicy will sanitize the parameters ahead of time.
             return SqlBatch.from(params, m_context, ExplainMode.EXPLAIN_ADHOC).execute();
-        } catch (PlannerFallbackException e) {
+        } catch (PlannerFallbackException e) {System.out.println("explain:58");
             return runUsingLegacy(params);
         } catch (Exception ex) { // For now, let's just fail the batch if any error happens.
             return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE, ex.getMessage());

@@ -1903,6 +1903,7 @@ public class Session implements SessionInterface {
     public GraphView findSessionGraph(String name) {
 
         for (int i = 0; i < transitionGraphs.length; i++) {
+            System.out.println("Session.java:1906:" +  transitionGraphs[i].getName().name);
             if (name.equals(transitionGraphs[i].getName().name)) {
                 return transitionGraphs[i];
             }

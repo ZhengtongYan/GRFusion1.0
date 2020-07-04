@@ -1760,9 +1760,7 @@ public class Expression {
                 // EL HACKO: I'm just adding in the timezone seconds
                 // at the moment, hope this is right --izzy
                 TimestampData time = (TimestampData) valueData;
-                exp.attributes.put("value", Long.toString(Math.round((time.getSeconds() +
-                                                                      time.getZone()) * 1e6) +
-                                                          time.getNanos() / 1000));
+                exp.attributes.put("value", Long.toString(Math.round((time.getSeconds() + time.getZone()) * 1e6) + time.getNanos() / 1000));
                 return exp;
             }
 

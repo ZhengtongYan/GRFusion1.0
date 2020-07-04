@@ -104,15 +104,16 @@ public class PathScanPlanNode extends SeqScanPlanNode {
             // if there was an inline projection we will have copied these already
             // otherwise we need to iterate through the output schema TVEs
             // and sort them by table schema index order.
-            for (SchemaColumn col : m_outputSchema.getColumns())
+            // for (SchemaColumn col : m_outputSchema.getColumns())
+            for (int i = 0; i < m_outputSchema.size(); i++)
             {
+                SchemaColumn col = m_outputSchema.getColumn(i);
                 // At this point, they'd better all be TVEs.
                 assert(col.getExpression() instanceof TupleValueExpression);
                 TupleValueExpression tve = (TupleValueExpression)col.getExpression();
                 // Modified by LX
                 // int index = tve.resolveColumnIndexesUsingSchema(m_tableSchema);
                 int index = tve.setColumnIndexUsingSchema(m_tableSchema);                
-                System.out.println("PathScanPlanNode 91: "+m_tableSchema);
                 
                 tve.setColumnIndex(index);
             }
@@ -147,22 +148,30 @@ public class PathScanPlanNode extends SeqScanPlanNode {
             m_hasSignificantOutputSchema = true;
         }
         
-        //System.out.println("PathScanPlanNode 128: "+m_outputSchema);
     }
     
     @Override
     public void toJSONString(JSONStringer stringer) throws JSONException {
         super.toJSONString(stringer);
         
-        stringer.key(Members.HINT.name()).value(hint);
-        stringer.key(Members.STARTVERTEX.name()).value(startvertexid);
-        stringer.key(Members.ENDVERTEX.name()).value(endverexid);
-        stringer.key(Members.PROP1.name()).value(prop1);
-        stringer.key(Members.PROP2.name()).value(prop2);
-        stringer.key(Members.PROP3.name()).value(prop3);
-        stringer.key(Members.PROP4.name()).value(prop4);
-        stringer.key(Members.PROP5.name()).value(prop5);
-        stringer.key(Members.LENGTH.name()).value(length);
+        stringer.keySymbolValuePair(Members.HINT.name(), hint);
+        stringer.keySymbolValuePair(Members.STARTVERTEX.name(), startvertexid);
+        stringer.keySymbolValuePair(Members.ENDVERTEX.name(), endverexid);
+        stringer.keySymbolValuePair(Members.PROP1.name(), prop1);
+        stringer.keySymbolValuePair(Members.PROP2.name(), prop2);
+        stringer.keySymbolValuePair(Members.PROP3.name(), prop3);
+        stringer.keySymbolValuePair(Members.PROP4.name(), prop4);
+        stringer.keySymbolValuePair(Members.PROP5.name(), prop5);
+        stringer.keySymbolValuePair(Members.LENGTH.name(), length);
+        // stringer.key(Members.HINT.name()).value(hint);
+        // stringer.key(Members.STARTVERTEX.name()).value(startvertexid);
+        // stringer.key(Members.ENDVERTEX.name()).value(endverexid);
+        // stringer.key(Members.PROP1.name()).value(prop1);
+        // stringer.key(Members.PROP2.name()).value(prop2);
+        // stringer.key(Members.PROP3.name()).value(prop3);
+        // stringer.key(Members.PROP4.name()).value(prop4);
+        // stringer.key(Members.PROP5.name()).value(prop5);
+        // stringer.key(Members.LENGTH.name()).value(length);
     }
    
     @Override

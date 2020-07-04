@@ -1158,7 +1158,7 @@ public class ParserRoutine extends ParserDML {
         readThis(Tokens.FOR);
 
         Statement cursorStatement = compileCursorSpecification();
-
+        System.out.println("ParserRoutine:1161");
         readThis(Tokens.DO);
 
         Statement[] statements = readSQLProcedureStatementList(routine,

@@ -96,9 +96,6 @@ public class TupleValueExpression extends AbstractValueExpression {
         m_columnAlias = columnAlias;
         m_columnIndex = columnIndex;
         m_differentiator = differentiator;
-        // System.out.println("in tve constructor1");
-        // System.out.println(m_columnName);
-        // System.out.println(m_columnIndex);
     }
 
     // Added by LX
@@ -129,9 +126,6 @@ public class TupleValueExpression extends AbstractValueExpression {
         m_columnIndex = columnIndex;
         m_differentiator = differentiator;
         m_graphObjectIdx = graphObjectIdx;
-        // System.out.println("in tve constructor2");
-        // System.out.println(m_columnName);
-        // System.out.println(m_columnIndex);
     }
     // End LX
 
@@ -242,6 +236,7 @@ public class TupleValueExpression extends AbstractValueExpression {
      * @param columnIndex The index of the column to set
      */
     public void setColumnIndex(int columnIndex) {
+        System.out.println("tve:239:" + m_columnIndex + ", " + columnIndex);
         m_columnIndex = columnIndex;
     }
 
@@ -423,7 +418,6 @@ public class TupleValueExpression extends AbstractValueExpression {
             }
         }
         // End LX
-
         return true;
     }
 
@@ -451,7 +445,7 @@ public class TupleValueExpression extends AbstractValueExpression {
     public void toJSONString(JSONStringer stringer) throws JSONException {
         super.toJSONString(stringer);
         stringer.keySymbolValuePair(Members.COLUMN_IDX, m_columnIndex);
-
+System.out.println("tve:448:" + m_columnIndex);
         // Added by LX
         if (m_graphObject != null) {
             stringer.keySymbolValuePair(Members.GRAPH_OBJECT, m_graphObject);
@@ -496,44 +490,54 @@ public class TupleValueExpression extends AbstractValueExpression {
         assert(column != null);
         m_tableName = table.getTypeName();
         m_columnIndex = column.getIndex();
-        System.out.println(".." + m_columnName + ".." + m_columnIndex);
-        // System.out.println(m_columnIndex);
-        // System.out.println(m_columnName);
-        // setTypeSizeAndInBytes(column);
+        System.out.println("tve:492:" + m_columnIndex);
+        setTypeSizeAndInBytes(column);
     }
 
     // Added by LX
     public void resolveForGraph(GraphView graph, String type) {
         assert(graph != null);
-        // It MAY be that for the case in which this function is called (expression indexes), the column's
-        // table name is not specified (and not missed?).
-        // It is possible to "correct" that here by cribbing it from the supplied table (base table for the index)
-        // -- not bothering for now.
         Column column;
-        // System.out.println(type);
-        // System.out.println(m_columnName);
+
         if (type == "vertex") {
-            column = graph.getVertexprops().getExact(m_columnName);
-            if (m_graphObject == null) m_graphObject = "VERTEXES";
+            // assuming all properties in vertex table are exactly the same
+            // as all columns in the referenced relation table
+            // this is what the original author of GRFusion assumed
+            Column graphCol = graph.getVertexprops().getExact(m_columnName);
+            if (m_graphObject == null) 
+                m_graphObject = "VERTEXES";
+            Column tableCol = graphCol.getMatviewsource();
+            String vLabel = m_columnName.substring(0, m_columnName.indexOf("."));
+            String name = m_columnName.substring(m_columnName.indexOf(".") + 1);
+            // System.out.println(name);
+            if (name.equals("FANIN") || name.equals("FANOUT"))
+                column = graph.getVertexprops().getExact(m_columnName);
+            else {
+                Table vTable = graph.getVertexlabels().getExact(vLabel).getVtable();
+                column = vTable.getColumns().getExact(tableCol.getName());
+            }
+            // System.out.println("tve:507:" + c.getName());
         }
         else if (type == "path") {
             column = graph.getPathprops().getExact(m_columnName);
-            if (m_graphObject == null) m_graphObject = "PATHS";
+            if (m_graphObject == null) 
+                m_graphObject = "PATHS";
         }
         else if (type == "startvertex" || type == "endvertex") {
             column = graph.getPathprops().getExact(m_columnName);
-            if (m_graphObject == null) m_graphObject = "VERTEXES";
+            if (m_graphObject == null) 
+                m_graphObject = "VERTEXES";
         }
         else {
             column = graph.getEdgeprops().getExact(m_columnName);
-            if (m_graphObject == null) m_graphObject = "EDGES";
+            if (m_graphObject == null) 
+                m_graphObject = "EDGES";
         }
         
         assert(column != null);
         m_tableName = graph.getTypeName();
         m_columnIndex = column.getIndex();
-        // System.out.println("---------------");
-        System.out.println("!!" + m_columnName + "!!" + m_columnIndex);
+        System.out.println("tve:527:" + m_columnIndex);
         setTypeSizeAndInBytes(column);
         // setTypeSizeBytes(column.getType(), column.getSize(), column.getInbytes());
     }
@@ -544,13 +548,15 @@ public class TupleValueExpression extends AbstractValueExpression {
      */
     public int setColumnIndexUsingSchema(NodeSchema inputSchema) {
         int index = inputSchema.getIndexOfTve(this);
+        
         if (index < 0) {
             //* enable to debug*/ System.out.println("DEBUG: setColumnIndex miss: " + this);
             //* enable to debug*/ System.out.println("DEBUG: setColumnIndex candidates: " + inputSchema);
             return index;
         }
-
-        setColumnIndex(index);
+        System.out.println("tve:545" + m_tableName + ", " + m_columnName);
+        if (m_graphObject != "VERTEXES")
+            setColumnIndex(index);
         if (getValueType() == null) {
             // In case of sub-queries the TVE may not have its
             // value type and size resolved yet. Try to resolve it now

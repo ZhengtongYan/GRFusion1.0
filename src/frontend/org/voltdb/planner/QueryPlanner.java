@@ -182,7 +182,7 @@ public class QueryPlanner implements AutoCloseable {
             ParameterizationInfo.resetCurrentParamIndex();
 
             m_xmlSQL = m_HSQL.getXMLCompiledStatement(m_sql);
-            //* enable to debug */ System.out.println("DEBUG: HSQL parsed:" + m_xmlSQL);
+            /* enable to debug */ System.out.println("QueryPlanner:185:DEBUG: HSQL parsed:" + m_xmlSQL);
         } catch (HSQLParseException e) {
             // XXXLOG probably want a real log message here
             throw new PlanningErrorException(e.getMessage());
@@ -197,6 +197,7 @@ public class QueryPlanner implements AutoCloseable {
         }
 
         m_planSelector.outputCompiledStatement(m_xmlSQL);
+        System.out.println("QueryPlanner:200");
     }
 
     private static Predicate<Pair<AbstractExpression, AbstractExpression>> isNotMigrating() {

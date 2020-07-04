@@ -128,8 +128,8 @@ map<PlanNodeType, string> const mapOfPlanNodeType {
    // Added by LX
    {PlanNodeType::VertexScan, "VERTEXSCAN"},
    {PlanNodeType::EdgeScan, "EDGESCAN"},
-   {PlanNodeType::PathScan, "PATHSCAN"} // ???
-   // {PlanNodeType::NestedLoopPath, "NESTEDLOOPPATH"} // End LX
+   {PlanNodeType::PathScan, "PATHSCAN"}, // ???
+   {PlanNodeType::NestedLoopPath, "NESTEDLOOPPATH"} // End LX
 };
 
 map<string, PlanNodeType> const mapToPlanNodeType = revert(mapOfPlanNodeType);

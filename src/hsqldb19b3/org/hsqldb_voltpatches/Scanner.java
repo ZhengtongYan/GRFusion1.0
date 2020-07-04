@@ -803,7 +803,7 @@ public class Scanner {
             currentPosition++;
 
             c = charAt(currentPosition);
-
+            // System.out.println("scanner:806:" + token.tokenString);
             if (c == '*') {
                 currentPosition++;
 
@@ -816,6 +816,7 @@ public class Scanner {
                 scanIdentifierChain();
             }
         }
+        // System.out.println("scanner:820:" + token.namePrePrefix + "," + token.namePrefix + "," + token.tokenString);
     }
 
     public boolean scanUndelimitedIdentifier() {
@@ -1670,7 +1671,7 @@ public class Scanner {
                     /** @todo 1.9.0 - review message malformed character set identifier */
                     token.tokenType   = Tokens.X_MALFORMED_STRING;
                     token.isMalformed = true;
-
+                    // System.out.println("scanner:1674:is it malformed?");
                     return;
                 }
 

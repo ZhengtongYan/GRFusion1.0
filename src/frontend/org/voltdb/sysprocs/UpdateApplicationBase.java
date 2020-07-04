@@ -326,7 +326,6 @@ public abstract class UpdateApplicationBase extends VoltNTSystemProcedure {
         }
         String newDDL = sb.toString();
         compilerLog.trace("Adhoc-modified DDL:\n" + newDDL);
-
         VoltCompiler compiler = new VoltCompiler(isXDCR, user);
         compiler.compileInMemoryJarfileWithNewDDL(jarfile, newDDL, sqlNodes, oldCatalog);
         return jarfile;

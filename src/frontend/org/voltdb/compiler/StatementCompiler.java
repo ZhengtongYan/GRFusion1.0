@@ -211,6 +211,7 @@ public abstract class StatementCompiler {
                 }
                 else {
                     planner.parse();
+                    System.out.println("StatementCompiler:214");
                 }
 
                 plan = planner.plan();

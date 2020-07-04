@@ -32,6 +32,7 @@
 package org.hsqldb_voltpatches;
 
 import java.util.Arrays;
+import java.util.ArrayList; // LX FEAT2
 
 import org.hsqldb_voltpatches.HSQLInterface.HSQLParseException;
 import org.hsqldb_voltpatches.HsqlNameManager.SimpleName;
@@ -78,6 +79,7 @@ final class RangeVariable {
     final boolean          isEdges;
     final boolean          isPaths;
     final String           hint;
+    final String[]         vertexLabels; // LX FEAT2: TODO make it a list later
     // End LX
     final SimpleName       tableAlias;
     private OrderedHashSet columnAliases;
@@ -133,6 +135,7 @@ final class RangeVariable {
         isEdges          = false;// Added by LX
         isPaths          = false;// Added by LX
         hint             = null;// Added by LX
+        vertexLabels     = null; // LX FEAT2
     }
 
     RangeVariable(Table table, SimpleName alias, OrderedHashSet columnList,
@@ -153,13 +156,13 @@ final class RangeVariable {
         isEdges          = false;
         isPaths          = false;
         hint             = null;
+        vertexLabels     = null; // LX FEAT2
         // End LX
         compileContext.registerRangeVariable(this);
     }
 
-    // Added by LX
-    RangeVariable(GraphView graph, int type, SimpleName alias, OrderedHashSet columnList, SimpleName[] columnNameList, CompileContext compileContext, String hint) {
-
+    // Implement LX FEAT2
+    RangeVariable(GraphView graph, int type, SimpleName alias, OrderedHashSet columnList, SimpleName[] columnNameList, CompileContext compileContext, String hint, HashSet vertexLabels) {
           isGraph          = true;
           
           if (type == Tokens.VERTEXES) { 
@@ -185,6 +188,8 @@ final class RangeVariable {
           
           rangeGraph       = graph;
           this.hint        = hint;
+          this.vertexLabels = new String[vertexLabels.size()];
+          vertexLabels.toArray(this.vertexLabels);// LX FEAT2
           
           rangeTable       = null;
           tableAlias       = alias;
@@ -216,6 +221,12 @@ final class RangeVariable {
         
           compileContext.registerRangeVariable(this);
     }
+
+    // MODIFIED by LX FEAT2
+    // RangeVariable(GraphView graph, int type, SimpleName alias, OrderedHashSet columnList, SimpleName[] columnNameList, CompileContext compileContext, String hint) {
+    //       // FEAT2 for those that doesn't specify label explicitly
+    //       RangeVariable(graph, type, alias, columnList, columnNameList, compileContext, hint, "");
+    // }
     // End LX
 /*
     RangeVariable(Table table, String alias, OrderedHashSet columnList,
@@ -249,6 +260,7 @@ final class RangeVariable {
         isEdges          = false;
         isPaths          = false;
         hint             = null;
+        vertexLabels      = null;
         // End LX
     }
 
@@ -300,6 +312,16 @@ final class RangeVariable {
         return rangeGraph;
     }
     // End LX
+
+    // Implement LX FEAT2
+    String[] getVertexLabels(){
+        return vertexLabels;
+    }
+    // LX FEAT2
+    boolean isGraph() {
+        return isGraph;
+    }
+
     public OrderedHashSet getColumnNames() {
 
         if (columnNames == null) {
@@ -386,7 +408,7 @@ final class RangeVariable {
                 && namedJoinColumnExpressions.containsKey(columnName)) {
             return -1;
         }
-
+// System.out.println("RangeVariable:389:" + tableName + "," + columnName);
         if (variables != null) {
             return variables.getIndex(columnName);
         } else if (columnAliases != null) {
@@ -412,6 +434,7 @@ final class RangeVariable {
     // Added by LX
     // TODO merge with findColumn(String tableName, String columnName)
     public int findColumn(String tableName, String objectName, String columnName) {
+// System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + columnName);
         if (namedJoinColumnExpressions != null
                 && tableName == null
                 && namedJoinColumnExpressions.containsKey(columnName)) {
@@ -509,6 +532,7 @@ final class RangeVariable {
         // End LX
         if (e.schema == null) {
             if (tableAlias == null) {
+              // System.out.println("RangeVariable:513:" + tablename + ", " + e.tableName);
                 // if (e.tableName.equals(rangeTable.tableName.name)) { comment LX
                 if (e.tableName.equals(tablename)) { // Added by LX
                     return true;
@@ -606,24 +630,31 @@ final class RangeVariable {
             if (isEdges && graph.isEdge(i)) {
                 column = graph.getEdgeProp(i);
             }
-            else if (isVertexes && graph.isVertex(i))
-                column = graph.getVertexProp(i);
+            else if (isVertexes && graph.isVertex(i)) {
+                // LX FEAT2
+                for (String vertexLabel: vertexLabels)
+                  if (vertexLabel.equals(graph.getVertexLabelByIndex(graph.getVLabelIdxByIndex(i))))
+                    column = graph.getVertexProp(i);
+            }
+                
             else if (isPaths && graph.isPath(i))
                 column = graph.getPathProp(i);
             else
                 continue;
             
-            String columnName = columnAliases == null ? column.getName().name : (String) columnAliases.get(i);
+            // LX FEAT2
+            if (column != null) {
+                String columnName = columnAliases == null ? column.getName().name : (String) columnAliases.get(i);
 
-            if (exclude != null && exclude.contains(columnName)) {
-                continue;
+                if (exclude != null && exclude.contains(columnName)) {
+                    continue;
+                }
+
+                Expression e = new ExpressionColumn(this, column, i);
+
+                expList.add(position++, e);  
             }
-
-            Expression e = new ExpressionColumn(this, column, i);
-
-            expList.add(position++, e);
         }
-
         return position;
     }
     // End LX
@@ -1592,7 +1623,7 @@ final class RangeVariable {
      * @return XML, correctly indented, representing this object.
      * @throws HSQLParseException
      */
-    VoltXMLElement voltGetGraphRangeVariableXML(Session session) throws org.hsqldb_voltpatches.HSQLInterface.HSQLParseException
+    VoltXMLElement voltGetGraphRangeVariableXML(Session session, String vLabel) throws org.hsqldb_voltpatches.HSQLInterface.HSQLParseException // modified by LX FEAT2
     {
         Index        index;
         Index        primaryIndex;
@@ -1607,8 +1638,11 @@ final class RangeVariable {
 
         // output open tag
         VoltXMLElement scan;
-        if (isVertexes) 
+        if (isVertexes) {
             scan = new VoltXMLElement("vertexscan");
+            // LX FEAT2
+            scan.attributes.put("label", vLabel);
+        }
         else if (isEdges)
             scan = new VoltXMLElement("edgescan");
         else if (isPaths)

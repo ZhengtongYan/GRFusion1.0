@@ -293,11 +293,7 @@ TableCatalogDelegate::getIndexIdString(const TableIndexScheme& indexScheme) {
 }
 
 
-Table* TableCatalogDelegate::constructTableFromCatalog(catalog::Database const& catalogDatabase,
-                                                       catalog::Table const& catalogTable,
-                                                       bool isXDCR,
-                                                       int tableAllocationTargetSize,
-                                                       bool forceNoDR) {
+Table* TableCatalogDelegate::constructTableFromCatalog(catalog::Database const& catalogDatabase, catalog::Table const& catalogTable, bool isXDCR, int tableAllocationTargetSize, bool forceNoDR) {
     LogManager::GLog("TableCatalogDelegate", "constructTableFromCatalog", 278, "tableName = " + catalogTable.name()); // Add LX
     // get an array of table column names
     const int numColumns = static_cast<int>(catalogTable.columns().size());

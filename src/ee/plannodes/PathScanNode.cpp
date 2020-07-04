@@ -17,7 +17,7 @@ namespace voltdb
 
 PathScanPlanNode::PathScanPlanNode() {
 
-}
+} 
 
 PathScanPlanNode::~PathScanPlanNode() {
 	// TODO Auto-generated destructor stub

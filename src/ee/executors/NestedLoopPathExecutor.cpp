@@ -183,6 +183,7 @@ bool NestedLoopPathExecutor::p_execute(const NValueArray &params) {
 
     if (graphView != NULL)
     {
+        // cout << "NestedLoopPathExecutor:186:" << joinPredicate->debug(true).c_str() << endl;
     	setStartAndEndVertexes(joinPredicate, inner_table, outer_table);
     	startVertexId = UNDEFINED;
     	endVertexId = UNDEFINED;
@@ -239,8 +240,6 @@ bool NestedLoopPathExecutor::p_execute(const NValueArray &params) {
         	}
         	else //the inner is a graph view
         	{
-
-
         		if (startVertexColumnId != UNDEFINED)
         		{
         			startVertexId = ValuePeeker::peekAsInteger(outer_tuple.getNValue(startVertexColumnId));
@@ -254,14 +253,15 @@ bool NestedLoopPathExecutor::p_execute(const NValueArray &params) {
         		graphView->fromVertexId = startVertexId;
         		graphView->toVertexId = endVertexId;
 
-        		PathIterator pathIterator = graphView->iteratorDeletingAsWeGo();
+        		PathIterator *pathIterator = graphView->iteratorDeletingAsWeGo();// LX
 
-        		while (postfilter.isUnderLimit() && pathIterator.next(inner_tuple)) {
+        		while (postfilter.isUnderLimit() && pathIterator->next(inner_tuple)) {// LX
 					pmp.countdownProgress();
 					// Apply join filter to produce matches for each outer that has them,
 					// then pad unmatched outers, then filter them all
 					//if (joinPredicate == NULL || joinPredicate->eval(&outer_tuple, &inner_tuple).isTrue())
-					{
+					// {
+                    // cout << "NestedLoopPathExecutor:264:" << inner_tuple.debug(inner_table->name()).c_str() << endl;
 						outerMatch = true;
 						// The inner tuple passed the join predicate
 						if (m_joinType == JOIN_TYPE_FULL) {
@@ -274,7 +274,8 @@ bool NestedLoopPathExecutor::p_execute(const NValueArray &params) {
 							join_tuple.setNValues(outer_cols, inner_tuple, 0, inner_cols);
 							outputTuple(postfilter, join_tuple, pmp);
 						}
-					}
+                    // break;
+					// }
 				} // END INNER WHILE LOOP
 
         	}
@@ -338,6 +339,7 @@ void NestedLoopPathExecutor::setStartAndEndVertexes(const AbstractExpression* jo
 
 	if (singlePredicate == NULL)
 	{
+        // cout << "NestedLoopPathExecutor:339:singlePredicate" << endl;
 		setStartAndEndVertexes(joinExpression->getLeft(), inner, outer);
 		setStartAndEndVertexes(joinExpression->getRight(), inner, outer);
 		return;
@@ -361,6 +363,7 @@ void NestedLoopPathExecutor::setStartAndEndVertexes(const AbstractExpression* jo
 		if (inner->columnName(left->getColumnId()) == StartVertexLiteral)
 		{
 			startVertexColumnId = right->getColumnId();
+            // cout << "NestedLoopPathExecutor:363:" << startVertexColumnId << endl;
 		}
 		else if (inner->columnName(left->getColumnId()) == EndVertexLiteral)
 		{

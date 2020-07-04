@@ -54,7 +54,8 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         TARGET_GRAPH_NAME,
         TARGET_GRAPH_ALIAS,
         TARGET_OBJECT_NAME,
-        ISGRAPH;
+        ISGRAPH,
+        VERTEX_LABEL; // LX FEAT2
         // End LX
     }
 
@@ -73,6 +74,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
     // Added by LX
     protected String m_targetObjectName = null;
     protected boolean isGraph = false;
+    protected String m_vLabel = null; // LX FEAT2
     // End LX
 
     // Flag marking the sub-query plan
@@ -187,6 +189,12 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
     }
     // End LX
 
+    // LX FEAT2
+    public void setTargetVertexLabel(String vlabel) {
+        m_vLabel = vlabel;
+        isGraph = true;
+    }
+
     /**
      * @param alias
      */
@@ -202,8 +210,10 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         setTargetTableName(tableScan.getTableName());
 
         // Added by LX
-        if (tableScan instanceof StmtTargetGraphScan)
+        if (tableScan instanceof StmtTargetGraphScan){
             setTargetObjectName(((StmtTargetGraphScan)tableScan).getGraphElementName());
+            setTargetVertexLabel(((StmtTargetGraphScan)tableScan).getVLabel());// LX FEAT2
+        }
         // End LX
 
         List<SchemaColumn> scanColumns = tableScan.getScanColumns();
@@ -590,6 +600,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         } else {
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_NAME.name(), m_targetTableName);
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_ALIAS.name(), m_targetTableAlias);          
+            stringer.keySymbolValuePair(Members.VERTEX_LABEL.name(), m_vLabel); // LX FEAT2
         }
         // End LX
         if (m_isSubQuery) {
@@ -613,6 +624,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         } else {
             m_targetTableName = jobj.getString( Members.TARGET_GRAPH_NAME.name() );
             m_targetTableAlias = jobj.getString( Members.TARGET_GRAPH_ALIAS.name() );
+            m_vLabel = jobj.getString( Members.VERTEX_LABEL.name() ); // LX FEAT2
         }
         // End LX
         if (jobj.has("SUBQUERY_INDICATOR")) {

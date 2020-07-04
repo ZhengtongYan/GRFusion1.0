@@ -102,7 +102,7 @@ public class GraphLeafNode extends JoinNode {
 
     @Override
     public boolean hasSubqueryScans(){
-        return true; // add LX nonsensical return
+        return false; // add LX nonsensical return
     }
 
     @Override

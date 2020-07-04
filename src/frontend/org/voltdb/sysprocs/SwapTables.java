@@ -43,7 +43,7 @@ public class SwapTables extends AdHocNTBase {
     }
 
     @Override
-    protected CompletableFuture<ClientResponse> runUsingCalcite(ParameterSet params) {
+    protected CompletableFuture<ClientResponse> runUsingCalcite(ParameterSet params) {System.out.println("SwapTables:46");
         return runUsingLegacy(params);
     }
     @Override
@@ -68,6 +68,7 @@ public class SwapTables extends AdHocNTBase {
             return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE,
                     String.format("Table %s cannot be swapped since it is used for exporting.",theTable));
         } else {
+            System.out.println("SwapTables:71");
             return runNonDDLAdHoc(context, sqlStatements, true, null, ExplainMode.NONE,
                     false, true, userParams);
         }

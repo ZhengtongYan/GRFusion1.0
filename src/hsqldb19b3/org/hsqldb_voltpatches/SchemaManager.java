@@ -87,7 +87,6 @@ public class SchemaManager {
 
     // SCHEMA management
     void createPublicSchema() {
-
         HsqlName name = database.nameManager.newHsqlName(null,
             SqlInvariants.PUBLIC_SCHEMA, SchemaObject.SCHEMA);
         Schema schema = new Schema(name,
@@ -397,7 +396,6 @@ public class SchemaManager {
     public HashMappedList getTables(String schema) {
 
         Schema temp = (Schema) schemaMap.get(schema);
-
         return temp.tableList;
     }
 
@@ -405,7 +403,6 @@ public class SchemaManager {
     public HashMappedList getGraphs(String schema) {
 
         Schema temp = (Schema) schemaMap.get(schema);
-
         return temp.graphviewList;
     }
     // End LX
@@ -736,6 +733,15 @@ public class SchemaManager {
         schema.tableList.set(index, table.getName().name, table);
     }
 
+    // Implement LX
+    void setGraphView(int index, GraphView graph) {
+
+        Schema schema = (Schema) schemaMap.get(graph.getSchemaName().name);
+
+        schema.graphviewList.set(index, graph.getName().name, graph);   
+    }
+    // Implement LX
+
     /**
      *  Returns index of a table or view in the HashMappedList that
      *  contains the table objects for this Database.
@@ -755,6 +761,21 @@ public class SchemaManager {
 
         return schema.tableList.getIndex(name.name);
     }
+
+    // Implement LX
+    int getGraphViewIndex(GraphView graph) {
+
+        Schema schema = (Schema) schemaMap.get(graph.getSchemaName().name);
+
+        if (schema == null) {
+            return -1;
+        }
+
+        HsqlName name = graph.getName();
+
+        return schema.graphviewList.getIndex(name.name);
+    }
+    // Implement LX
 
     void recompileDependentObjects(OrderedHashSet tableSet) {
 

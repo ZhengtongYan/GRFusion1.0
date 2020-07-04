@@ -540,7 +540,6 @@ public abstract class AbstractParsedStmt {
         }
         String columnName = exprNode.attributes.get("column");
         String columnAlias = exprNode.attributes.get("alias");
-        System.out.println("---" + columnName + "---");
         // Whether or not this column is the coalesced column produced by a join with a
         // USING predicate.
         String usingAttr = exprNode.attributes.get("using");
@@ -576,14 +575,11 @@ public abstract class AbstractParsedStmt {
         
         TupleValueExpression expr;
         if (propertytype == "vertex" )          
-            expr = new TupleValueExpression(tableName, tableAlias, "VERTEXES",
-                    columnName, columnAlias, -1, differentiator, objectidx);
+            expr = new TupleValueExpression(tableName, tableAlias, "VERTEXES", columnName, columnAlias, -1, differentiator, objectidx);
         else if (propertytype == "edge" )
-            expr = new TupleValueExpression(tableName, tableAlias, "EDGES",
-                    columnName, columnAlias, -1, differentiator, objectidx);
+            expr = new TupleValueExpression(tableName, tableAlias, "EDGES", columnName, columnAlias, -1, differentiator, objectidx);
         else if (propertytype == "path" || propertytype == "startvertex" || propertytype == "endvertex")
-            expr = new TupleValueExpression(tableName, tableAlias, "PATHS",
-                    columnName, columnAlias, -1, differentiator, objectidx);
+            expr = new TupleValueExpression(tableName, tableAlias, "PATHS", columnName, columnAlias, -1, differentiator, objectidx);
         else 
             expr = new TupleValueExpression(tableName, tableAlias, columnName, columnAlias, -1, differentiator);
         // End LX
@@ -624,7 +620,7 @@ public abstract class AbstractParsedStmt {
             resolvedExpr = tableScan.resolveTVE(expr);
         }
         // End LX
-        // AbstractExpression resolvedExpr = tableScan.resolveTVE(tve); comment LX
+        // AbstractExpression resolvedExpr = tableScan.resolveTVE(tve);// comment LX
         if (tableScan instanceof StmtCommonTableScan || m_stmtId == tableScan.getStatementId()) {
             return resolvedExpr;
         }
@@ -854,11 +850,11 @@ public abstract class AbstractParsedStmt {
      * @param tableAlias
      * @return the cache entry
      */
-    protected StmtTableScan addGraphToStmtCache(GraphView graph, String tableAlias, String object, String hint, int startvertexid, int endvertexid, int prop1, int prop2, int prop3, int prop4, int prop5, int length) {
+    protected StmtTableScan addGraphToStmtCache(GraphView graph, String tableAlias, String object, String hint, String vertexLabel, int startvertexid, int endvertexid, int prop1, int prop2, int prop3, int prop4, int prop5, int length) {
         // Create an index into the query Catalog cache
         StmtTableScan tableScan = m_tableAliasMap.get(tableAlias);
         if (tableScan == null) {
-            tableScan = new StmtTargetGraphScan(graph, tableAlias, m_stmtId, object, hint, startvertexid, endvertexid, prop1, prop2, prop3, prop4, prop5, length);
+            tableScan = new StmtTargetGraphScan(graph, tableAlias, m_stmtId, object, hint, vertexLabel, startvertexid, endvertexid, prop1, prop2, prop3, prop4, prop5, length);
             m_tableAliasMap.put(tableAlias, tableScan);
         }
         return tableScan;
@@ -1489,6 +1485,7 @@ public abstract class AbstractParsedStmt {
     * @param tableNode
     */
    private void parseGraph(VoltXMLElement tableNode) {
+System.out.println("AbstractParsedStmt:1488:" + tableNode);
        String tableName = tableNode.attributes.get("graph");
        assert(tableName != null);
 
@@ -1512,6 +1509,13 @@ public abstract class AbstractParsedStmt {
                        (tableNode.name == "pathscan")?"PATHS":null;
        
        String hint = tableNode.attributes.get("hint");
+       // LX FEAT2
+       String vertexLabel;
+       if (object == "VERTEXES"){
+            vertexLabel = tableNode.attributes.get("label");
+       }
+       else
+            vertexLabel = "";
        int startvertexid = -1;
        int endvertexid = -1;
        int prop1 = -1;
@@ -1544,8 +1548,8 @@ public abstract class AbstractParsedStmt {
        if (tableNode.attributes.get("length") != null) {
            length = Integer.parseInt(tableNode.attributes.get("length"));
        }
-       graphScan = addGraphToStmtCache(graph, tableAlias, object, hint, startvertexid, endvertexid,
-                                       prop1, prop2, prop3, prop4, prop5, length);
+       graphScan = addGraphToStmtCache(graph, tableAlias, object, hint, vertexLabel, startvertexid, endvertexid,
+                                       prop1, prop2, prop3, prop4, prop5, length); // LX FEAT2
 
        AbstractExpression joinExpr = parseJoinCondition(tableNode);
        AbstractExpression whereExpr = parseWhereCondition(tableNode);
@@ -1682,9 +1686,10 @@ public abstract class AbstractParsedStmt {
 
                 assert(visitedTable != null);
 
-                if( visited.contains(visitedTable)) {
-                    throw new PlanningErrorException("Not unique graph/alias: " + visitedTable);
-                }
+                // commented by LX FEAT2
+                // if( visited.contains(visitedTable)) {
+                //     throw new PlanningErrorException("Not unique graph/alias: " + visitedTable);
+                // }
 
                 parseGraph(node);
                 visited.add(visitedTable);

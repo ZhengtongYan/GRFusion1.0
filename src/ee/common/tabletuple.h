@@ -54,6 +54,7 @@
 #include "common/ValuePeeker.hpp"
 #include "common/FatalException.hpp"
 #include "common/ExportSerializeIo.h"
+#include "logging/LogManager.h"
 
 #include <common/debuglog.h>
 #include <ostream>
@@ -401,7 +402,7 @@ public:
         const char* dataPtr = getDataPtr(columnInfo);
         const bool isInlined = columnInfo->inlined;
         const bool isVolatile = inferVolatility(columnInfo);
-
+        // LogManager::GLog("tabletuple.h", "getNValue:405", idx, getTypeName(columnType).c_str());
         return NValue::initFromTupleStorage(dataPtr, columnType, isInlined, isVolatile);
     }
 

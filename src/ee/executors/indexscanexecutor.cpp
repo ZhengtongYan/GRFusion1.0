@@ -59,12 +59,15 @@
 #include "storage/tableiterator.h"
 #include "storage/persistenttable.h"
 
+#include "logging/LogManager.h"
+
+
 using namespace voltdb;
 
 bool IndexScanExecutor::p_init(
         AbstractPlanNode *abstractNode, const ExecutorVector& executorVector) {
     VOLT_TRACE("init IndexScan Executor");
-
+    LogManager::GLog("IndexScanExecutor", "p_init", 67, "");
     m_projectionNode = nullptr;
 
     m_node = dynamic_cast<IndexScanPlanNode*>(abstractNode);
@@ -145,6 +148,7 @@ bool IndexScanExecutor::p_init(
 }
 
 bool IndexScanExecutor::p_execute(const NValueArray &params) {
+    LogManager::GLog("IndexScanExecutor", "p_execute", 148, "");
     vassert(m_node);
     vassert(m_node == dynamic_cast<IndexScanPlanNode*>(m_abstractNode));
 

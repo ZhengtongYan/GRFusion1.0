@@ -72,6 +72,7 @@ import org.voltdb.catalog.FilteredCatalogDiffEngine;
 import org.voltdb.catalog.Procedure;
 import org.voltdb.catalog.Statement;
 import org.voltdb.catalog.Table;
+import org.voltdb.catalog.GraphView; // Add LX for debug
 import org.voltdb.common.Constants;
 import org.voltdb.common.Permission;
 import org.voltdb.compilereport.ProcedureAnnotation;
@@ -813,6 +814,7 @@ public class VoltCompiler {
 
         // do all the work to get the catalog
         final Catalog catalog = compileCatalogInternal(cannonicalDDLIfAny, previousCatalogIfAny, ddlReaderList, sqlNodes, jarOutput);
+        
         if (catalog == null) {
             return null;
         }
@@ -824,7 +826,6 @@ public class VoltCompiler {
         // Build DDL from Catalog Data
         String ddlWithBatchSupport = CatalogSchemaTools.toSchema(catalog);
         m_canonicalDDL = CatalogSchemaTools.toSchemaWithoutInlineBatches(ddlWithBatchSupport);
-
         // generate the catalog report and write it to disk
         try {
             generateCatalogReport(m_catalog, ddlWithBatchSupport, m_warnings, jarOutput);
@@ -835,6 +836,7 @@ public class VoltCompiler {
         }
 
         jarOutput.put(AUTOGEN_DDL_FILE_NAME, m_canonicalDDL.getBytes(Constants.UTF8ENCODING));
+
         if (DEBUG_VERIFY_CATALOG) {
             debugVerifyCatalog(jarOutput, sqlNodes, catalog);
         }
@@ -1051,7 +1053,6 @@ public class VoltCompiler {
         final VoltDDLElementTracker voltDdlTracker = new VoltDDLElementTracker(this);
 
         Database db = initCatalogDatabase(m_catalog);
-
         // shutdown and make a new hsqldb <-- NOTE
         HSQLInterface hsql = HSQLInterface.loadHsqldb(ParameterizationInfo.getParamStateManager());
         compileDatabase(db, hsql, voltDdlTracker, cannonicalDDLIfAny, previousDBIfAny,
@@ -1105,7 +1106,6 @@ public class VoltCompiler {
                     if (m_currentFilename.equals(NO_FILENAME)) {
                         m_currentFilename = schemaReader.getName();
                     }
-
                     // add the file object's path to the list of files for the jar
                     m_ddlFilePaths.put(schemaReader.getName(), schemaReader.getPath());
 
@@ -1133,8 +1133,9 @@ public class VoltCompiler {
 //                    final SchemaPlus sc = CreateIndexUtils.run(node, previousDBIfAny, db);
                 }
             });
-            ddlcompiler.compileToCatalog(db, m_isXDCR); // NOTE: this is the place catalog gets added for create table.
 
+            ddlcompiler.compileToCatalog(db, m_isXDCR); // NOTE: this is the place catalog gets added for create table.
+            
             // add database estimates info
             addDatabaseEstimatesInfo(m_estimates, db);
 
@@ -1812,10 +1813,8 @@ public class VoltCompiler {
     public void compileInMemoryJarfileWithNewDDL(
             InMemoryJarfile jarfile, String newDDL, List<SqlNode> sqlNodes, Catalog oldCatalog)
             throws IOException, VoltCompilerException {
-        String oldDDL = new String(jarfile.get(VoltCompiler.AUTOGEN_DDL_FILE_NAME),
-                Constants.UTF8ENCODING);
+        String oldDDL = new String(jarfile.get(VoltCompiler.AUTOGEN_DDL_FILE_NAME), Constants.UTF8ENCODING);
         compilerLog.trace("OLD DDL: " + oldDDL);
-
         // Use the in-memory jarfile-provided class loader so that procedure
         // classes can be found and copied to the new file that gets written.
         ClassLoader originalClassLoader = m_classLoader;
@@ -1824,10 +1823,10 @@ public class VoltCompiler {
 
             List<VoltCompilerReader> ddlList = new ArrayList<>();
             ddlList.add(newDDLReader);
-
             m_classLoader = jarfile.getLoader();
             // Do the compilation work.
             InMemoryJarfile jarOut = compileInternal(canonicalDDLReader, oldCatalog, ddlList, sqlNodes, jarfile);
+            
             // Trim the compiler output to try to provide a concise failure
             // explanation
             if (jarOut == null) {

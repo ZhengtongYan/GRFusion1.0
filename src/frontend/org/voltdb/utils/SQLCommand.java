@@ -373,6 +373,10 @@ public class SQLCommand {
                 case "classes":
                     execListClasses();
                     break;
+
+                case "vertexlabels":
+                    execListVertexLabels();
+                    break;
                 /*
                 * This undocumented argument, CONFIG, is broken: returns an error that
                 * @SystemCatalog has no selector CONFIGURATION.
@@ -635,6 +639,15 @@ public class SQLCommand {
         printTables("User Tables", tables.tables);
         printTables("User Views", tables.views);
         printTables("User Export Streams", tables.exports);
+        System.out.println();
+    }
+
+    private static void execListVertexLabels() throws Exception {
+        VoltTable tableData = m_client.callProcedure("@SystemCatalog", "VertexLabels").getResults()[0];
+        while (tableData.advanceRow()) {
+            String vlabel = tableData.getString("VERTEX_LABEL");
+            System.out.println(vlabel);            
+        }
         System.out.println();
     }
 

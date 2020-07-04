@@ -57,6 +57,9 @@
 #include "plannodes/limitnode.h"
 #include "plannodes/aggregatenode.h"
 
+#include "plannodes/PathScanNode.h"
+#include "graph/GraphView.h"
+
 #include "storage/tabletuplefilter.h"
 #include "storage/persistenttable.h"
 #include "storage/temptable.h"
@@ -81,12 +84,12 @@ bool NestLoopIndexExecutor::p_init(
     m_indexNode =
         dynamic_cast<IndexScanPlanNode*>(m_abstractNode->getInlinePlanNode(PlanNodeType::IndexScan));
     vassert(m_indexNode);
-    VOLT_TRACE("<NestLoopIndexPlanNode> %s, <IndexScanPlanNode> %s",
-               m_abstractNode->debug().c_str(), m_indexNode->debug().c_str());
+    VOLT_TRACE("<NestLoopIndexPlanNode> %s, <IndexScanPlanNode> %s", m_abstractNode->debug().c_str(), m_indexNode->debug().c_str());
 
     m_lookupType = m_indexNode->getLookupType();
     m_sortDirection = m_indexNode->getSortDirection();
 
+    
     //
     // We need exactly one input table and a target table
     //
@@ -118,6 +121,8 @@ bool NestLoopIndexExecutor::p_init(
     // Grab the Index from our inner table
     // We'll throw an error if the index is missing
     TableIndex* index = inner_table->index(m_indexNode->getTargetIndexName());
+    graphView = NULL;
+    pathScanNode = NULL;
     if (index == NULL) {
         VOLT_ERROR("Failed to retreive index '%s' from inner table '%s' for"
                    " internal PlanNode '%s'",
@@ -130,11 +135,23 @@ bool NestLoopIndexExecutor::p_init(
 
         m_indexValues.init(index->getKeySchema());
         // Add LX
+
+        vector<AbstractPlanNode*> children = abstractNode->getChildren();
+        cout << "NestLoopIndexExecutor:137:" << children.size() << endl;
+        pathScanNode = dynamic_cast<PathScanPlanNode*>(children[0]);
+        if (pathScanNode != NULL){
+            graphView = pathScanNode->getTargetGraphView();
+            startVertexColumnId = UNDEFINED;
+            endVertexColumnId = UNDEFINED;
+            cout << "NestLoopIndexExecutor:141:" << graphView->name() << endl;
+        }
+
+
         std::stringstream paramsToPrint;
         paramsToPrint << "Input table = " << node->getInputTable()->name() << ", inner table = " << inner_table->name();
                         //<< ", Join predicate = " << node->getJoinPredicate()->debug(true);
 
-        LogManager::GLog("NestedLoopIndex", "p_init", 160, paramsToPrint.str());
+        LogManager::GLog("NestedLoopIndex", "p_init", 137, paramsToPrint.str());
 
         //Debugging code to understand how nested-loop index works
         // End LX
@@ -143,8 +160,25 @@ bool NestLoopIndexExecutor::p_init(
 }
 
 bool NestLoopIndexExecutor::p_execute(const NValueArray &params) {
+    LogManager::GLog("NestedLoopIndex", "p_execute", 146, "");
     vassert(dynamic_cast<NestLoopIndexPlanNode*>(m_abstractNode));
     NestLoopIndexPlanNode* node = static_cast<NestLoopIndexPlanNode*>(m_abstractNode);
+
+    // if (graphView != NULL)
+    // {
+    //     setStartAndEndVertexes(joinPredicate, inner_table, outer_table);
+    //     startVertexId = UNDEFINED;
+    //     endVertexId = UNDEFINED;
+    //     graphView->pathLength = pathScanNode->getPathLength();
+    //     graphView->spColumnIndexInEdgesTable = pathScanNode->getSPColumnIdInEdgesTable();
+    //     graphView->topK = 1;
+    //     graphView->queryType = getQueryType();
+
+    //     std::stringstream debugParams;
+    //     debugParams << "startVertexColumnId = " << startVertexColumnId << ", endVertexColumnId = " << endVertexColumnId << ", length = " << graphView->pathLength << ", spColumnIndexInEdgesTable = " << graphView->spColumnIndexInEdgesTable << ", queryType = " << graphView->queryType;
+    //     LogManager::GLog("NestedLoopPathExecutor", "p_execute", 224, debugParams.str());
+    // }
+
 
     // output table must be a temp table
     vassert(m_tmpOutputTable);
@@ -163,6 +197,9 @@ bool NestLoopIndexExecutor::p_execute(const NValueArray &params) {
     VOLT_TRACE("executing NestLoopIndex with outer table: %s, inner table: %s",
                outer_table->debug("").c_str(), inner_table->debug("").c_str());
 
+    LogManager::GLog("NestedLoopIndex", "p_execute", 167, outer_table->debug("").c_str() );
+    LogManager::GLog("NestedLoopIndex", "p_execute", 167, inner_table->debug("").c_str() );
+
     //
     // Substitute parameter to SEARCH KEY Note that the expressions
     // will include TupleValueExpression even after this substitution
@@ -171,6 +208,7 @@ bool NestLoopIndexExecutor::p_execute(const NValueArray &params) {
     for (int ctr = 0; ctr < num_of_searchkeys; ctr++) {
         VOLT_TRACE("Search Key[%d]:\n%s",
                    ctr, m_indexNode->getSearchKeyExpressions()[ctr]->debug(true).c_str());
+        LogManager::GLog("NestedLoopIndex", "p_execute", 177, m_indexNode->getSearchKeyExpressions()[ctr]->debug(true).c_str());
     }
 
     // end expression
@@ -270,11 +308,14 @@ bool NestLoopIndexExecutor::p_execute(const NValueArray &params) {
     }
 
     VOLT_TRACE("<num_of_outer_cols>: %d\n", num_of_outer_cols);
+    LogManager::GLog("NestedLoopIndex", "p_execute", 277, to_string(num_of_outer_cols));
+
+    
     while (postfilter.isUnderLimit() && outer_iterator.next(outer_tuple)) {
         VOLT_TRACE("outer_tuple:%s",
                    outer_tuple.debug(outer_table->name()).c_str());
         pmp.countdownProgress();
-
+        LogManager::GLog("NestedLoopIndex", "p_execute", 282, outer_tuple.debug(outer_table->name()).c_str());
         // Set the join tuple columns that originate solely from the outer tuple.
         // Must be outside the inner loop in case of the empty inner table.
         join_tuple.setNValues(0, outer_tuple, 0, num_of_outer_cols);
@@ -450,6 +491,7 @@ bool NestLoopIndexExecutor::p_execute(const NValueArray &params) {
                     }
                     VOLT_TRACE("inner_tuple:%s",
                                inner_tuple.debug(inner_table->name()).c_str());
+                    LogManager::GLog("NestedLoopIndex", "p_execute", 458, inner_tuple.debug(inner_table->name()).c_str());
                     pmp.countdownProgress();
 
                     //
@@ -557,9 +599,72 @@ bool NestLoopIndexExecutor::p_execute(const NValueArray &params) {
     }
 
     VOLT_TRACE ("result table:\n %s", m_tmpOutputTable->debug("").c_str());
+    LogManager::GLog("NestedLoopIndex", "p_execute", 566, m_tmpOutputTable->debug("").c_str());
     VOLT_TRACE("Finished NestLoopIndex");
     return true;
 }
+
+// void NestLoopIndexExecutor::setStartAndEndVertexes(const AbstractExpression* joinExpression, const Table* inner, const Table* outer)
+// {
+//     if (joinExpression == NULL)
+//         return;
+
+//     const ComparisonExpression<CmpEq>* singlePredicate = dynamic_cast<const ComparisonExpression<CmpEq>*>(joinExpression);
+
+//     if (singlePredicate == NULL)
+//     {
+//         setStartAndEndVertexes(joinExpression->getLeft(), inner, outer);
+//         setStartAndEndVertexes(joinExpression->getRight(), inner, outer);
+//         return;
+//     }
+
+//     const TupleValueExpression* left = dynamic_cast<const TupleValueExpression*>(singlePredicate->getLeft());
+//     const TupleValueExpression* right = dynamic_cast<const TupleValueExpression*>(singlePredicate->getRight());
+//     if (left != NULL && right != NULL)
+//     {
+//         //make sure that left* points to the inner (i.e., graph view) and that right* points to the outer
+//         if (left->getTableId() == 0)
+//         {
+//             const TupleValueExpression* temp = left;
+//             left = right;
+//             right = temp;
+//         }
+
+//         assert(left->getTableId() == 1);
+//         assert(right->getTableId() == 0);
+
+//         if (inner->columnName(left->getColumnId()) == StartVertexLiteral)
+//         {
+//             startVertexColumnId = right->getColumnId();
+//         }
+//         else if (inner->columnName(left->getColumnId()) == EndVertexLiteral)
+//         {
+//             endVertexColumnId = right->getColumnId();
+//         }
+//     }
+// }
+
+// int NestLoopIndexExecutor::getQueryType()
+// {
+//     int queryType = UNDEFINED;
+//     if (startVertexColumnId != UNDEFINED && endVertexColumnId == UNDEFINED && pathScanNode->getPathLength() != UNDEFINED)
+//     {
+//         queryType = 1;
+//     }
+//     else if (startVertexColumnId != UNDEFINED && endVertexColumnId != UNDEFINED)
+//     {
+//         if (pathScanNode->getSPColumnIdInEdgesTable() == UNDEFINED)
+//         {
+//             queryType = 3; //reachability
+//         }
+//         else
+//         {
+//             queryType = 21; //shortest path
+//         }
+//     }
+
+//     return queryType;
+// }
 
 NestLoopIndexExecutor::~NestLoopIndexExecutor() { }
 

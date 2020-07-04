@@ -22,6 +22,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
     private final GraphView m_graph;
     private final String m_graphElement;
     private final String m_hint;
+    private final String m_vLabel; // LX FEAT2
     private final int m_startvertexid;
     private final int m_endvertexid;
     private final int m_prop1;
@@ -34,14 +35,15 @@ public class StmtTargetGraphScan extends StmtTableScan {
     private List<Column> m_columns;
 
     public StmtTargetGraphScan(GraphView graph, String tableAlias, int stmtId, String object,
-    		                   String hint, int startvertexid, int endvertexid,
+    		                   String hint, String vertexLabel, int startvertexid, int endvertexid,
     		                   int prop1, int prop2, int prop3, int prop4,int prop5, int length
-    		                   ) {
+    		                   ) {// LX FEAT2
         super(tableAlias, stmtId);
         assert (graph != null);
         m_graph = graph;
         m_graphElement = object;
         m_hint = hint;
+        m_vLabel = vertexLabel; // LX FEAT2
         m_startvertexid = startvertexid;
         m_endvertexid = endvertexid;
         m_prop1 = prop1;
@@ -54,12 +56,16 @@ public class StmtTargetGraphScan extends StmtTableScan {
     }
 
     public StmtTargetGraphScan(GraphView graph, String tableAlias) {
-        this(graph, tableAlias, 0, null, null, -1, -1, -1, -1, -1, -1, -1, -1);
+        this(graph, tableAlias, 0, null, null, "", -1, -1, -1, -1, -1, -1, -1, -1);
     }
 
     public String getHint() {
 		return m_hint;
 	}
+    // LX FEAT2
+    public String getVLabel() {
+        return m_vLabel;
+    }
 
 	public int getStartvertexid() {
 		return m_startvertexid;

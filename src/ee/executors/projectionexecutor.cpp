@@ -48,6 +48,7 @@
 #include "plannodes/projectionnode.h"
 #include "storage/tableiterator.h"
 #include "storage/tablefactory.h"
+#include "logging/LogManager.h"
 
 namespace voltdb {
 
@@ -131,15 +132,18 @@ bool ProjectionExecutor::p_execute(const NValueArray &params) {
         if (m_allTupleArray != NULL) {
             VOLT_TRACE("sweet, all tuples");
             for (int ctr = m_columnCount - 1; ctr >= 0; --ctr) {
+                LogManager::GLog("projectionexecutor", "p_execute", ctr, "134");
                 temp_tuple.setNValue(ctr, m_tuple.getNValue(m_allTupleArray[ctr]));
             }
         } else if (m_allParamArray != NULL) {
             VOLT_TRACE("sweet, all params");
             for (int ctr = m_columnCount - 1; ctr >= 0; --ctr) {
+                LogManager::GLog("projectionexecutor", "p_execute", ctr, "140");
                 temp_tuple.setNValue(ctr, params[m_allParamArray[ctr]]);
             }
         } else {
             for (int ctr = m_columnCount - 1; ctr >= 0; --ctr) {
+                LogManager::GLog("projectionexecutor", "p_execute", ctr, "145");
                 temp_tuple.setNValue(ctr, expression_array[ctr]->eval(&m_tuple, NULL));
             }
         }

@@ -211,13 +211,13 @@ public class HSQLInterface {
                     expectedTableAffected = stmtInfo.secondName;
                 }
                 else {
+
                     expectedTableAffected = tableNameForIndexName(stmtInfo.name);
                 }
             }
             else {
                 expectedTableAffected = stmtInfo.name;
             }
-
             // Note that we're assuming ifexists can't happen with "create"
             expectFailure = (expectedTableAffected == null) && !stmtInfo.ifexists;
         }
@@ -226,7 +226,6 @@ public class HSQLInterface {
         }
 
         runDDLCommand(ddl);
-
         // If we expect to fail, but the statement above didn't bail...
         // (Shouldn't get here ever I think)
         if (expectFailure) {
@@ -372,6 +371,7 @@ public class HSQLInterface {
 
         try {
             cs = sessionProxy.compileStatement(sql);
+            // System.out.println("HSQLInterface:374");
         } catch (HsqlException caught) {
             // a switch in case we want to give more error details on additional error codes
             switch(caught.getErrorCode()) {
@@ -406,7 +406,7 @@ public class HSQLInterface {
                     "An unexpected system error was logged by the SQL parser for statement \"" + sql + "\" ",
                     caught);
         }
-
+        // System.out.println("HSQLInterface:409");
         //Result result = Result.newPrepareResponse(cs.id, cs.type, rmd, pmd);
         Result result = Result.newPrepareResponse(cs);
         if (result.hasError()) {
@@ -414,7 +414,9 @@ public class HSQLInterface {
         }
 
         VoltXMLElement xml = null;
+        // System.out.println("HSQLInterface:417");
         xml = cs.voltGetStatementXML(sessionProxy);
+        // System.out.println("HSQLInterface:419");
         if (m_logger.isDebugEnabled()) {
             try {
                 /*
@@ -441,7 +443,7 @@ public class HSQLInterface {
         fixupInStatementExpressions(xml);
 
         assert(xml != null);
-
+        // System.out.println("HSQLInterface:446");
         return xml;
     }
 
@@ -579,7 +581,6 @@ public class HSQLInterface {
         HashMappedList hsqlTables = getHSQLTables();
         for (int i = 0; i < hsqlTables.size(); i++) {
             Table table = (Table) hsqlTables.get(i);
-            System.out.println(table.getName().name);
         }
     }
 

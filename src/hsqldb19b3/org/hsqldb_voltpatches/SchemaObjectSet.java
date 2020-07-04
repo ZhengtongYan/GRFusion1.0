@@ -173,7 +173,6 @@ public class SchemaObjectSet {
             case SchemaObject.INDEX :
                 value = name;
         }
-
         map.put(name.name, value);
     }
 

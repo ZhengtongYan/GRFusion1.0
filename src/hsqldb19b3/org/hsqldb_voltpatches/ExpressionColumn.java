@@ -33,6 +33,7 @@ package org.hsqldb_voltpatches;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.ArrayList; // LX FEAT2
 
 import org.hsqldb_voltpatches.HsqlNameManager.HsqlName;
 import org.hsqldb_voltpatches.HsqlNameManager.SimpleName;
@@ -64,6 +65,7 @@ public class ExpressionColumn extends Expression {
     String        objectName;
     int           objectIdx = -1; //id of edge/vertex in the ordered list of edges/vertexes in the path,e.g. Edge[0], Vertex[2]
     int           columnIndex0 = -1;
+    String        labelName;
     // End LX
 
     //
@@ -79,6 +81,7 @@ public class ExpressionColumn extends Expression {
         this.schema = schema;
         tableName   = table;
         columnName  = column;
+        // labelName   = table; // LX FEAT2. this is added for graph only
     }
     // Added by LX
     /**
@@ -88,11 +91,21 @@ public class ExpressionColumn extends Expression {
         super(OpTypes.COLUMN);
         this.schema = schema;
         tableName   = table;
-        columnName  = column;
+        columnName  = column; 
         objectName  = object;
         objectIdx   = objIdx;
     }
     // End LX
+
+    // Implement LX FEAT2
+    ExpressionColumn(String schema, String table, String object, String label, String column) {
+        super(OpTypes.COLUMN);
+        this.schema = schema;
+        tableName   = table;
+        columnName  = label + "." + column;
+        labelName  = label;
+        objectName = object;
+    }
 
     ExpressionColumn(ColumnSchema column) {
         super(OpTypes.COLUMN);
@@ -147,6 +160,18 @@ public class ExpressionColumn extends Expression {
         tableName   = table;
     }
 
+    // LX FEAT2
+    /**
+     * Creates an OpCodes.ASTERISK expression for graph
+     */
+    ExpressionColumn(String schema, String table, String object, String label) {
+        super(OpTypes.MULTICOLUMN);
+        this.schema = schema;
+        tableName   = table;
+        labelName  = label;
+        objectName = object;
+    }
+
     /**
      * Creates a OpCodes.SEQUENCE expression
      */
@@ -156,7 +181,36 @@ public class ExpressionColumn extends Expression {
         dataType      = sequence.getDataType();
     }
 
+    // LX FEAT2
+    private void setObjectName(RangeVariable range) {
+        if (objectName == null) {
+            if (range.isPaths) {
+                objectName = "PATHS";
+            }
+            else if (range.isVertexes) {
+                objectName = "VERTEXES";
+                // LX FEAT2
+                if (this.schema != null) {
+                    this.schema = null;
+                    labelName  = tableName;
+                    tableName = null;
+                    columnName  = labelName + "." + columnName;
+                }
+                else if (tableName != null) {
+                    tableName = null;
+                    labelName = "";
+                    columnName = "." + columnName;
+                }
+
+            }
+            else if (range.isEdges) {
+                objectName = "EDGES";
+            }
+        }
+    }
+
     void setAttributesAsColumn(RangeVariable range, int index) {
+System.out.println("ExpressionColumn:171:set objectName");
         columnIndex   = index;
         column        = range.getColumn(index);
         dataType      = column.getDataType();
@@ -188,10 +242,7 @@ public class ExpressionColumn extends Expression {
             schema      = table.getSchemaName().name;
         }
         
-        if (objectName == null)
-            if (range.isPaths) objectName = "PATHS";
-            else if (range.isVertexes) objectName = "VERTEXES";
-            else if (range.isEdges) objectName = "EDGES";
+            
         // End LX
         if (alias == null && rangeVariable.hasColumnAliases()) {
             alias = rangeVariable.getColumnAliasName(index);
@@ -260,6 +311,17 @@ public class ExpressionColumn extends Expression {
         return column.getName();
     }
 
+    // LX FEAT2
+    private void prependColname(String pre) {
+        columnName = pre + "." + columnName;
+    }
+
+    // LX FEAT2
+    private void trimColname() {
+        int idx = columnName.indexOf(".");
+        columnName = columnName.substring(idx+1);
+    }
+
     @Override
     void collectObjectNames(Set set) {
 
@@ -274,6 +336,7 @@ public class ExpressionColumn extends Expression {
                 return;
 
             case OpTypes.MULTICOLUMN :
+                System.out.println("ExpressionColumn:301");
             case OpTypes.DYNAMIC_PARAM :
             case OpTypes.ASTERISK :
             case OpTypes.SIMPLE_COLUMN :
@@ -332,6 +395,11 @@ public class ExpressionColumn extends Expression {
     }
     // End LX
 
+    // LX FEAT2
+    String getLabelName() {
+        return labelName;
+    }
+
     String getSchemaName() {
         return schema;
     }
@@ -344,7 +412,7 @@ public class ExpressionColumn extends Expression {
     @Override
     public HsqlList resolveColumnReferences(RangeVariable[] rangeVarArray,
             int rangeCount, HsqlList unresolvedSet, boolean acceptsSequences) {
-
+System.out.println("ExpressionColumn:357:" + opType);
         switch (opType) {
 
             case OpTypes.SEQUENCE :
@@ -354,6 +422,7 @@ public class ExpressionColumn extends Expression {
                 break;
 
             case OpTypes.MULTICOLUMN :
+                System.out.println("ExpressionColumn:382");
             case OpTypes.DYNAMIC_PARAM :
             case OpTypes.ASTERISK :
             case OpTypes.SIMPLE_COLUMN :
@@ -388,22 +457,52 @@ public class ExpressionColumn extends Expression {
                         continue;
                     }
 
-                    ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
-                    if (resolution != null) {
-                        if (resolution instanceof ExpressionColumnReferenceResolution) {
-                            if (usingResolutions.add(resolution)) {
-                                foundSize += 1;
+                    // LX FEAT2
+                    if (objectName != null && labelName == null){ // not specify label
+                        ArrayList<String> vl = rangeVar.getGraph().getVertexLabelList();
+                        for (int j = 0; j < vl.size(); j++) {
+                            prependColname(vl.get(j));
+                            if (rangeVar.getGraph().findVertexProp(columnName) != -1) {
+                                ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
+                                if (resolution != null) {
+                                    if (resolution instanceof ExpressionColumnReferenceResolution) {
+                                        if (usingResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    else {
+                                        assert(resolution instanceof RangeVariableColumnReferenceResolution);
+                                        if (rangeVariableResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    // Cache this in case this is the only resolution.
+                                    lastRes = resolution;
+                                }
                             }
+                            trimColname();
                         }
-                        else {
-                            assert(resolution instanceof RangeVariableColumnReferenceResolution);
-                            if (rangeVariableResolutions.add(resolution)) {
-                                foundSize += 1;
-                            }
-                        }
-                        // Cache this in case this is the only resolution.
-                        lastRes = resolution;
                     }
+
+                    else {
+                        ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
+                        if (resolution != null) {
+                            if (resolution instanceof ExpressionColumnReferenceResolution) {
+                                if (usingResolutions.add(resolution)) {
+                                    foundSize += 1;
+                                }
+                            }
+                            else {
+                                assert(resolution instanceof RangeVariableColumnReferenceResolution);
+                                if (rangeVariableResolutions.add(resolution)) {
+                                    foundSize += 1;
+                                }
+                            }
+                            // Cache this in case this is the only resolution.
+                            lastRes = resolution;
+                        }
+                    }
+                        
                 }
                 if (foundSize == 1) {
                     lastRes.finallyResolve();
@@ -561,7 +660,11 @@ public class ExpressionColumn extends Expression {
     }
 
     public ColumnReferenceResolution resolveColumnReference(RangeVariable rangeVar) {
-
+        System.out.println("ExpressionColumn:574:" + tableName + "," + columnName);
+        // LX FEAT2 
+        if (rangeVar.isGraph)
+            setObjectName(rangeVar);
+        System.out.println("ExpressionColumn:661:" + tableName + "," + columnName);
         if (tableName == null) {
             Expression e = rangeVar.getColumnExpression(columnName);
 
@@ -596,6 +699,7 @@ public class ExpressionColumn extends Expression {
         // int colIndex = rangeVar.findColumn(tableName, columnName);Commented by LX
         // Added by LX
         int colIndex;
+        // System.out.println("ExpressionColumn:610:" + tableName + "," + objectName + "," + columnName);
         if (objectName != null) {
             colIndex = rangeVar.findColumn(tableName, objectName, columnName);
         }
@@ -688,6 +792,7 @@ public class ExpressionColumn extends Expression {
             }
             case OpTypes.ASTERISK :
             case OpTypes.MULTICOLUMN :
+                System.out.println("ExpressionColumn:718");
             default :
                 throw Error.runtimeError(ErrorCode.U_S0500, "Expression");
         }
@@ -732,6 +837,7 @@ public class ExpressionColumn extends Expression {
             }
 
             case OpTypes.MULTICOLUMN : {
+                System.out.println("ExpressionColumn:763");
                 if (nodes.length == 0) {
                     return "*";
                 }
@@ -813,7 +919,7 @@ public class ExpressionColumn extends Expression {
                 break;
 
             case OpTypes.MULTICOLUMN :
-
+                System.out.println("ExpressionColumn:845");
             // shouldn't get here
         }
 
@@ -826,6 +932,7 @@ public class ExpressionColumn extends Expression {
      */
     String getTableName() {
         if (opType == OpTypes.MULTICOLUMN) {
+            System.out.println("ExpressionColumn:858");
             return tableName;
         }
 
@@ -845,7 +952,7 @@ public class ExpressionColumn extends Expression {
             if (obj instanceof ExpressionColumn) {
                 ExpressionColumn e  = (ExpressionColumn) obj;
                 StringBuffer     sb = new StringBuffer();
-
+                // System.out.println("ExpressionColumn:859:" + e.schema + ", " + e.tableName + ", " + sb.toString() + ", " + e.getColumnName());
                 if (e.schema != null) {
                     sb.append(e.schema + '.');
                 }

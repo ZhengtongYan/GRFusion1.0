@@ -111,6 +111,7 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
     // call runInternal() method.
     abstract public CompletableFuture<ClientResponse> run(ParameterSet params);
     protected CompletableFuture<ClientResponse> runInternal(ParameterSet params) {
+        // System.out.println("AdHocNTBase:114");
         if (USING_CALCITE) {
             try {
                 return runUsingCalcite(params);
@@ -301,6 +302,7 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
                 AdHocPlannedStatement result = compileAdHocSQL(
                         context.m_ptool, sqlStatement, inferSP, userPartitionKey, explainMode, isLargeQuery,
                         isSwapTables, userParamSet);
+                // System.out.println("AdHocNTBase:304");
                 // The planning tool may have optimized for the single partition case
                 // and generated a partition parameter.
                 if (inferSP) {
@@ -313,12 +315,12 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
                 errorMsgs.add(e.getMessage());
             }
         }
-
+// System.out.println("AdHocNTBase:317");
         if (!errorMsgs.isEmpty()) {
             String errorSummary = StringUtils.join(errorMsgs, "\n");
             return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE, errorSummary);
         }
-
+// System.out.println("AdHocNTBase:322");
         AdHocPlannedStmtBatch plannedStmtBatch =
                 new AdHocPlannedStmtBatch(userParamSet, stmts, partitionParamIndex, partitionParamType,
                         partitionParamValue, userPartitionKey == null ? null : new Object[] { userPartitionKey });
@@ -326,12 +328,12 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
         if (adhocLog.isDebugEnabled()) {
             logBatch(context, plannedStmtBatch, userParamSet);
         }
-
+// System.out.println("AdHocNTBase:330");
         final VoltTrace.TraceEventBatch traceLog = VoltTrace.log(VoltTrace.Category.CI);
         if (traceLog != null) {
             traceLog.add(() -> VoltTrace.endAsync("planadhoc", getClientHandle()));
         }
-
+// System.out.println("AdHocNTBase:335");
         if (explainMode == ExplainMode.EXPLAIN_ADHOC) {
             return processExplainPlannedStmtBatch(plannedStmtBatch);
         } else if (explainMode == ExplainMode.EXPLAIN_DEFAULT_PROC) {
@@ -481,7 +483,7 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
             }
             params = new Object[] { buf.array() };
         }
-
+// System.out.println("AdHocNTBase:489");
         return callProcedure(procedureName, params);
     }
 

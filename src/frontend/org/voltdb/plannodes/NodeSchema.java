@@ -141,8 +141,8 @@ public class NodeSchema implements Iterable<SchemaColumn> {
      */
     
     // Modified by LX
-    // private List<SchemaColumn> getColumns() {
-    public List<SchemaColumn> getColumns(){
+    private List<SchemaColumn> getColumns() {
+    // public List<SchemaColumn> getColumns(){
         return m_columns;
     }
 

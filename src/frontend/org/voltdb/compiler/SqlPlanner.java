@@ -157,6 +157,7 @@ final class SqlPlanner {
                 planner.planSwapTables();
             } else {
                 planner.parse();
+                System.out.println("SqlPlanner:160");
             }
             m_parsedToken = planner.parameterize();
 
@@ -192,6 +193,7 @@ final class SqlPlanner {
                 }
             }
             // If not caching or there was no cache hit, do the expensive full planning.
+            System.out.println("SqlPlanner:196");
             return plan(planner);
         } catch (Exception e) {
             /*

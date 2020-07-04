@@ -523,6 +523,12 @@ public class CatalogDiffEngine {
             return null;
         }
 
+        // Added by LX
+        else if (suspect instanceof GraphView) {
+            return null;
+        }
+        // End LX
+        
         else if (suspect instanceof Table) {
             Table tbl = (Table)suspect;
             if (TableType.isStream(tbl.getTabletype()) || TableType.needsShadowStream(tbl.getTabletype())) {

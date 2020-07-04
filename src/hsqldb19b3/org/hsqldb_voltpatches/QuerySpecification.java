@@ -209,12 +209,15 @@ public class QuerySpecification extends QueryExpression {
 
     @Override
     public void resolveReferences(Session session) {
-
+// System.out.println("QuerySpecification:212");
         finaliseRangeVariables();
+        System.out.println("QuerySpecification:214");
         resolveColumnReferencesForAsterisk();
+        System.out.println("QuerySpecification:216");
         finaliseColumns();
+        // System.out.println("QuerySpecification:218");
         resolveColumnReferences();
-
+// System.out.println("QuerySpecification:220");
         unionColumnTypes = new Type[indexLimitVisible];
         unionColumnMap   = new int[indexLimitVisible];
 
@@ -406,30 +409,72 @@ public class QuerySpecification extends QueryExpression {
         return oldSize == newSize;
     }
 
+    // LX FEAT2
+    private boolean hasVLabInRangeGraph(String tablename) {
+        for (int i = 0; i < rangeVariables.length; i++) {
+            RangeVariable rangeVar = rangeVariables[i];
+            System.out.println("QuerySpecification:416:" + rangeVar.getGraph());
+            if (rangeVar.isGraph()) {
+
+                String[] vlablist = rangeVar.getVertexLabels();
+                System.out.println("QuerySpecification:418" + vlablist.length);
+                for (int j = 0; j < vlablist.length; j++) {
+                    System.out.println("QuerySpecification:420:" + tablename + ", " + vlablist[j]);
+                    if (tablename.equals(vlablist[j])) {
+                        // String objectname = ((ExpressionColumn) e).getObjectName();
+                        // if (objectname) {
+                        //     addAllJoinedLabeledColumns(e);
+                            return true;
+                        // }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     private void resolveColumnReferencesForAsterisk() {
 
         for (int pos = 0; pos < indexLimitVisible; ) {
             Expression e = (Expression) (exprColumnList.get(pos));
-
+            System.out.println("QuerySpecification:416:" + pos);
             if (e.getType() == OpTypes.MULTICOLUMN) {
                 exprColumnList.remove(pos);
 
                 String tablename = ((ExpressionColumn) e).getTableName();
 
                 if (tablename == null) {
-                    addAllJoinedColumns(e);
+                    System.out.println("QuerySpecification:423");
+                    // LX FEAT2
+                    // String objectname = ((ExpressionColumn) e).getObjectName();
+                    // if (objectname == null)
+                        addAllJoinedColumns(e);
+                    // else
+                        // addAllJoinedLabeledColumns(e);
                 } else {
+                    System.out.println("QuerySpecification:426");                    
                     int rangeIndex =
                         e.findMatchingRangeVariableIndex(rangeVariables);
 
                     if (rangeIndex == -1) {
-                        throw Error.error(ErrorCode.X_42501, tablename);
+                        // LX FEAT2
+                        if (!hasVLabInRangeGraph(tablename)) 
+                           throw Error.error(ErrorCode.X_42501, tablename);  
+                        else {
+                            // String objectname = ((ExpressionColumn) e).getObjectName();
+                            addAllJoinedColumns(e);
+                        }                    
                     }
-
-                    RangeVariable range   = rangeVariables[rangeIndex];
-                    HashSet       exclude = getAllNamedJoinColumns();
-
-                    range.addTableColumns(e, exclude);
+                    else {
+                        RangeVariable range   = rangeVariables[rangeIndex];
+                        HashSet       exclude = getAllNamedJoinColumns();
+                        // LX FEAT 2
+                        if (range.isGraph())
+                            addAllJoinedColumns(e);
+                        else
+                            range.addTableColumns(e, exclude);
+                    }
+                        
                 }
 
                 for (int i = 0; i < e.nodes.length; i++) {
@@ -593,6 +638,22 @@ public class QuerySpecification extends QueryExpression {
 
         e.nodes = nodes;
     }
+
+    // LX FEAT2
+    // private void addAllJoinedLabeledColumns(Expression e) {
+
+    //     HsqlArrayList list = new HsqlArrayList();
+    //     String labelname = ((ExpressionColumn) e).getLabelName();
+    //     for (int i = 0; i < rangeVariables.length; i++) {
+    //         rangeVariables[i].addTableColumns(list);
+    //     }
+
+    //     Expression[] nodes = new Expression[list.size()];
+
+    //     list.toArray(nodes);
+
+    //     e.nodes = nodes;
+    // }
 
     private void finaliseColumns() {
 

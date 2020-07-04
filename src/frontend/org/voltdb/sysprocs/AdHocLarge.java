@@ -70,7 +70,7 @@ public class AdHocLarge extends AdHocNTBase {
         }
 
         assert (mix == AdHocSQLMix.ALL_DML_OR_DQL);
-
+// System.out.println("AdHocLarge:73");
         return runNonDDLAdHoc(VoltDB.instance().getCatalogContext(),
                 sqlStatements,
                 true, // infer partitioning

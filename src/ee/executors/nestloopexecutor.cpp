@@ -49,6 +49,7 @@
 #include "storage/tabletuplefilter.h"
 #include "plannodes/nestloopnode.h"
 #include "plannodes/limitnode.h"
+#include "logging/LogManager.h"
 
 #ifdef VOLT_DEBUG_ENABLED
 #include <ctime>
@@ -65,7 +66,7 @@ const static int8_t MATCHED_TUPLE(TableTupleFilter::ACTIVE_TUPLE + 1);
 bool NestLoopExecutor::p_init(
         AbstractPlanNode* abstractNode, const ExecutorVector& executorVector) {
     VOLT_TRACE("init NLJ Executor");
-
+    LogManager::GLog("NestLoopExecutor", "p_init", 68, "");
     NestLoopPlanNode* node = dynamic_cast<NestLoopPlanNode*>(m_abstractNode);
     vassert(node);
 
@@ -82,7 +83,7 @@ bool NestLoopExecutor::p_init(
 
 bool NestLoopExecutor::p_execute(const NValueArray &params) {
     VOLT_DEBUG("executing NestLoop...");
-
+    LogManager::GLog("NestLoopExecutor", "p_init", 68, "");
     NestLoopPlanNode* node = dynamic_cast<NestLoopPlanNode*>(m_abstractNode);
     vassert(node);
     vassert(node->getInputTableCount() == 2);

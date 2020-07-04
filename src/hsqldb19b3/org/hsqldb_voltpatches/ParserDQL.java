@@ -34,6 +34,7 @@ package org.hsqldb_voltpatches;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import org.hsqldb_voltpatches.lib.HashSet; // LX FEAT2
 
 import org.hsqldb_voltpatches.HsqlNameManager.HsqlName;
 import org.hsqldb_voltpatches.HsqlNameManager.SimpleName;
@@ -67,7 +68,7 @@ public class ParserDQL extends ParserBase {
     HsqlException                  lastError;
     boolean                        strictSQLNames;
     boolean                        strictSQLIdentifierParts;
-    String                         vertexLabel; // LX FEAT2
+    HashSet                        vertexLabels; // LX FEAT2
     // A VoltDB extension to reject quoted (delimited) names.
     // TODO: Set flag from property?
     boolean rejectQuotedSchemaObjectNames = true;
@@ -93,7 +94,7 @@ public class ParserDQL extends ParserBase {
             HsqlDatabaseProperties.sql_enforce_keywords);
         strictSQLIdentifierParts = database.getProperties().isPropertyTrue(
             HsqlDatabaseProperties.sql_enforce_keywords);
-        vertexLabel = null; // LX FEAT2
+        vertexLabels = new HashSet(); // LX FEAT2
     }
 
     /**
@@ -952,6 +953,7 @@ public class ParserDQL extends ParserBase {
     }
 
     QuerySpecification XreadSelect() {
+        vertexLabels = new HashSet(); // LX FEAT2
 
         QuerySpecification select = new QuerySpecification(compileContext);
 
@@ -1601,7 +1603,7 @@ public class ParserDQL extends ParserBase {
                     token.namePrefix, token.namePrePrefix, token.tokenType);
                 
                 if (graph != null) isGraph = true;
-                // System.out.println("parserDQL:1602:" + isGraph);
+                System.out.println("parserDQL:1602:" + token.namePrePrefix + "," + token.namePrefix + "," + token.tokenType);
                 read();                
                 
             } else {     
@@ -1721,7 +1723,7 @@ public class ParserDQL extends ParserBase {
     
         RangeVariable range;
         if (isGraph){
-            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint, vertexLabel); // LX FEAT2
+            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint, vertexLabels); // LX FEAT2
         }
         else
             range = new RangeVariable(table, alias, columnList, columnNameList, compileContext);
@@ -2200,12 +2202,21 @@ public class ParserDQL extends ParserBase {
             case Tokens.ASTERISK :
                 System.out.println("parserDQL:2200:" + token.namePrePrefix + ", " + token.namePrefix);
                 // LX FEAT2
-                if (token.namePrePrefix != null && token.namePrePrefix.equals("VERTEXES")) {
-                    vertexLabel = token.namePrefix;
+                if (token.namePrePrefix != null && token.namePrePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) {
+                    vertexLabels.add(token.namePrefix);
                     e = new ExpressionColumn(null, null, token.namePrePrefix, token.namePrefix);
                 }
-                else    
+                else if (token.namePrefix != null && token.namePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) {
+                    vertexLabels.add("");
+                    e = new ExpressionColumn(null, null, token.namePrefix, "");   
+                }
+                else {
+                    // LX FEAT2
+                    if (token.namePrePrefix != null) vertexLabels.add(token.namePrefix);
+                    else if (token.namePrefix != null) vertexLabels.add("");
                     e = new ExpressionColumn(token.namePrePrefix, token.namePrefix);
+                }    
+                    
 
                 recordExpressionForToken((ExpressionColumn) e);
                 read();
@@ -4330,7 +4341,7 @@ public class ParserDQL extends ParserBase {
             // TODO 15 Mar 2017 parse IDX of Edge or Vertex and send as parameter 
             Expression column;
             // System.out.println("parserDQL:4318:" + prefix);
-            vertexLabel = "";// LX FEAT2
+            String vertexLabel = "";// LX FEAT2
             if (prefix != null && 
                      (prefix.equals(Tokens.getKeyword(Tokens.EDGES)) || 
                       prefix.equals(Tokens.getKeyword(Tokens.VERTEXES)) ||
@@ -4344,7 +4355,8 @@ public class ParserDQL extends ParserBase {
                 else if (postfix != null) {
                     index = Character.getNumericValue(postfix.charAt(1));
                 } 
-                // System.out.println("ParserDQL:4331: "+prePrefix+'.'+prefix+'.'+name+'.'+index);
+                System.out.println("ParserDQL:4353: "+prePrefix+'.'+prefix+'.'+name+'.'+index);
+                // this works for not specifying labels
                 column = new ExpressionColumn(null, prePrefix, prefix, name, index);
             }
             // LX FEAT2
@@ -4352,15 +4364,18 @@ public class ParserDQL extends ParserBase {
             // from table.label.col in graphview
             // two thoughts: delay calling ExpressionColumn() until we know it is graph or not;
             // Or in ExpressionColumn(), delay assign schema until we know it is graph or not
-            else if (prePrefix != null && prePrefix.equals("VERTEXES")) {
+            else if (prePrefix != null && prePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) {
                 // System.out.println("ParserDQL:4337: "+prePrefix+'.'+prefix+'.'+name);
                 vertexLabel = prefix; 
                 column = new ExpressionColumn(null, null, prePrefix, prefix, name);    
             }
             else {
+                System.out.println("ParserDQL:4368: "+prePrefix+'.'+prefix+'.'+name);
+                if (prePrefix != null)
+                    vertexLabel = prefix; 
                 column = new ExpressionColumn(prePrefix, prefix, name);
             }
-
+            vertexLabels.add(vertexLabel);
             //org.voltdb.VLog.GLog("ParserDQL", "readColumnOrFunctionExpression", 4012, 
             //      "column = " + column.getColumnName() + " object " + ((ExpressionColumn)column).getObjectName());
             // End LX

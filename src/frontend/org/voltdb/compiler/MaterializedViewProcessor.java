@@ -627,6 +627,13 @@ public class MaterializedViewProcessor {
     private static void processMaterializedViewColumn(
             Table srcTable, Column destColumn, ExpressionType type, TupleValueExpression colExpr) {
 
+        System.out.println("{");
+            String[] tmp_dest = destColumn.getFields();
+            int ii;
+            for ( ii = 0; ii < tmp_dest.length; ii++){
+                System.out.println(destColumn.getField(tmp_dest[ii]));
+            }
+            System.out.println("}");
         if (colExpr != null) {
             assert(colExpr.getTableName().equalsIgnoreCase(srcTable.getTypeName()));
             String srcColName = colExpr.getColumnName();

@@ -30,7 +30,7 @@ import org.voltdb.exceptions.PlanningErrorException;
 public class ExplainCatalog extends AdHocNTBase {
 
     @Override
-    public CompletableFuture<ClientResponse> run(ParameterSet params) {
+    public CompletableFuture<ClientResponse> run(ParameterSet params) {System.out.println("ExplainCatalog:33");
         return runUsingLegacy(params);
     }
 

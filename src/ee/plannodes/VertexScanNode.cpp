@@ -43,9 +43,17 @@ GraphView* VertexScanPlanNode::getTargetGraphView() const
 	return m_gcd->getGraphView();
 }
 
+// LX FEAT2
+std::string VertexScanPlanNode::getVertexLabel() const
+{
+	return m_vertexLabel;
+}
+
 void VertexScanPlanNode::loadFromJSONObject(PlannerDomValue obj)
 {
 	m_target_graph_name = obj.valueForKey("TARGET_GRAPH_NAME").asStr();
+
+	m_vertexLabel = obj.valueForKey("VERTEX_LABEL").asStr(); // LX FEAT2
 
 	m_isEmptyScan = obj.hasNonNullKey("PREDICATE_FALSE");
 

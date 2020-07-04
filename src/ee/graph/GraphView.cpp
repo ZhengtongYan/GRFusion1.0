@@ -296,6 +296,7 @@ void GraphView::expandCurrentPathOperation()
 	// this->fromVertexId = 1;
 	if(executeTraversal)
 	{
+		// cout << "graphView:299:executeTraversal" << endl;
 		switch(this->queryType)
 		{
 		//reachability, BFS,...
@@ -604,6 +605,7 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
 	std::map<int, int> vertexToLevel;
 	std::unordered_set<int> visited;
+	// cout << "1" << endl;
 	if(NULL != currentVertex)
 	{
 		vertexToLevel[currentVertex->getId()] = 0;
@@ -611,10 +613,11 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 		int fanOut;
 		Edge* outEdge = NULL;
 		Vertex* outVertex = NULL;
-
+		// cout << "2" << endl;
 		while(!q.empty() && vertexToLevel[currentVertex->getId()] < depth)
 		{
 			currentVertex = q.front();
+			// cout << "BFS:currentVertex:" << currentVertex << endl;
 			q.pop();
 
 			if (visited.find(currentVertex->getId()) == visited.end())
@@ -627,11 +630,12 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 			}
 
 			fanOut = currentVertex->fanOut();
+			// cout << "4:" << fanOut << endl;
 			for(int i = 0; i < fanOut; i++)
 			{
 				outEdge = currentVertex->getOutEdge(i);
 				outVertex = outEdge->getEndVertex();
-
+				// cout << "BFS:outVertex:" << outVertex << endl;
 				if (visited.find(outVertex->getId()) != visited.end())
 				{
 					continue;
@@ -639,6 +643,7 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 
 				//outVertex->Level = currentVertex->Level + 1;
 				vertexToLevel[outVertex->getId()] = vertexToLevel[currentVertex->getId()] + 1;
+				// cout << "5" << endl;
 				if( (depth > 0 && vertexToLevel[outVertex->getId()] == depth))
 				{
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
@@ -650,7 +655,10 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)(vertexToLevel[outVertex->getId()])));
 					//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 					if(m_pathTable->activeTupleCount() <= 1000)
-					m_pathTable->insertTempTuple(temp_tuple);
+						m_pathTable->insertTempTuple(temp_tuple);
+					// cout << "BFS: start: " << startVertexId << ", end: " << outVertex->getId() << endl;
+					// cout << "BFS:660:" << m_pathTable->activeTupleCount() << endl;
+					// cout << "BFS:661:" << m_pathTableIterator->m_activeTuples << endl;
 				}
 				else
 				{

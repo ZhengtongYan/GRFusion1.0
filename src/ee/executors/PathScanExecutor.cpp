@@ -31,6 +31,8 @@
 #include "plannodes/limitnode.h"
 #include "graph/PathIterator.h"
 
+#include "logging/LogManager.h"
+
 //#include "common/NValue.hpp"
 //#include "common/ValuePeeker.hpp"
 //#include "common/ValueFactory.hpp"
@@ -56,6 +58,9 @@ bool PathScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVect
 	graphView->vSelectivity = node->getVertexSelectivity();
 	graphView->eSelectivity = node->getEdgeSelectivity();
 
+	{
+		LogManager::GLog("PathScanExecutor", "p_init", 60, to_string(graphView->fromVertexId));
+	}
 	//
 	// OPTIMIZATION: If there is no predicate for this SeqScan,
 	// then we want to just set our OutputTable pointer to be the
@@ -98,6 +103,7 @@ bool PathScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVect
 
 bool PathScanExecutor::p_execute(const NValueArray &params)
 {
+	LogManager::GLog("PathScanExecutor", "p_execute", 106, "");
 	PathScanPlanNode* node = dynamic_cast<PathScanPlanNode*>(m_abstractNode);
 	assert(node);
 
@@ -133,7 +139,7 @@ bool PathScanExecutor::p_execute(const NValueArray &params)
 	if (projection_node != NULL) {
 		num_of_columns = static_cast<int> (projection_node->getOutputColumnExpressions().size());
 	}
-
+	cout << "PathScanExecutor:142:" << num_of_columns << endl;
 	//
 	// OPTIMIZATION: NESTED LIMIT
 	// How nice! We can also cut off our scanning with a nested limit!
@@ -161,7 +167,7 @@ bool PathScanExecutor::p_execute(const NValueArray &params)
 		//
 		TableTuple tuple(input_table->schema());
 		//TableIterator iterator =  input_table->iteratorDeletingAsWeGo();
-		PathIterator iterator =  graphView->iteratorDeletingAsWeGo(GraphOperationType::ShortestPath);
+		PathIterator *iterator =  graphView->iteratorDeletingAsWeGo(GraphOperationType::ShortestPath);
 		AbstractExpression *predicate = node->getPredicate();
 
 		if (predicate)
@@ -192,12 +198,13 @@ bool PathScanExecutor::p_execute(const NValueArray &params)
 			temp_tuple = m_tmpOutputTable->tempTuple();
 		}
 
-		while (postfilter.isUnderLimit() && iterator.next(tuple))
+		while (postfilter.isUnderLimit() && iterator->next(tuple))
 		{
 			VOLT_TRACE("INPUT TUPLE: %s, %d/%d\n",
 					   tuple.debug(input_table->name()).c_str(), tuple_ctr,
 					   (int)input_table->activeTupleCount());
 			pmp.countdownProgress();
+			LogManager::GLog("PathScanExecutor", "p_execute", 206, tuple.debug(input_table->name()).c_str());
 
 			//
 			// For each tuple we need to evaluate it against our predicate and limit/offset
@@ -272,11 +279,7 @@ void PathScanExecutor::outputTuple(CountingPostfilter& postfilter, TableTuple& t
         column_names[ctr] = outputSchema[ctr]->getColumnName();
     }
 
-    m_tmpOutputTable = TableFactory::getTempTable(m_abstractNode->databaseId(),
-                                                              tempTableName,
-                                                              schema,
-                                                              column_names,
-                                                              limits);
+    m_tmpOutputTable = TableFactory::getTempTable(m_abstractNode->databaseId(), tempTableName, schema, column_names, limits);
     m_abstractNode->setOutputTable(m_tmpOutputTable);
     */
 //}

@@ -59,6 +59,8 @@ class IndexScanPlanNode;
 class AggregateExecutorBase;
 class ProgressMonitorProxy;
 class TableTuple;
+class GraphView;
+class PathScanPlanNode;
 
 /**
  * Nested loop for IndexScan.
@@ -77,6 +79,16 @@ protected:
     std::vector<AbstractExpression*> m_outputExpressions;
     SortDirectionType m_sortDirection;
     StandAloneTupleStorage m_indexValues;
+    void setStartAndEndVertexes(const AbstractExpression* joinExpression, const Table* inner, const Table* outer);
+    int getQueryType();
+
+    GraphView* graphView;
+    PathScanPlanNode* pathScanNode;
+    const int UNDEFINED = -1;
+    int startVertexColumnId = UNDEFINED, endVertexColumnId = UNDEFINED;
+    int startVertexId, endVertexId;
+    const string StartVertexLiteral = "STARTVERTEXID";
+    const string EndVertexLiteral = "ENDVERTEXID";
 public:
     NestLoopIndexExecutor(VoltDBEngine *engine, AbstractPlanNode* abstract_node) :
         AbstractJoinExecutor(engine, abstract_node) {

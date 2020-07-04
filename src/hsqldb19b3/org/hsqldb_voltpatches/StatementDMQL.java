@@ -970,10 +970,7 @@ public abstract class StatementDMQL extends Statement {
                 queryExpr.operatorName() + " tuple set operator is not supported.");
     }
 
-    private static VoltXMLElement voltAddXMLWithClause(QueryExpression queryExpr,
-                                                       VoltXMLElement mainQueryXML,
-                                                       ExpressionColumn [] parameters,
-                                                       Session session) throws HSQLParseException {
+    private static VoltXMLElement voltAddXMLWithClause(QueryExpression queryExpr, VoltXMLElement mainQueryXML, ExpressionColumn [] parameters, Session session) throws HSQLParseException {
         WithList withList = queryExpr.getWithList();
         if (withList == null) {
             return mainQueryXML;
@@ -989,9 +986,7 @@ public abstract class StatementDMQL extends Statement {
         return mainQueryXML;
     }
 
-    private static VoltXMLElement voltGetXMLForWithExpr(WithExpression withExpr,
-                                                        ExpressionColumn [] parameters,
-                                                        Session session) throws HSQLParseException {
+    private static VoltXMLElement voltGetXMLForWithExpr(WithExpression withExpr, ExpressionColumn [] parameters, Session session) throws HSQLParseException {
         VoltXMLElement withExprXML = new VoltXMLElement("withListElement");
         Table tbl = withExpr.getTable();
         VoltXMLElement tblXML = tbl.voltGetTableXML(session);
@@ -1252,8 +1247,12 @@ public abstract class StatementDMQL extends Statement {
         for (RangeVariable rangeVariable : select.rangeVariables) {
             // scans.children.add(rangeVariable.voltGetRangeVariableXML(session)); comment LX
             // Add LX
-            if (rangeVariable.isGraph)
-                scans.children.add(rangeVariable.voltGetGraphRangeVariableXML(session));
+            if (rangeVariable.isGraph) {
+                // LX FEAT2
+                String[] vlabels = rangeVariable.getVertexLabels();
+                for (String vlabel: vlabels)
+                    scans.children.add(rangeVariable.voltGetGraphRangeVariableXML(session, vlabel));
+            }
             else
                 scans.children.add(rangeVariable.voltGetRangeVariableXML(session));
             // End LX

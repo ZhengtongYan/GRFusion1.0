@@ -44,25 +44,32 @@ inline bool PathIterator::next(TableTuple &out) {
 
 	if(graphView->m_pathTableIterator == NULL)
 	{
-		LogManager::GLog("PathIterator", "next", 46,
-							"m_pathTableIterator is initialized after we found it null.");
+		LogManager::GLog("PathIterator", "next", 46, "m_pathTableIterator is initialized after we found it null.");
+		// graphView->m_pathTableIterator = &(graphView->m_pathTable->iteratorDeletingAsWeGo());
 		TableIterator tempByLu = graphView->m_pathTable->iteratorDeletingAsWeGo();
 		graphView->m_pathTableIterator = &tempByLu;
 	}
-	//bool hasNext = graphView->m_pathTableIterator->hasNext();
+	// cout << "PathIterator:52:" << graphView->m_pathTableIterator->m_activeTuples << ", " << (int)graphView->m_pathTable->activeTupleCount() << endl;
+
+	// Add by LX
+	bool hasNext = graphView->m_pathTableIterator->hasNext();
+	if (!hasNext)
+		return false;
+
 	//if new tuples were added, update the iterator about the #active tuples
-	if(graphView->m_pathTableIterator->m_activeTuples < (int)graphView->m_pathTable->activeTupleCount())
-	{
-		//std::stringstream paramsToPrint;
-		//paramsToPrint << "hasNext is false, activeTupleCount before = " << graphView->m_pathTableIterator->m_activeTuples;
+	// Commented by LX because of m_activeTuples SEGV
+	// if(graphView->m_pathTableIterator->m_activeTuples < (int)graphView->m_pathTable->activeTupleCount())
+	// {
+	// 	std::stringstream paramsToPrint;
+	// 	paramsToPrint << "hasNext is false, activeTupleCount before = " << graphView->m_pathTableIterator->m_activeTuples;
 
-		graphView->m_pathTableIterator->m_activeTuples = (int)graphView->m_pathTable->activeTupleCount();
+	// 	graphView->m_pathTableIterator->m_activeTuples = (int)graphView->m_pathTable->activeTupleCount();
 
-		//paramsToPrint << ", activeTupleCount after = " << graphView->m_pathTableIterator->m_activeTuples;
-		//LogManager::GLog("PathIterator", "next", 61, paramsToPrint.str());
-	}
+	// 	paramsToPrint << ", activeTupleCount after = " << graphView->m_pathTableIterator->m_activeTuples;
+	// 	LogManager::GLog("PathIterator", "next", 61, paramsToPrint.str());
+	// }
 
-
+	
 	/*
 	bool hasNext = graphView->m_pathTableIterator->hasNext();
 	if(!hasNext)
@@ -76,7 +83,6 @@ inline bool PathIterator::next(TableTuple &out) {
 			isValidTuple = graphView->m_pathTableIterator->next(out);
 		}
 	}
-
 	if(graphView->dummyPathExapansionState == 6)
 		isValidTuple = false;
 	*/

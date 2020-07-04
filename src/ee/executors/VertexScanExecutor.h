@@ -51,6 +51,7 @@ public:
         void outputTuple(TableTuple& tuple);
         AggregateExecutorBase* m_aggExec;
         GraphView* graphView;
+        std::string m_vLabel;
 
 
 };

@@ -36,6 +36,8 @@ import org.voltdb.catalog.Index;
 import org.voltdb.catalog.ProcParameter;
 import org.voltdb.catalog.Procedure;
 import org.voltdb.catalog.Table;
+import org.voltdb.catalog.GraphView; // LX FEAT2
+import org.voltdb.catalog.VertexLabel; // LX FEAT2
 import org.voltdb.catalog.Task;
 import org.voltdb.catalog.TaskParameter;
 import org.voltdb.task.TaskScope;
@@ -222,6 +224,17 @@ public class JdbcDatabaseMetaDataGenerator
             new ColumnInfo("ENABLED", VoltType.STRING)
     };
 
+    // LX FEAT2
+    static public final ColumnInfo[] GRAPH_VLABEL_SCHEMA = new ColumnInfo[] {
+            new ColumnInfo("GRAPHVIEW_NAME", VoltType.STRING),
+            new ColumnInfo("LABEL", VoltType.STRING)
+    };
+
+    // Implement by LX
+    static public final ColumnInfo[] GRAPH_SCHEMA = new ColumnInfo[] {
+            new ColumnInfo("GRAPHVIEW_NAME", VoltType.STRING)
+    };    
+
     JdbcDatabaseMetaDataGenerator(Catalog catalog, DefaultProcedureManager defaultProcs, InMemoryJarfile jarfile)
     {
         m_catalog = catalog;
@@ -264,6 +277,16 @@ public class JdbcDatabaseMetaDataGenerator
         else if (selector.equalsIgnoreCase("TYPEINFO"))
         {
             result = getTypeInfo();
+        }
+        // LX FEAT2
+        else if (selector.equalsIgnoreCase("VERTEXLABELS"))
+        {
+            result = getVLabels();
+        }
+        // Implement LX
+        else if (selector.equalsIgnoreCase("GRAPHVIEWS"))
+        {
+            result = getGraphs();
         }
         // This selector is not part of the JDBC standard, but we pile on here
         // because it's a convenient way to get information about the application
@@ -345,6 +368,29 @@ public class JdbcDatabaseMetaDataGenerator
                            null, // unused SELF_REFERENCING_COL_NAME
                            null  // unused REF_GENERATION
                           );
+        }
+        return results;
+    }
+
+    // LX FEAT2
+    VoltTable getVLabels()
+    {
+        VoltTable results = new VoltTable(GRAPH_VLABEL_SCHEMA);
+        for (GraphView gv : m_database.getGraphviews())
+        {
+            for (VertexLabel vl : gv.getVertexlabels())
+                results.addRow(gv.getTypeName(), vl.getTypeName());
+        }
+        return results;
+    }
+
+    // Implement by LX
+    VoltTable getGraphs()
+    {
+        VoltTable results = new VoltTable(GRAPH_SCHEMA);
+        for (GraphView gv : m_database.getGraphviews())
+        {
+            results.addRow(gv.getTypeName());
         }
         return results;
     }

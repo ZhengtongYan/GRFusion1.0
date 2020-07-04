@@ -164,6 +164,7 @@ public class PlannerTool {
     }
 
     public AdHocPlannedStatement planSqlForTest(String sqlIn) {
+        // System.out.println("PlannerTool:167");
         StatementPartitioning infer = StatementPartitioning.inferPartitioning();
         return planSql(sqlIn, infer, false, null, false, false);
     }
@@ -178,7 +179,7 @@ public class PlannerTool {
     public synchronized CompiledPlan planSqlCore(String sql, StatementPartitioning partitioning) {
         TrivialCostModel costModel = new TrivialCostModel();
         DatabaseEstimates estimates = new DatabaseEstimates();
-
+        // System.out.println("PlannerTool:181");
         CompiledPlan plan = null;
         // This try-with-resources block acquires a global lock on all planning
         // This is required until we figure out how to do parallel planning.
@@ -189,6 +190,7 @@ public class PlannerTool {
 
             // do the expensive full planning.
             planner.parse();
+            // System.out.println("PlannerTool:192");
             plan = planner.plan();
             assert(plan != null);
         } catch (Exception e) {
@@ -362,9 +364,10 @@ public class PlannerTool {
             //////////////////////
             // PLAN THE STMT
             //////////////////////
-
+            // System.out.println("PlannerTool:366");
             final SqlPlanner planner = new SqlPlanner(m_database, partitioning, m_hsql, sql,
                     isLargeQuery, isSwapTables, isExplainMode, m_adHocLargeFallbackCount, userParams, m_cache, compileLog);
+            // System.out.println("PlannerTool:369");
             final CompiledPlan plan = planner.getCompiledPlan();
             final AdHocPlannedStatement adhocPlan = planner.getAdhocPlan();
             assert (plan == null) != (adhocPlan == null) : "It should be either planned or cached";
@@ -372,6 +375,7 @@ public class PlannerTool {
             m_adHocLargeFallbackCount = planner.getAdHocLargeFallBackCount();
             if (adhocPlan != null) {
                 cacheUse = CacheUse.HIT2;   // IMPORTANT
+                // System.out.println("PlannerTool:377");
                 return adhocPlan;
             } else {
                 final String parsedToken = planner.getParsedToken();
@@ -395,9 +399,11 @@ public class PlannerTool {
                     m_cache.put(sql, parsedToken, ahps, planner.getExtractedLiterals(), planner.hasQuestionMark(),
                             planner.hasExceptionWhenParameterized());
                 }
+                // System.out.println("PlannerTool:401");
                 return ahps;
             }
         } finally {
+            // System.out.println("PlannerTool:405");
             if (m_plannerStats != null) {
                 m_plannerStats.endStatsCollection(m_cache.getLiteralCacheSize(), m_cache.getCoreCacheSize(), cacheUse, -1);
             }

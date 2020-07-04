@@ -49,6 +49,7 @@ bool VertexScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVe
 	vassert((! isSubquery) || (node->getChildren().size() == 1));
     // vassert(!node->isSubquery() || (node->getChildren().size() == 1));
 	graphView = node->getTargetGraphView();
+    m_vLabel = node->getVertexLabel(); // LX FEAT2
 
 	//
 	// OPTIMIZATION: If there is no predicate for this SeqScan,
@@ -65,7 +66,8 @@ bool VertexScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVe
 		// Create output table based on output schema from the plan
 		const std::string& temp_name = (node->isSubQuery()) ?
 				node->getChildren()[0]->getOutputTable()->name():
-				graphView->getVertexTable()->name();
+                graphView->getVertexTableFromLabel(m_vLabel)->name(); // LX FEAT2
+				// graphView->getVertexTable()->name();
 		// setTempOutputTable(limits, temp_name);
         setTempOutputTable(executorVector, temp_name);
 		LogManager::GLog("VertexScanExecutor", "p_init", 70,
@@ -79,7 +81,8 @@ bool VertexScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVe
 	else {
 		Table* temp_t = isSubquery ?
 				 node->getChildren()[0]->getOutputTable() :
-				 graphView->getVertexTable();
+                 graphView->getVertexTableFromLabel(m_vLabel); // LX FEAT2
+				 // graphView->getVertexTable();
 		node->setOutputTable(temp_t);
 		LogManager::GLog("VertexScanExecutor", "p_init", 83,
 						"after calling setOutputTable with temp table name = " + temp_t->name());
@@ -100,6 +103,7 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
 
     // Short-circuit an empty scan
     if (node->isEmptyScan()) {
+        cout << "VertexScanExecutor:106" << endl;
         VOLT_DEBUG ("Empty Vertex Scan :\n %s", output_table->debug().c_str());
         return true;
     }
@@ -110,17 +114,13 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
             node->getTargetTable();
 	*/
     GraphView* graphView = node->getTargetGraphView();
-    Table* input_table = graphView->getVertexTable();
-    LogManager::GLog("VertexScanExecutor", "p_execute", 112,
-                input_table->getColumnNames()[0]);
-    LogManager::GLog("VertexScanExecutor", "p_execute", 112,
-                input_table->getColumnNames()[1]);
-    LogManager::GLog("VertexScanExecutor", "p_execute", 112,
-                input_table->getColumnNames()[2]);
-    LogManager::GLog("VertexScanExecutor", "p_execute", 112,
-                input_table->getColumnNames()[3]);
-    LogManager::GLog("VertexScanExecutor", "p_execute", 112,
-                input_table->getColumnNames()[4]);
+    // Table* input_table = graphView->getVertexTable();
+
+    // LX FEAT2
+    std::string vertexLabel = node->getVertexLabel();
+    Table* input_table = graphView->getVertexTableFromLabel(vertexLabel);
+    cout << "VertexScanExecutor:122:" << vertexLabel << ", " << input_table->name() << endl;
+
     vassert(input_table);
     int vertexId = -1, fanIn = -1, fanOut = -1;
 
@@ -147,8 +147,10 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
 
     ProjectionPlanNode* projectionNode = dynamic_cast<ProjectionPlanNode*>(node->getInlinePlanNode(PlanNodeType::Projection));
     if (projectionNode != NULL) {
+        cout << "VertexScanExecutor:150" << endl;
+        // num_of_columns = 1;
         num_of_columns = static_cast<int> (projectionNode->getOutputColumnExpressions().size());
-        LogManager::GLog("VertexScanExecutor", "p_execute", 151, projectionNode->getOutputColumnNames()[0] + projectionNode->getOutputColumnNames()[1]);
+        // LogManager::GLog("VertexScanExecutor", "p_execute", 151, projectionNode->getOutputColumnNames()[0] + projectionNode->getOutputColumnNames()[1]);
     }
     LogManager::GLog("VertexScanExecutor", "p_execute:140", num_of_columns, "num_of_columns"  );
     //
@@ -227,7 +229,8 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                        tuple.debug(input_table->name()).c_str(), tuple_ctr,
                        (int)input_table->activeTupleCount());
             pmp.countdownProgress();
-            LogManager::GLog("VertexScanExecutor", "p_execute", 230, tuple.debug(input_table->name()).c_str());
+            // LogManager::GLog("VertexScanExecutor", "p_execute", 230, tuple.debug(input_table->name()).c_str());
+            cout << "VertexScanExecutor:233:" << tuple.debug(input_table->name()).c_str() << endl;
             //
             // For each tuple we need to evaluate it against our predicate and limit/offset
             //
@@ -239,35 +242,47 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                 //
                 if (projectionNode != NULL)
                 {
-                    LogManager::GLog("VertexScanExecutor", "p_execute", 243, "243");
+                    // LogManager::GLog("VertexScanExecutor", "p_execute", 243, "243");
 
                     VOLT_TRACE("inline projection...");
                     //get the vertex id
                     vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
+                    cout << "VertexScanExecutor:250:" << vertexId << endl;
                     fanOut = graphView->getVertex(vertexId)->fanOut();
                     fanIn = graphView->getVertex(vertexId)->fanIn();
-                    for (int ctr = 0; ctr < num_of_columns - 2; ctr++) {
+                    cout << "VertexScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;
+                    for (int ctr = 0; ctr < num_of_columns ; ctr++) {
                     	//msaber: todo, need to check the projection operator construction
                     	//and modify it to allow selecting graph vertex attributes
                         
                         // LX: add workaround to solve inconsistent column index issue: given a ctr index, find the column name
                         string t_coln = projectionNode->getOutputColumnNames()[ctr];
-                        int tbl_ctr;
-                        for (tbl_ctr = 0; tbl_ctr < num_of_columns - 2; tbl_ctr++){
-                            string c_coln = graphView->getVertexAttributeName(tbl_ctr);
-                            if (t_coln.compare(c_coln) == 0)
-                                break;
+                        cout << "VertexScanExecutor:257:" << t_coln << endl;
+                        // cout << "VertexScanExecutor:259:" << projectionNode->getOutputColumnExpressions()[ctr]->debug(true).c_str() << endl;
+                        if (t_coln.compare(vertexLabel + ".FANIN") == 0){
+                            temp_tuple.setNValue(ctr, ValueFactory::getIntegerValue(fanIn));
+                            continue;
                         }
+                        else if (t_coln.compare(vertexLabel + ".FANOUT") == 0){
+                            temp_tuple.setNValue(ctr, ValueFactory::getIntegerValue(fanOut));
+                            continue;
+                        }
+
+                        // int tbl_ctr;
+                        // for (tbl_ctr = 0; tbl_ctr < num_of_columns - 2; tbl_ctr++){
+                        //     string c_coln = graphView->getVertexAttributeName(tbl_ctr);
+
+                        //     if (t_coln.compare(c_coln) == 0)
+                        //         break;
+                        // }
                         
-                        int newctr = graphView->getColumnIdInVertexTable(tbl_ctr);
-                        NValue value = projectionNode->getOutputColumnExpressions()[newctr]->eval(&tuple, NULL);
+                        // int newctr = graphView->getColumnIdInVertexTable(tbl_ctr);
+                        // NValue value = projectionNode->getOutputColumnExpressions()[newctr]->eval(&tuple, NULL);
+                        NValue value = projectionNode->getOutputColumnExpressions()[ctr]->eval(&tuple, NULL);
+                        
+                        // LogManager::GLog("VertexScanExecutor", "p_execute:254", 254, projectionNode->getOutputColumnExpressions()[ctr]->debug(true).c_str());
                         temp_tuple.setNValue(ctr, value);
-                        LogManager::GLog("VertexScanExecutor", "p_execute", 254, projectionNode->getOutputColumnExpressions()[ctr]->debug(true).c_str());
                     }
-
-                    temp_tuple.setNValue(num_of_columns - 2, ValueFactory::getIntegerValue(fanOut));
-                    temp_tuple.setNValue(num_of_columns - 1, ValueFactory::getIntegerValue(fanIn));
-
                     outputTuple(temp_tuple);
                 }
                 else
@@ -314,11 +329,7 @@ void VertexScanExecutor::setTempOutputTable(TempTableLimits* limits, const strin
         column_names[ctr] = outputSchema[ctr]->getColumnName();
     }
 
-    m_tmpOutputTable = TableFactory::getTempTable(m_abstractNode->databaseId(),
-                                                              tempTableName,
-                                                              schema,
-                                                              column_names,
-                                                              limits);
+    m_tmpOutputTable = TableFactory::getTempTable(m_abstractNode->databaseId(), tempTableName, schema, column_names, limits);
     m_abstractNode->setOutputTable(m_tmpOutputTable);
 }
  */

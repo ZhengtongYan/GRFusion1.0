@@ -85,7 +85,7 @@ public class AdHoc extends AdHocNTBase {
             return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE,
                     "Adhoc system procedure requires at least the query parameter.");
         }
-
+// System.out.println("adhoc:88");
         final Object[] paramArray = params.toArray();
         final String sql = (String) paramArray[0];
         final Object[] userParams = params.size() > 1 ? Arrays.copyOfRange(paramArray, 1, paramArray.length) : null;

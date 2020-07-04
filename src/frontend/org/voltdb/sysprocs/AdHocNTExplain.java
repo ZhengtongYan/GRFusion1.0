@@ -36,6 +36,7 @@ abstract public class AdHocNTExplain extends AdHocNTBase {
 
     @Override
     protected CompletableFuture<ClientResponse> runUsingCalcite(ParameterSet params) {
+        System.out.println("AdHocNTExplain:39");
         return runUsingLegacy(params);
     }
 }
