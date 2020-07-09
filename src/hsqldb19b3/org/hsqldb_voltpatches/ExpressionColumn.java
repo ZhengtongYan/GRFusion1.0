@@ -422,7 +422,6 @@ System.out.println("ExpressionColumn:357:" + opType);
                 break;
 
             case OpTypes.MULTICOLUMN :
-                System.out.println("ExpressionColumn:382");
             case OpTypes.DYNAMIC_PARAM :
             case OpTypes.ASTERISK :
             case OpTypes.SIMPLE_COLUMN :

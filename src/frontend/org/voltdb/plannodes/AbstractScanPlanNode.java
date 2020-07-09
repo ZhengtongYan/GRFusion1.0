@@ -55,6 +55,13 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         TARGET_GRAPH_ALIAS,
         TARGET_OBJECT_NAME,
         ISGRAPH,
+        ISGRAPHTOGRAPH, // LX FEAT4
+        SUB_GRAPH_NAME, // LX FEAT4
+        SUB_GRAPH_VERTEX, // LX FEAT4
+        SUB_GRAPH_EDGE, // LX FEAT4
+        VERTEX_TABLE_ALIAS, // LX FEAT4
+        EDGE_TABLE_ALIAS, // LX FEAT4
+        CHOSEN_VERTEX_LABEL, // LX FEAT4
         VERTEX_LABEL; // LX FEAT2
         // End LX
     }
@@ -75,6 +82,13 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
     protected String m_targetObjectName = null;
     protected boolean isGraph = false;
     protected String m_vLabel = null; // LX FEAT2
+    protected boolean isGraphtoGraph = false; // LX FEAT4
+    protected String m_subGraphName = null; // LX FEAT4
+    protected boolean m_subGraphVertex = false; // LX FEAT4
+    protected boolean m_subGraphEdge = false; // LX FEAT4
+    protected String m_vertexTableAlias = null; // LX FEAT4
+    protected String m_edgeTableAlias = null; // LX FEAT4
+    protected String m_chosenVertexLabel = null; // LX FEAT4
     // End LX
 
     // Flag marking the sub-query plan
@@ -195,6 +209,49 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         isGraph = true;
     }
 
+    // LX FEAT4
+    public void setSubGraphName(String name) {
+        m_subGraphName = name;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
+
+    // LX FEAT4
+    public void setSubGraphVertex(boolean hasV) {
+        m_subGraphVertex = hasV;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
+
+    // LX FEAT4
+    public void setSubGraphEdge(boolean hasE) {
+        m_subGraphEdge = hasE;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
+
+    // LX FEAT4
+    public void setVertexTableAlias(String name) {
+        m_vertexTableAlias = name;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
+
+    // LX FEAT4
+    public void setEdgeTableAlias(String name) {
+        m_edgeTableAlias = name;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
+
+    // LX FEAT4
+    public void setChosenVertexLabel(String name) {
+        m_chosenVertexLabel = name;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
+
+
     /**
      * @param alias
      */
@@ -211,8 +268,19 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
 
         // Added by LX
         if (tableScan instanceof StmtTargetGraphScan){
-            setTargetObjectName(((StmtTargetGraphScan)tableScan).getGraphElementName());
-            setTargetVertexLabel(((StmtTargetGraphScan)tableScan).getVLabel());// LX FEAT2
+            // LX FEAT4
+            if (!((StmtTargetGraphScan)tableScan).isGtoG()) {
+                setTargetObjectName(((StmtTargetGraphScan)tableScan).getGraphElementName());
+                setTargetVertexLabel(((StmtTargetGraphScan)tableScan).getVLabel());// LX FEAT2
+            }
+            else {
+                setSubGraphName(((StmtTargetGraphScan)tableScan).getNewGraphName());
+                setSubGraphVertex(((StmtTargetGraphScan)tableScan).getHasVertex());
+                setSubGraphEdge(((StmtTargetGraphScan)tableScan).getHasEdge());
+                setVertexTableAlias(((StmtTargetGraphScan)tableScan).getVertexTableAlias());
+                setEdgeTableAlias(((StmtTargetGraphScan)tableScan).getEdgeTableAlias());
+                setChosenVertexLabel(((StmtTargetGraphScan)tableScan).getChosenVertexLabel());
+            }
         }
         // End LX
 
@@ -466,21 +534,28 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
             // CatalogMap<Column> cols = db.getTables().getExact(m_targetTableName).getColumns(); comment LX
             // Added by LX
             CatalogMap<Column> cols = null;
-            if (!isGraph)
+            if (!isGraph){
                 cols = db.getTables().getExact(m_targetTableName).getColumns();
-            else if (m_targetObjectName == "VERTEXES") 
+                addColsToSchema(cols, m_targetObjectName);
+            }
+            else if (m_targetObjectName == "VERTEXES") {
                 cols = db.getGraphviews().getExact(m_targetTableName).getVertexprops();
-            else if (m_targetObjectName == "EDGES")
+                addColsToSchema(cols, m_targetObjectName);
+            }
+            else if (m_targetObjectName == "EDGES") {
                 cols = db.getGraphviews().getExact(m_targetTableName).getEdgeprops();
+                addColsToSchema(cols, m_targetObjectName);
+            }
             else if (m_targetObjectName == "PATHS") {
                 //cols = db.getGraphviews().getExact(m_targetTableName).getVertexprops();
                 //addColsToSchema(cols, "VERTEXES");
                 //cols = db.getGraphviews().getExact(m_targetTableName).getEdgeprops();
                 //addColsToSchema(cols, "EDGES");
                 cols = db.getGraphviews().getExact(m_targetTableName).getPathprops();
+                addColsToSchema(cols, m_targetObjectName);
             }
 
-            addColsToSchema(cols, m_targetObjectName);
+            // addColsToSchema(cols, m_targetObjectName);
             // End LX
             /*
             assert(cols != null);
@@ -594,13 +669,27 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
 
         // Added by LX
         stringer.keySymbolValuePair(Members.ISGRAPH.name(), String.valueOf(isGraph).toUpperCase());
+        stringer.keySymbolValuePair(Members.ISGRAPHTOGRAPH.name(), String.valueOf(isGraphtoGraph).toUpperCase());
         if (!isGraph) {
             stringer.keySymbolValuePair(Members.TARGET_TABLE_NAME.name(), m_targetTableName);
             stringer.keySymbolValuePair(Members.TARGET_TABLE_ALIAS.name(), m_targetTableAlias);
-        } else {
+        } else if (!isGraphtoGraph){
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_NAME.name(), m_targetTableName);
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_ALIAS.name(), m_targetTableAlias);          
             stringer.keySymbolValuePair(Members.VERTEX_LABEL.name(), m_vLabel); // LX FEAT2
+        }
+        // LX FEAT4
+        else {
+            stringer.keySymbolValuePair(Members.TARGET_GRAPH_NAME.name(), m_targetTableName);
+            stringer.keySymbolValuePair(Members.TARGET_GRAPH_ALIAS.name(), m_targetTableAlias);          
+            stringer.keySymbolValuePair(Members.VERTEX_LABEL.name(), m_vLabel); 
+            stringer.keySymbolValuePair(Members.SUB_GRAPH_NAME.name(), m_subGraphName);
+            stringer.keySymbolValuePair(Members.SUB_GRAPH_VERTEX.name(), String.valueOf(m_subGraphVertex).toUpperCase());
+            stringer.keySymbolValuePair(Members.SUB_GRAPH_EDGE.name(), String.valueOf(m_subGraphEdge).toUpperCase());
+            stringer.keySymbolValuePair(Members.VERTEX_TABLE_ALIAS.name(), m_vertexTableAlias);
+            stringer.keySymbolValuePair(Members.EDGE_TABLE_ALIAS.name(), m_edgeTableAlias);
+            if (m_chosenVertexLabel != null)
+                stringer.keySymbolValuePair(Members.CHOSEN_VERTEX_LABEL.name(), m_chosenVertexLabel);
         }
         // End LX
         if (m_isSubQuery) {
@@ -618,13 +707,27 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
 
         // Added by LX
         isGraph = Boolean.valueOf( jobj.getString( Members.ISGRAPH.name() ));
+        isGraphtoGraph = Boolean.valueOf( jobj.getString( Members.ISGRAPHTOGRAPH.name() ));
         if (!isGraph) {
             m_targetTableName = jobj.getString( Members.TARGET_TABLE_NAME.name() );
             m_targetTableAlias = jobj.getString( Members.TARGET_TABLE_ALIAS.name() );
-        } else {
+        } else if (!isGraphtoGraph){
             m_targetTableName = jobj.getString( Members.TARGET_GRAPH_NAME.name() );
             m_targetTableAlias = jobj.getString( Members.TARGET_GRAPH_ALIAS.name() );
             m_vLabel = jobj.getString( Members.VERTEX_LABEL.name() ); // LX FEAT2
+        }
+        // LX FEAT4
+        else {
+            m_targetTableName = jobj.getString( Members.TARGET_GRAPH_NAME.name() );
+            m_targetTableAlias = jobj.getString( Members.TARGET_GRAPH_ALIAS.name() );
+            m_vLabel = jobj.getString( Members.VERTEX_LABEL.name() ); 
+            m_subGraphName = jobj.getString( Members.SUB_GRAPH_NAME.name() ); 
+            m_subGraphVertex = Boolean.valueOf( jobj.getString( Members.SUB_GRAPH_VERTEX.name() ));
+            m_subGraphEdge = Boolean.valueOf( jobj.getString( Members.SUB_GRAPH_EDGE.name() ));
+            m_vertexTableAlias = jobj.getString( Members.VERTEX_TABLE_ALIAS.name() ); 
+            m_edgeTableAlias = jobj.getString( Members.EDGE_TABLE_ALIAS.name() ); 
+            if (jobj.has("CHOSEN_VERTEX_LABEL"))
+                m_chosenVertexLabel = jobj.getString( Members.CHOSEN_VERTEX_LABEL.name() );
         }
         // End LX
         if (jobj.has("SUBQUERY_INDICATOR")) {

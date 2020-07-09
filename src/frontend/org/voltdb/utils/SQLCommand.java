@@ -373,7 +373,7 @@ public class SQLCommand {
                 case "classes":
                     execListClasses();
                     break;
-
+                // LX FEAT2
                 case "vertexlabels":
                     execListVertexLabels();
                     break;
@@ -1123,10 +1123,22 @@ public class SQLCommand {
                 return;
             }
             // All other commands get forwarded to @AdHoc
-            printResponse(callProcedureHelper("@AdHoc", statement), true);
+            // LX FEAT4
+            if (isGtoGstmt(statement))
+                printResponse(callProcedureHelper("@AdHoc", statement), true, true);
+            else
+                printResponse(callProcedureHelper("@AdHoc", statement), true);
         } catch (Exception exc) {
             stopOrContinue(exc);
         }
+    }
+
+    // LX FEAT4
+    private static boolean isGtoGstmt(String statement) {
+        String stmt = statement.toUpperCase();
+        if (stmt.contains("SELECT GRAPH"))
+            return true;
+        return false;
     }
 
     private static int stopOrContinue(Exception exc) {
@@ -1164,7 +1176,6 @@ public class SQLCommand {
         if (response.getStatus() != ClientResponse.SUCCESS) {
             throw new Exception("Execution Error: " + response.getStatusString());
         }
-
         long elapsedTime = System.nanoTime() - m_startTime;
         for (VoltTable t : response.getResults()) {
             long rowCount;
@@ -1180,6 +1191,15 @@ public class SQLCommand {
                 System.out.printf("(Returned %d rows in %.2fs)\n", rowCount, elapsedTime / 1000000000.0);
             }
         }
+    }
+
+    private static void printResponse(ClientResponse response, boolean suppressTableOutputForDML, boolean suppressOutputForGtoG) throws Exception {
+        if (response.getStatus() != ClientResponse.SUCCESS) {
+            throw new Exception("Execution Error: " + response.getStatusString());
+        }
+        long elapsedTime = System.nanoTime() - m_startTime;
+        System.out.printf("(Returned a subgraph in %.2fs)\n", elapsedTime / 1000000000.0);
+        
     }
 
     private static void printDdlResponse(ClientResponse response) throws Exception {

@@ -975,7 +975,40 @@ public class ParserDQL extends ParserBase {
             read();
         }
 
-        while (true) {
+        // LX FEAT4 Fix the format to be:
+        // select Graph(V.Label.*, E.*) into newGraph from oldGraph
+        if (token.tokenType == Tokens.GRAPH) {
+            read();
+            readThis(Tokens.OPENBRACKET);
+            select.isGraph2Graph = true;
+
+            // read requirements for vertex
+            StringBuilder vsb = new StringBuilder();
+            if (token.namePrefix.equals("*"))
+                select.chosenVertexLabel = null;
+            else
+                select.chosenVertexLabel = token.namePrefix;
+            vsb.append(token.namePrePrefix);
+            select.newGraphVertex = vsb.toString();
+            read();
+
+            readThis(Tokens.COMMA);
+
+            // read requirements for edges
+            StringBuilder esb = new StringBuilder();
+            esb.append(token.namePrefix); // TODO: fix edge label later
+            select.newGraphEdge = esb.toString();
+            read();
+
+            readThis(Tokens.CLOSEBRACKET);
+            readThis(Tokens.INTO);
+            select.newGraphName = token.tokenString;
+            read();
+            // System.out.println("ParserDQL:994:" + select.newGraphVertex + ", " + select.newGraphEdge + ", " + select.newGraphName);
+        }
+
+        // while (true) {
+        while (!select.isGraph2Graph) { // LX FEAT4
             Expression e = XreadValueExpression();
 
             if (token.tokenType == Tokens.AS) {
@@ -1040,9 +1073,67 @@ public class ParserDQL extends ParserBase {
         return null;
     }
     // End LX
+
+    // LX FEAT4
+    RangeVariable readGraph(QuerySpecification select) {
+        GraphView graph = null;
+        boolean hasV    = false;
+        boolean hasE    = false;
+        SimpleName valias = null;
+        SimpleName ealias = null;
+
+        graph = database.schemaManager.getGraph(session, token.namePrefix, token.namePrePrefix);
+        if (token.tokenType == Tokens.EDGES) {
+            hasE = true;
+        }
+        if (token.tokenType == Tokens.VERTEXES) {
+            hasV = true;
+        }
+        read();
+        if (token.tokenType != Tokens.COMMA) {
+            SimpleName alias = HsqlNameManager.getSimpleName(token.tokenString, isDelimitedIdentifier());
+            if (hasE) ealias = alias;
+            else valias = alias;
+            read();
+        }
+                   
+        return new RangeVariable(graph, hasV, hasE, valias, ealias, select.newGraphName, select.newGraphVertex, select.newGraphEdge, select.chosenVertexLabel, compileContext);
+    }
+
+    // LX FEAT4
+    void XreadGraphReferences(QuerySpecification select) {
+        RangeVariable graphVar1 = readGraph(select);
+        if (readIfThis(Tokens.COMMA)) {
+            RangeVariable graphVar2 = readGraph(select);
+            if (graphVar1.getGraph() != graphVar2.getGraph())
+                return ;
+            if (graphVar2.hasEdge()) {
+                graphVar1.setHasEdge(true);
+                if (graphVar2.getEdgeTableAlias() != null)
+                    graphVar1.setEdgeTableAlias(graphVar2.getEdgeTableAlias());
+            }
+            if (graphVar2.hasVertex()) {
+                graphVar1.setHasVertex(true);
+                if (graphVar2.getVertexTableAlias() != null)
+                    graphVar1.setVertexTableAlias(graphVar2.getVertexTableAlias());
+            }
+        }
+        select.addRangeVariable(graphVar1);
+    }
+
     void XreadFromClause(QuerySpecification select) {
         readThis(Tokens.FROM);
-        while (true) {
+
+        // LX FEAT4
+        if (select.isGraph2Graph) {
+            System.out.println("parserDQL:1079");
+            XreadGraphReferences(select);
+            return;
+        }
+
+        // while (true) {
+        while (!select.isGraph2Graph){ // LX FEAT4
+            System.out.println("parserDQL:1082");
             XreadTableReference(select);
             if (readIfThis(Tokens.COMMA)) {
                 continue;
@@ -1055,6 +1146,7 @@ public class ParserDQL extends ParserBase {
     void XreadTableReference(QuerySpecification select) {
 
         boolean       natural = false;
+        System.out.println("parserDQL:1079");
         RangeVariable range   = readTableOrSubquery();
         select.addRangeVariable(range);
 
@@ -1600,7 +1692,7 @@ public class ParserDQL extends ParserBase {
                 checkIsIdentifier();
                 // System.out.println("parserDQL:1597:" + token.namePrefix + ", " + token.namePrePrefix + ", " + token.tokenType);
                 graph = database.schemaManager.getGraph(session,
-                    token.namePrefix, token.namePrePrefix, token.tokenType);
+                    token.namePrefix, token.namePrePrefix);
                 
                 if (graph != null) isGraph = true;
                 System.out.println("parserDQL:1602:" + token.namePrePrefix + "," + token.namePrefix + "," + token.tokenType);

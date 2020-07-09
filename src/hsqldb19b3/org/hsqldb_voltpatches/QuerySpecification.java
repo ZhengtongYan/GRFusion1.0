@@ -74,10 +74,17 @@ public class QuerySpecification extends QueryExpression {
     public boolean        isDistinctSelect;
     public boolean        isAggregated;
     public boolean        isGrouped;
+    public boolean        isGraph2Graph; // LX FEAT4
+    public String         newGraphName; // LX FEAT4 
+    public String         newGraphVertex;// LX FEAT4 
+    public String         newGraphEdge;// LX FEAT4 
+    public String         chosenVertexLabel; // LX FEAT4
     public String         hint; // Added by LX
     private HashSet       groupColumnNames;
     RangeVariable[]       rangeVariables;
+    // GToGGraphVariable[]   graphVariables; // LX FEAT4
     private HsqlArrayList rangeVariableList;
+    // private HsqlArrayList graphVariableList; // LX FEAT4
     Expression            queryCondition;
     Expression            checkQueryCondition;
     private Expression    havingCondition;

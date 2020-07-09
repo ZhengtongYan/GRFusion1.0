@@ -33,8 +33,8 @@ class GraphView
 
 public:
 	//PQEntryWithLength.first is the cost, PQEntryWithLength.second.first is the vertexId, PQEntryWithLength.second.second is the path length
-	typedef pair<double, pair<int, int> > PQEntryWithLength;
-	typedef pair<int, int > PQEntry;
+	typedef pair<double, pair<string, int> > PQEntryWithLength; // LX FEAT2
+	typedef pair<int, string> PQEntry; // LX FEAT2
 	~GraphView(void);
 
 	/*
@@ -59,21 +59,31 @@ public:
 
 
 	float shortestPath(int source, int destination, int costColumnId);
-	Vertex* getVertex(int id);
-	TableTuple* getVertexTuple(int id);
-	Edge* getEdge(int id);
-	TableTuple* getEdgeTuple(int id);
+	// Vertex* getVertex(int id);
+	Vertex* getVertex(string id); // LX FEAT2
+	// TableTuple* getVertexTuple(int id);
+	TableTuple* getVertexTuple(string id); // LX FEAT2
+	// Edge* getEdge(int id);
+	Edge* getEdge(string id); // LX FEAT2
+	// TableTuple* getEdgeTuple(int id);
+	TableTuple* getEdgeTuple(string id);  // LX FEAT2
 	TableTuple* getEdgeTuple(char* data);
-	void addVertex(int id, Vertex* vertex);
-	void addEdge(int id, Edge* edge);
+	// void addVertex(int id, Vertex* vertex);
+	// void addEdge(int id, Edge* edge);
+	void addVertex(string id, Vertex* vertex); // LX FEAT2
+	void addEdge(string id, Edge* edge); // LX FEAT2
 	int numOfVertexes();
 	int numOfEdges();
 	string name();
 	string debug();
 	bool isDirected();
 	// Table* getVertexTable(); // TODO: remove after fixing vertexscan
-	Table* getVertexTableFromLabel(std::string vlabel); // LX FEAT2
-	Table* getVertexTableById(int id); // LX FEAT2
+	Table* getVertexTableFromLabel(string vlabel); // LX FEAT2
+	Table* getVertexTableById(string id); // LX FEAT2
+	void addToSubgraphList(string graphname); // LX FEAT4
+	void addToSubgraphVertex(std::vector<Vertex*> subgraphVertex); // LX FEAT4
+	void addToSubgraphEdge(std::vector<Edge*> subgraphEdge); // LX FEAT4
+	
 	Table* getEdgeTable();
 	Table* getPathTable();
 	TupleSchema* getVertexSchema();
@@ -102,32 +112,48 @@ public:
 	void expandCurrentPathOperation();
 
 	//Queries
-	void BFS_Reachability_ByDepth(int startVertexId, int depth);
-	void BFS_Reachability_ByDestination(int startVertexId, int endVertex);
-	void BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int depth, int eSelectivity);
-	void SP_TopK(int src, int dest, int k);
-	void SP_EdgeSelectivity(int src, int dest, int edgeSelectivity);
-	void SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity);
-	int fromVertexId, toVertexId, queryType, pathLength, topK, vSelectivity, eSelectivity, spColumnIndexInEdgesTable;
+	// void BFS_Reachability_ByDepth(int startVertexId, int depth);
+	// void BFS_Reachability_ByDestination(int startVertexId, int endVertex);
+	// void BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int depth, int eSelectivity);
+	// void SP_TopK(int src, int dest, int k);
+	// void SP_EdgeSelectivity(int src, int dest, int edgeSelectivity);
+	// void SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity);
+	void BFS_Reachability_ByDepth(string startVertexId, int depth); // LX FEAT2
+	void BFS_Reachability_ByDestination(string startVertexId, string endVertex); // LX FEAT2
+	void BFS_Reachability_ByDepth_eSelectivity(string startVertexId, int depth, int eSelectivity); // LX FEAT2
+	void SP_TopK(string src, string dest, int k); // LX FEAT2
+	void SP_EdgeSelectivity(string src, string dest, int edgeSelectivity); // LX FEAT2
+	void SP_ToAllVertexes_EdgeSelectivity(string src, int edgeSelectivity); // LX FEAT2
+	string fromVertexId, toVertexId; // LX FEAT2
+	int queryType, pathLength, topK, vSelectivity, eSelectivity, spColumnIndexInEdgesTable;
 
 	//Topology query, i.e., connected sub-graph of
 
 	//to select all vertexes, set vSelectivty to 100, same for the edges
 	void SubGraphLoop(int length, int vSelectivity, int eSelectivity);
-	void SubGraphLoopFromStartVertex(int startVertexId, int length, int vSelectivity, int eSelectivity); //14
-	void SubGraphLoop(int startVertexId, int length); //startVertexId of -1 means to try all the vertexes as the start of the loop
+	// void SubGraphLoopFromStartVertex(int startVertexId, int length, int vSelectivity, int eSelectivity); //14
+	// void SubGraphLoop(int startVertexId, int length); //startVertexId of -1 means to try all the vertexes as the start of the loop
+	void SubGraphLoopFromStartVertex(string startVertexId, int length, int vSelectivity, int eSelectivity); // LX FEAT2
+	void SubGraphLoop(string startVertexId, int length); // LX FEAT2
 
 
 protected:
 	void fillGraphFromRelationalTables();
 	void constructPathSchema(); //constucts m_pathColumnNames and m_pathSchema
 	void constructPathTempTable();
-	std::map<int, Vertex* > m_vertexes;
-	std::map<int, Edge* > m_edges;
+
+	std::vector<std::vector<Vertex*>> m_subgraphVertexList; // LX FEAT4
+	std::vector<std::vector<Edge*>> m_subgraphEdgeList; // LX FEAT4
+	std::vector<string> m_subgraphList; // LX FEAT4
+
+	// std::map<int, Vertex* > m_vertexes;
+	// std::map<int, Edge* > m_edges;
+	std::map<string, Vertex* > m_vertexes; // LX FEAT2
+	std::map<string, Edge* > m_edges; // LX FEAT2
 	// Table* m_vertexTable;
 	std::vector<Table*> m_vertexTables; // LX FEAT2
-	std::vector<std::string> m_vertexLabels; // LX FEAT2
-	std::map<int, Table*> m_idToVTableMap; // LX FEAT2
+	std::vector<string> m_vertexLabels; // LX FEAT2
+	std::map<string, Table*> m_idToVTableMap; // LX FEAT2
 	Table* m_edgeTable;
 	TempTable* m_pathTable;
 	TableIterator* m_pathTableIterator;
@@ -136,13 +162,13 @@ protected:
 	TupleSchema* m_edgeSchema; //will contain startVertexId and endVertexId as additional attributes
 	TupleSchema* m_pathSchema; //will contain startVertexId, endVertexId, and cost for now
 	// schema as array of string names
-	std::vector<std::string> m_vertexColumnNames;
-	std::vector<std::string> m_edgeColumnNames;
-	std::vector<std::string> m_pathColumnNames;
+	std::vector<string> m_vertexColumnNames;
+	std::vector<string> m_edgeColumnNames;
+	std::vector<string> m_pathColumnNames;
 	std::vector<int> m_columnIDsInVertexTable;
 	std::vector<int> m_columnIDsInEdgeTable;
 	int m_vertexIdColumnIndex;
-	std::map<std::string, int> m_vertexIdColIdxList;// LX FEAT2: store the id col index for each label
+	std::map<string, int> m_vertexIdColIdxList;// LX FEAT2: store the id col index for each label
 
 	int m_edgeIdColumnIndex;
 	int m_edgeFromColumnIndex;
@@ -156,7 +182,7 @@ protected:
 	bool executeTraversal = false;
 	// identity information
 	CatalogId m_databaseId;
-	std::string m_name;
+	string m_name;
 	//SHA-1 of signature string
 	char m_signature[20];
 	//Mohamed: I think all the below ma not be needed as we will just reference the underlying tables
@@ -170,8 +196,8 @@ protected:
 	TupleSchema* m_edgeSchema;
 
 	// schema as array of string names
-	std::vector<std::string> m_vertexColumnNames;
-	std::vector<std::string> m_edgeColumnNames;
+	std::vector<string> m_vertexColumnNames;
+	std::vector<string> m_edgeColumnNames;
 	char *m_vertexColumnHeaderData;
 	char *m_edgeColumnHeaderData;
 	int32_t m_vertexColumnHeaderSize;

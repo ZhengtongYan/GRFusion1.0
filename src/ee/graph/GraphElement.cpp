@@ -3,7 +3,8 @@
 
 namespace voltdb {
 
-GraphElement::GraphElement(int id, char* tupleData, GraphView* graphView, bool remote)
+// GraphElement::GraphElement(int id, char* tupleData, GraphView* graphView, bool remote)
+GraphElement::GraphElement(std::string id, char* tupleData, GraphView* graphView, bool remote)
 {
 	this->m_id = id;
 	this->m_tupleData = tupleData;
@@ -13,7 +14,8 @@ GraphElement::GraphElement(int id, char* tupleData, GraphView* graphView, bool r
 
 GraphElement::GraphElement(void)
 {
-	this->m_id = -1;
+	// this->m_id = -1;
+	this->m_id = ""; // LX FEAT2
 	this->m_tupleData = NULL;
 	this->m_gview = NULL;
 	this->m_isRemote = false;
@@ -26,12 +28,14 @@ bool GraphElement::isRemote()
 }
 
 
-void GraphElement::setId(int id)
+// void GraphElement::setId(int id)
+void GraphElement::setId(std::string id)
 {
 	this->m_id = id;
 }
 
-int GraphElement::getId()
+// int GraphElement::getId()
+std::string GraphElement::getId() // LX FEAT2
 {
 	return this->m_id;
 }

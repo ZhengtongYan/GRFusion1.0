@@ -63,6 +63,8 @@ import org.voltdb.planner.parseinfo.StmtTableScan;
 import org.voltdb.planner.parseinfo.StmtTargetTableScan;
 import org.voltdb.planner.parseinfo.GraphLeafNode;// Add LX
 import org.voltdb.planner.parseinfo.StmtTargetGraphScan; // Add LX
+// import org.voltdb.planner.parseinfo.StmtTargetGtoGGraphScan; // LX FEAT4
+// import org.voltdb.planner.parseinfo.GtoGGraphLeafNode;// LX FEAT4
 import org.voltdb.plannodes.LimitPlanNode;
 import org.voltdb.plannodes.SchemaColumn;
 import org.voltdb.types.ExpressionType;
@@ -301,6 +303,10 @@ public abstract class AbstractParsedStmt {
                 parseTable(node);
             } else if (node.name.equalsIgnoreCase("tablescans")) {
                 parseTables(node);
+            }
+            // LX FEAT4
+            else if (node.name.equalsIgnoreCase("graphscans")) {
+                parseG2GGraph(node);
             }
             // Add LX
             else if (node.name.equalsIgnoreCase("vertexscan") || node.name.equalsIgnoreCase("edgescan")   || node.name.equalsIgnoreCase("pathscan")   || node.name.equalsIgnoreCase("graphscan")) {
@@ -860,6 +866,17 @@ public abstract class AbstractParsedStmt {
         return tableScan;
     }
     // End LX
+
+    // LX FEAT4
+    protected StmtTableScan addGtoGgraphToStmtCache(GraphView oldgraph, String tableAlias, String newGraphName, boolean hasvertex, boolean hasedge, String vtablealias, String etablealias, String chosenVertexLabel) {
+        StmtTableScan tableScan = m_tableAliasMap.get(tableAlias);
+        if (tableScan == null) {
+            tableScan = new StmtTargetGraphScan(oldgraph, tableAlias, newGraphName, hasvertex, hasedge, vtablealias, etablealias, chosenVertexLabel);
+            ((StmtTargetGraphScan)tableScan).addSubgraphToGraph();
+            m_tableAliasMap.put(tableAlias, tableScan);
+        }
+        return tableScan;
+    }
 
     /**
      * Add a sub-query to the statement cache.
@@ -1477,6 +1494,71 @@ public abstract class AbstractParsedStmt {
             assert(joinType != JoinType.INVALID);
             m_joinTree = new BranchNode(nodeId + 1, joinType, m_joinTree, leafNode);
        }
+    }
+
+    private void parseG2GGraph(VoltXMLElement graphNode) {
+        for (VoltXMLElement childNode : graphNode.children) {
+            if (!childNode.name.equalsIgnoreCase("graphscan")) 
+                continue;
+            String oldGraphName = childNode.attributes.get("oldgraph");
+            String newGraphName = childNode.attributes.get("newgraph");
+            String newVformat = childNode.attributes.get("newv");
+            String newEformat = childNode.attributes.get("newe");
+
+            String chosenVertexLabel = null;
+            if (childNode.attributes.get("chosenvertexlabel") != null)
+                chosenVertexLabel = childNode.attributes.get("chosenvertexlabel");
+
+            String tableAlias = null;
+            if (childNode.attributes.get("tablealias") == null) 
+                tableAlias = oldGraphName;
+
+            boolean hasV = false;
+            if (childNode.attributes.get("hasvertex") != null) 
+                hasV = Boolean.parseBoolean(childNode.attributes.get("hasvertex"));  
+            boolean hasE = false;
+            if (childNode.attributes.get("hasedge") != null) 
+                hasE = Boolean.parseBoolean(childNode.attributes.get("hasedge"));
+            String vtalias = null;
+            if (childNode.attributes.get("vertextablealias") != null) 
+                vtalias = childNode.attributes.get("vertextablealias");
+            String etalias = null;
+            if (childNode.attributes.get("edgetablealias") != null) 
+                etalias = childNode.attributes.get("edgetablealias");
+
+            StmtTableScan graphScan = null;
+            GraphView oldgraph;
+            oldgraph = m_db.getGraphviews().getExact(oldGraphName);
+            graphScan = addGtoGgraphToStmtCache(oldgraph, tableAlias, newGraphName, hasV, hasE, vtalias, etalias, chosenVertexLabel); 
+
+           AbstractExpression joinExpr = parseJoinCondition(childNode);
+           AbstractExpression whereExpr = parseWhereCondition(childNode);
+
+           // The join type of the leaf node is always INNER
+           // For a new tree its node's ids start with 0 and keep incrementing by 1
+           int nodeId = (m_joinTree == null) ? 0 : m_joinTree.getId() + 1;
+
+           JoinNode leafNode;
+           if (oldgraph != null) {
+               leafNode = new GraphLeafNode(nodeId, joinExpr, whereExpr, (StmtTargetGraphScan)graphScan);
+           } else {
+               throw new PlanningErrorException("Graph subquery is not supported");
+           }
+
+           if (m_joinTree == null) {
+               // this is the first table
+               m_joinTree = leafNode;
+           } else {
+               // Build the tree by attaching the next table always to the right
+               // The node's join type is determined by the type of its right node
+
+               JoinType joinType = JoinType.get(childNode.attributes.get("jointype"));
+               assert(joinType != JoinType.INVALID);
+               JoinNode joinNode = new BranchNode(nodeId + 1, joinType, m_joinTree, leafNode);
+               m_joinTree = joinNode;
+          }
+       
+        }
     }
 
     // Add LX

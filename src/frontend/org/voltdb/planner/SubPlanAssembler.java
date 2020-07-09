@@ -61,6 +61,7 @@ import org.voltdb.utils.CatalogUtil;
 import org.voltdb.plannodes.EdgeScanPlanNode; // Add LX
 import org.voltdb.plannodes.PathScanPlanNode; // Add LX
 import org.voltdb.plannodes.VertexScanPlanNode; // Add LX
+import org.voltdb.plannodes.GraphVEScanPlanNode; // LX FEAT4
 
 
 public abstract class SubPlanAssembler {
@@ -1966,6 +1967,9 @@ public abstract class SubPlanAssembler {
                 scanNode = new EdgeScanPlanNode(graphScan);
             else if (((StmtTargetGraphScan)graphScan).getGraphElementName() == "PATHS")
                 scanNode = new PathScanPlanNode(graphScan);
+            // LX FEAT4
+            else
+                scanNode = new GraphVEScanPlanNode(graphScan);
             
             assert(scanNode != null);
             // build the predicate

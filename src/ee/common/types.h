@@ -225,7 +225,10 @@ enum class PlanNodeType {
     VertexScan       = 70,
     EdgeScan         = 71,
     PathScan         = 72,
-    NestedLoopPath   = 73 // End LX
+    NestedLoopPath   = 73, // End LX
+
+    // LX FEAT4
+    GraphVEScan      = 74
 };
 
 // ------------------------------------------------------------------

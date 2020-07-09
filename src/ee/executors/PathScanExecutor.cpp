@@ -59,7 +59,7 @@ bool PathScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVect
 	graphView->eSelectivity = node->getEdgeSelectivity();
 
 	{
-		LogManager::GLog("PathScanExecutor", "p_init", 60, to_string(graphView->fromVertexId));
+		LogManager::GLog("PathScanExecutor", "p_init", 60, graphView->fromVertexId);
 	}
 	//
 	// OPTIMIZATION: If there is no predicate for this SeqScan,

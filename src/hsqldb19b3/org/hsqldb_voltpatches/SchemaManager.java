@@ -413,7 +413,7 @@ public class SchemaManager {
      *  Throws if the graph does not exist in the context.
      */
     // Added by LX
-    public GraphView getGraph(Session session, String name, String schema, int tokenType) {
+    public GraphView getGraph(Session session, String name, String schema) {
 
         GraphView g = null;
         

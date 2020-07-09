@@ -11,12 +11,14 @@ Edge::Edge(void)
 {
 }
 
-int Edge::getStartVertexId()
+// int Edge::getStartVertexId()
+string Edge::getStartVertexId() // LX FEAT2
 {
 	return m_startVertexId;
 }
 	
-int Edge::getEndVertexId()
+// int Edge::getEndVertexId()
+string Edge::getEndVertexId() // LX FEAT2
 {
 	return m_endVertexId;
 }
@@ -41,12 +43,14 @@ string Edge::toString()
 	return stream.str();
 }
 
-void Edge::setStartVertexId(int id)
+// void Edge::setStartVertexId(int id)
+void Edge::setStartVertexId(string id) // LX FEAT2
 {
 	this->m_startVertexId = id;
 }
 
-void Edge::setEndVertexId(int id)
+// void Edge::setEndVertexId(int id)
+void Edge::setEndVertexId(string id) // LX FEAT2
 {
 	this->m_endVertexId = id;
 }

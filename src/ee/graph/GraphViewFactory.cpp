@@ -65,7 +65,7 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 	{
 		vw->m_columnIDsInVertexTable[i] = columnIdsInVertexTable[i];
 	}
-	LogManager::GLog("GraphViewFactory", "create", 55, to_string(colCountInVTable));
+	LogManager::GLog("GraphViewFactory", "create", 68, to_string(colCountInVTable));
 	//set the edges columns
 	//int eColumnCount = eSchema->columnCount();
 	int eColumnCount = edgeColumnNames.size();
@@ -131,7 +131,7 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 			vw->m_ePropColumnIndex = vw->m_columnIDsInEdgeTable[i];
 		}
 	}
-
+	
 	vw->m_databaseId = databaseId;
 	::memcpy(&(vw->m_signature), signature, 20);
 
@@ -196,22 +196,22 @@ void GraphViewFactory::printGraphView(GraphView* gview)
 	cout << "#Vertexes = " << vCount << endl;
 	cout << "#Edges = " << eCount << endl;
 	cout << "Vertexes" << endl;
-	Vertex* currentVertex;
-	for(int i = 0; i < vCount; i++)
-	{
-		currentVertex = gview->getVertex(i);
-		cout << "\t" << currentVertex->toString() << endl;
-		cout << "\t\t" << "out: " << endl;
-		for(int j = 0; j < currentVertex->fanOut(); j++)
-		{
-			cout << "\t\t\t" << currentVertex->getOutEdge(j)->toString() << endl;
-		}
-		cout << "\t\t" << "in: " << endl;
-		for(int j = 0; j < currentVertex->fanIn(); j++)
-		{
-			cout << "\t\t\t" << currentVertex->getInEdge(j)->toString() << endl;
-		}
-	}
+	// Vertex* currentVertex;
+	// for(int i = 0; i < vCount; i++)
+	// {
+	// 	currentVertex = gview->getVertex(i);
+	// 	cout << "\t" << currentVertex->toString() << endl;
+	// 	cout << "\t\t" << "out: " << endl;
+	// 	for(int j = 0; j < currentVertex->fanOut(); j++)
+	// 	{
+	// 		cout << "\t\t\t" << currentVertex->getOutEdge(j)->toString() << endl;
+	// 	}
+	// 	cout << "\t\t" << "in: " << endl;
+	// 	for(int j = 0; j < currentVertex->fanIn(); j++)
+	// 	{
+	// 		cout << "\t\t\t" << currentVertex->getInEdge(j)->toString() << endl;
+	// 	}
+	// }
 }
 
 

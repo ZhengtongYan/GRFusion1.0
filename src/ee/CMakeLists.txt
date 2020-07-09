@@ -124,6 +124,7 @@ SET (VOLTDB_SRC
   catalog/function.cpp
   catalog/functionparameter.cpp
   catalog/graphview.cpp
+  catalog/subgraph.cpp
   catalog/vertexlabel.cpp
   catalog/index.cpp
   catalog/indexref.cpp
@@ -177,6 +178,7 @@ SET (VOLTDB_SRC
   executors/EdgeScanExecutor.cpp
   executors/executorfactory.cpp
   executors/executorutil.cpp
+  executors/GraphVEScanExecutor.cpp
   executors/indexcountexecutor.cpp
   executors/indexscanexecutor.cpp
   executors/insertexecutor.cpp
@@ -234,6 +236,7 @@ SET (VOLTDB_SRC
   plannodes/commontablenode.cpp
   plannodes/deletenode.cpp
   plannodes/EdgeScanNode.cpp
+  plannodes/GraphVEScanNode.cpp
   plannodes/indexcountnode.cpp
   plannodes/indexscannode.cpp
   plannodes/insertnode.cpp

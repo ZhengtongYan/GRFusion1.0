@@ -19,12 +19,14 @@ int Vertex::fanIn()
 	return this->m_inEdgeIds.size();
 }
 
-int Vertex::getOutEdgeId(int index)
+// int Vertex::getOutEdgeId(int index)
+std::string Vertex::getOutEdgeId(int index) // LX FEAT2
 {
 	return this->m_outEdgeIds[index];
 }
 
-int Vertex::getInEdgeId(int index)
+// int Vertex::getInEdgeId(int index)
+std::string Vertex::getInEdgeId(int index) // LX FEAT2
 {
 	return this->m_inEdgeIds[index];
 }

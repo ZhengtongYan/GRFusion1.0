@@ -652,7 +652,7 @@ int VoltDBEngine::executePlanFragment(int64_t planfragmentId, int64_t inputDepen
     if (tuplesModified > 0) {
         m_dirtyFragmentBatch = true;
     }
-
+    cout << "VoltDBEngine:655" << endl;
     return ENGINE_ERRORCODE_SUCCESS;
 }
 
@@ -2326,9 +2326,9 @@ void VoltDBEngine::setExecutorVectorForFragmentId(int64_t fragId) {
         throwSerializableEEException(
                 "Fetched empty plan from frontend for PlanFragment '%jd'", (intmax_t)fragId);
     }
-
+    std::cout << "VoltDBEngine:2329" << endl;
     boost::shared_ptr<ExecutorVector> ev_guard = ExecutorVector::fromJsonPlan(this, plan, fragId);
-
+    std::cout << "VoltDBEngine:2331" << endl;
     // add the plan to the back
     //
     // (Why to the back?  Shouldn't it be at the front with the
@@ -2343,6 +2343,7 @@ void VoltDBEngine::setExecutorVectorForFragmentId(int64_t fragId) {
 
     m_currExecutorVec = ev_guard.get();
     vassert(m_currExecutorVec);
+    cout << "VoltDBEngine:2346" << endl;
 }
 
 // -------------------------------------------------

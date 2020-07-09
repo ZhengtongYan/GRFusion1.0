@@ -26,6 +26,7 @@ import org.voltdb.plannodes.*;
 import org.voltdb.plannodes.VertexScanPlanNode;
 import org.voltdb.plannodes.EdgeScanPlanNode;
 import org.voltdb.plannodes.PathScanPlanNode;
+import org.voltdb.plannodes.GraphVEScanPlanNode; // LX FEAT4
 // End LX
 
 /**
@@ -42,6 +43,7 @@ public enum PlanNodeType implements PlanMatcher {
     // Scan Nodes
     //
     // Added by LX
+    GRAPHVESCAN      ( 6, GraphVEScanPlanNode.class),
     PATHSCAN         ( 7, PathScanPlanNode.class),
     EDGESCAN         ( 8, EdgeScanPlanNode.class),
     VERTEXSCAN       ( 9, VertexScanPlanNode.class),

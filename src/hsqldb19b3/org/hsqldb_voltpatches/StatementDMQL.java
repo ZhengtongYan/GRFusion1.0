@@ -1247,15 +1247,28 @@ public abstract class StatementDMQL extends Statement {
         for (RangeVariable rangeVariable : select.rangeVariables) {
             // scans.children.add(rangeVariable.voltGetRangeVariableXML(session)); comment LX
             // Add LX
-            if (rangeVariable.isGraph) {
+            if (rangeVariable.isGraph && ! rangeVariable.isGraph2Graph) {
                 // LX FEAT2
                 String[] vlabels = rangeVariable.getVertexLabels();
                 for (String vlabel: vlabels)
                     scans.children.add(rangeVariable.voltGetGraphRangeVariableXML(session, vlabel));
             }
-            else
+            else if (!rangeVariable.isGraph)
                 scans.children.add(rangeVariable.voltGetRangeVariableXML(session));
             // End LX
+        }
+
+        // LX FEAT4
+        VoltXMLElement graphscans;
+        graphscans = new VoltXMLElement("graphscans");
+        query.children.add(graphscans);
+        for (RangeVariable rangeVariable : select.rangeVariables) {
+            if (rangeVariable.isGraph2Graph) {
+                // graphscans.attributes.put("newgraphname", rangeVariable.getNewGraphName());
+                // graphscans.attributes.put("newgraphvertex", rangeVariable.getNewGraphVertex());
+                // graphscans.attributes.put("newgraphedge", rangeVariable.getNewGraphEdge());
+                graphscans.children.add(rangeVariable.voltGetGraphG2GVariableXML(session));
+            }
         }
 
         // groupby

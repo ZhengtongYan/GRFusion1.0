@@ -31,30 +31,49 @@ float GraphView::shortestPath(int source, int destination, int costColumnId)
 	return (float)source * destination;
 }
 
-Vertex* GraphView::getVertex(int id)
+// Vertex* GraphView::getVertex(int id)
+Vertex* GraphView::getVertex(string id) // LX FEAT2
 {
 	return this->m_vertexes[id];
 }
 
 // LX FEAT2
-Table* GraphView::getVertexTableById(int id)
+Table* GraphView::getVertexTableById(string id)
 {
 	return this->m_idToVTableMap[id];
 }
 
-TableTuple* GraphView::getVertexTuple(int id)
+// LX FEAT4
+void GraphView::addToSubgraphList(string name) {
+	this->m_subgraphList.push_back(name);
+}
+
+// LX FEAT4
+void GraphView::addToSubgraphVertex(std::vector<Vertex*> subgraphVertex) {
+	this->m_subgraphVertexList.push_back(subgraphVertex);
+}
+
+// LX FEAT4
+void GraphView::addToSubgraphEdge(std::vector<Edge*> subgraphEdge) {
+	this->m_subgraphEdgeList.push_back(subgraphEdge);
+}
+
+// TableTuple* GraphView::getVertexTuple(int id)
+TableTuple* GraphView::getVertexTuple(string id) // LX FEAT4
 {
 	Vertex* v = this->getVertex(id);
 	Table* t = this->getVertexTableById(id);
 	return new TableTuple(v->getTupleData(), t->schema());
 }
 
-Edge* GraphView::getEdge(int id)
+// Edge* GraphView::getEdge(int id)
+Edge* GraphView::getEdge(string id) // LX FEAT2
 {
 	return this->m_edges[id];
 }
 
-TableTuple* GraphView::getEdgeTuple(int id)
+// TableTuple* GraphView::getEdgeTuple(int id)
+TableTuple* GraphView::getEdgeTuple(string id) // LX FEAT2
 {
 	Edge* e = this->getEdge(id);
 	return new TableTuple(e->getTupleData(), this->m_edgeTable->schema());
@@ -65,12 +84,14 @@ TableTuple* GraphView::getEdgeTuple(char* data)
 	return new TableTuple(data, this->m_edgeTable->schema());
 }
 
-void GraphView::addVertex(int id, Vertex* vertex)
+// void GraphView::addVertex(int id, Vertex* vertex)
+void GraphView::addVertex(string id, Vertex* vertex) // LX FEAT2
 {
 	this->m_vertexes[id] = vertex;
 }
 	
-void GraphView::addEdge(int id, Edge* edge)
+// void GraphView::addEdge(int id, Edge* edge)
+void GraphView::addEdge(string id, Edge* edge) // LX FEAT2
 {
 	this->m_edges[id] = edge;
 }
@@ -81,7 +102,7 @@ void GraphView::addEdge(int id, Edge* edge)
 // }
 
 // LX FEAT2
-Table* GraphView::getVertexTableFromLabel(std::string vlabel)
+Table* GraphView::getVertexTableFromLabel(string vlabel)
 {
 	for (int i = 0; i < (this->m_vertexLabels).size(); i++){
 		if (((this->m_vertexLabels[i]).compare(vlabel)) == 0)
@@ -270,7 +291,7 @@ void GraphView::expandCurrentPathOperation()
 	//new entries should be added to the paths temp table
 	//adding no new entries means that the exploration is completely done
 	//and the iterator will have hasNext evaluated to false
-	// std::stringstream paramsToPrint;
+	// stringstream paramsToPrint;
 	
 	// if(dummyPathExapansionState < 6)
 	// {
@@ -337,7 +358,8 @@ void GraphView::expandCurrentPathOperation()
 	}
 }
 
-void GraphView::SP_TopK(int src, int dest, int k)
+// void GraphView::SP_TopK(int src, int dest, int k)
+void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
 {
 	double minCost = DBL_MAX;
 	int foundPathsSoFar = 0;
@@ -348,7 +370,9 @@ void GraphView::SP_TopK(int src, int dest, int k)
 	pq.push(make_pair(0, make_pair(src, 0))); //zero cost to reach Vertex from
 	Vertex* v = NULL;
 	Edge* e = NULL;
-	int currVId, fanOut = -1, candVertexId = -1;
+	string currVId;
+	int fanOut = -1;
+	string candVertexId = "";
 	
 	//upper-bound to avoid loops (considering an average fan-out of 10
 	int maxPQOperations = this->numOfVertexes() * 10;
@@ -359,8 +383,8 @@ void GraphView::SP_TopK(int src, int dest, int k)
 	while(!pq.empty())
 	{
 		//select next vertex to explore
-		currVId = ((pair<int, int >)( pq.top().second)).first;
-		length = ((pair<int, int >)( pq.top().second)).second;
+		currVId = ((pair<string, int >)( pq.top().second)).first;
+		length = ((pair<string, int >)( pq.top().second)).second;
 		minCost = pq.top().first;
 		if(currVId == dest)
 		{
@@ -369,8 +393,10 @@ void GraphView::SP_TopK(int src, int dest, int k)
 			//add a tuple here
 			TableTuple temp_tuple = m_pathTable->tempTuple();
 			//start vertex, end vertex, length, cost, path
-			temp_tuple.setNValue(0, ValueFactory::getIntegerValue(src));
-			temp_tuple.setNValue(1, ValueFactory::getIntegerValue(dest));
+			// temp_tuple.setNValue(0, ValueFactory::getIntegerValue(src));
+			// temp_tuple.setNValue(1, ValueFactory::getIntegerValue(dest));
+			temp_tuple.setNValue(0, ValueFactory::getStringValue(src)); // LX FEAT2
+			temp_tuple.setNValue(1, ValueFactory::getStringValue(dest)); // LX FEAT2
 			temp_tuple.setNValue(2, ValueFactory::getIntegerValue(length));
 			temp_tuple.setNValue(3, ValueFactory::getDoubleValue(minCost));
 			//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -412,7 +438,7 @@ void GraphView::SP_TopK(int src, int dest, int k)
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "TopK SP: from = " << src << ", to = " << dest
 			<< ", k = " << k
 			<< ", foundPaths = " << foundPathsSoFar
@@ -420,16 +446,19 @@ void GraphView::SP_TopK(int src, int dest, int k)
 	LogManager::GLog("GraphView", "TopK_SP", 334, paramsToPrint.str());
 }
 
-void GraphView::SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity)
+// void GraphView::SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity)
+void GraphView::SP_ToAllVertexes_EdgeSelectivity(string src, int edgeSelectivity) //LX FEAT2
 {
 	int minCost = INT_MAX;
 	priority_queue<PQEntry, vector<PQEntry>, std::greater<PQEntry>> pq;
-	map<int, int> costMap;
+	map<string, int> costMap;
 	costMap[src] = 0;
 	pq.push(make_pair(0, src)); //zero cost to reach Vertex from
 	Vertex* v = NULL;
 	Edge* e = NULL;
-	int currVId, fanOut = -1, candVertexId = -1;
+	string currVId;
+	int fanOut = -1;
+	string candVertexId = "";
 
 	while(!pq.empty())
 	{
@@ -477,7 +506,7 @@ void GraphView::SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity)
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "SSSP with eSelectivity: from = "
 			<< ", eSelectivity = " << edgeSelectivity
 			<< ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
@@ -485,16 +514,18 @@ void GraphView::SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity)
 }
 
 
-void GraphView::SP_EdgeSelectivity(int src, int dest, int edgeSelectivity)
+// void GraphView::SP_EdgeSelectivity(int src, int dest, int edgeSelectivity)
+void GraphView::SP_EdgeSelectivity(string src, string dest, int edgeSelectivity) // LX FEAT2
 {
 	int minCost = INT_MAX;
 	priority_queue<PQEntry, vector<PQEntry>, std::greater<PQEntry>> pq;
-	map<int, int> costMap;
+	map<string, int> costMap;
 	costMap[src] = 0;
 	pq.push(make_pair(0, src)); //zero cost to reach Vertex from
 	Vertex* v = NULL;
 	Edge* e = NULL;
-	int currVId, fanOut = -1, candVertexId = -1;
+	string currVId,  candVertexId = "";
+	int fanOut = -1;
 
 	while(!pq.empty())
 	{
@@ -506,8 +537,8 @@ void GraphView::SP_EdgeSelectivity(int src, int dest, int edgeSelectivity)
 			//add a tuple here
 			TableTuple temp_tuple = m_pathTable->tempTuple();
 			//start vertex, end vertex, length, cost, path
-			temp_tuple.setNValue(0, ValueFactory::getIntegerValue(src));
-			temp_tuple.setNValue(1, ValueFactory::getIntegerValue(dest));
+			temp_tuple.setNValue(0, ValueFactory::getStringValue(src));
+			temp_tuple.setNValue(1, ValueFactory::getStringValue(dest));
 			temp_tuple.setNValue(2, ValueFactory::getIntegerValue(minCost));
 			temp_tuple.setNValue(3, ValueFactory::getDoubleValue(minCost));
 			//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -540,14 +571,15 @@ void GraphView::SP_EdgeSelectivity(int src, int dest, int edgeSelectivity)
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "SP with eSelectivity: from = " << src << ", to = " << dest
 			<< ", eSelectivity = " << edgeSelectivity
 			<< ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "SP_eSelectivity", 398, paramsToPrint.str());
 }
 
-void GraphView::BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int depth, int eSelectivity)
+// void GraphView::BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int depth, int eSelectivity)
+void GraphView::BFS_Reachability_ByDepth_eSelectivity(string startVertexId, int depth, int eSelectivity) // LX FEAT2
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
@@ -577,8 +609,8 @@ void GraphView::BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int dep
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
 					TableTuple temp_tuple = m_pathTable->tempTuple();
 					//start vertex, end vertex, length, cost, path
-					temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
-					temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
+					temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
+					temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
 					temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)(outVertex->Level + 1)));
 					//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -594,17 +626,18 @@ void GraphView::BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int dep
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "BFS_ByDepth: from = " << startVertexId << ", depth = " << depth << ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "BFS_ByDepth", 463, paramsToPrint.str());
 }
 
-void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
+// void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
+void GraphView::BFS_Reachability_ByDepth(string startVertexId, int depth) // LX FEAT2
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
-	std::map<int, int> vertexToLevel;
-	std::unordered_set<int> visited;
+	std::map<string, int> vertexToLevel;
+	std::unordered_set<string> visited;
 	// cout << "1" << endl;
 	if(NULL != currentVertex)
 	{
@@ -649,8 +682,8 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
 					TableTuple temp_tuple = m_pathTable->tempTuple();
 					//start vertex, end vertex, length, cost, path
-					temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
-					temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
+					temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
+					temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
 					temp_tuple.setNValue(2, ValueFactory::getIntegerValue(vertexToLevel[outVertex->getId()]));
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)(vertexToLevel[outVertex->getId()])));
 					//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -669,17 +702,18 @@ void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "BFS_ByDepth: from = " << startVertexId << ", depth = " << depth << ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "BFS_ByDepth", 463, paramsToPrint.str());
 }
 
-void GraphView::BFS_Reachability_ByDestination(int startVertexId, int destVerexId)
+// void GraphView::BFS_Reachability_ByDestination(int startVertexId, int destVerexId)
+void GraphView::BFS_Reachability_ByDestination(string startVertexId, string destVerexId) // LX FEAT2
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
-	std::map<int, int> vertexToLevel;
-	std::unordered_set<int> visited;
+	std::map<string, int> vertexToLevel;
+	std::unordered_set<string> visited;
 
 	if(NULL != currentVertex)
 	{
@@ -722,8 +756,8 @@ void GraphView::BFS_Reachability_ByDestination(int startVertexId, int destVerexI
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
 					TableTuple temp_tuple = m_pathTable->tempTuple();
 					//start vertex, end vertex, length, cost, path
-					temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
-					temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
+					temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
+					temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
 					temp_tuple.setNValue(2, ValueFactory::getIntegerValue(level));
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)level));
 					temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -745,12 +779,13 @@ void GraphView::BFS_Reachability_ByDestination(int startVertexId, int destVerexI
 	}
 	executeTraversal = false;
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "BFS_Reachability_ByDestination: from = " << startVertexId << ", to = " << destVerexId << ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "BFS_Reachability", 513, paramsToPrint.str());
 }
 
-void GraphView::SubGraphLoopFromStartVertex(int startVertexId, int length, int vSelectivity, int eSelectivity)
+// void GraphView::SubGraphLoopFromStartVertex(int startVertexId, int length, int vSelectivity, int eSelectivity)
+void GraphView::SubGraphLoopFromStartVertex(string startVertexId, int length, int vSelectivity, int eSelectivity) // LX FEAT2
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = NULL;
@@ -794,8 +829,8 @@ void GraphView::SubGraphLoopFromStartVertex(int startVertexId, int length, int v
 						TableTuple temp_tuple = m_pathTable->tempTuple();
 						//start vertex, end vertex, length, cost, path
 						//set the start vertex to the vertex having an edge that closes the loop (for debugging purposes)
-						temp_tuple.setNValue(0, ValueFactory::getIntegerValue(outEdge->getStartVertex()->getId()));
-						temp_tuple.setNValue(1, ValueFactory::getIntegerValue(startVertexId));
+						temp_tuple.setNValue(0, ValueFactory::getStringValue(outEdge->getStartVertex()->getId()));
+						temp_tuple.setNValue(1, ValueFactory::getStringValue(startVertexId));
 						temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -818,7 +853,7 @@ void GraphView::SubGraphLoopFromStartVertex(int startVertexId, int length, int v
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "SubGraphLoop from a specific vertex: length = " << length << ", vSelectivity = " << vSelectivity
 			<< ", eSelectivity = " << eSelectivity
 			<< ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
@@ -830,8 +865,8 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = NULL;
-	int startVertexId = -1;
-	for(std::map<int, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
+	string startVertexId = NULL; // LX FEAT2
+	for(std::map<string, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
 	{
 		currentVertex = it->second;
 		if(currentVertex->vProp > vSelectivity)
@@ -869,8 +904,8 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 						TableTuple temp_tuple = m_pathTable->tempTuple();
 						//start vertex, end vertex, length, cost, path
 						//set the start vertex to the vertex having an edge that closes the loop (for debugging purposes)
-						temp_tuple.setNValue(0, ValueFactory::getIntegerValue(outEdge->getStartVertex()->getId()));
-						temp_tuple.setNValue(1, ValueFactory::getIntegerValue(startVertexId));
+						temp_tuple.setNValue(0, ValueFactory::getStringValue(outEdge->getStartVertex()->getId()));
+						temp_tuple.setNValue(1, ValueFactory::getStringValue(startVertexId));
 						temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -893,18 +928,19 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 		}
 	}
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "SubGraphLoop: length = " << length << ", vSelectivity = " << vSelectivity
 			<< ", eSelectivity = " << eSelectivity
 			<< ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "SubGraphLoop", 625, paramsToPrint.str());
 }
 
-void GraphView::SubGraphLoop(int startVertexId, int length)
+// void GraphView::SubGraphLoop(int startVertexId, int length)
+void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = NULL;
-	if(startVertexId >= 0)
+	if(startVertexId != "")
 	{
 		currentVertex = this->m_vertexes[startVertexId];
 	}
@@ -933,8 +969,8 @@ void GraphView::SubGraphLoop(int startVertexId, int length)
 						//Now, we reached the destination vertexes, where we should add tuples into the output table
 						TableTuple temp_tuple = m_pathTable->tempTuple();
 						//start vertex, end vertex, length, cost, path
-						temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
-						temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
+						temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
+						temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
 						temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -952,7 +988,7 @@ void GraphView::SubGraphLoop(int startVertexId, int length)
 	}
 	else
 	{
-		for (std::map<int, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
+		for (std::map<string, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
 		{
 			currentVertex = it->second;
 			currentVertex->Level = 0;
@@ -978,8 +1014,8 @@ void GraphView::SubGraphLoop(int startVertexId, int length)
 							//Now, we reached the destination vertexes, where we should add tuples into the output table
 							TableTuple temp_tuple = m_pathTable->tempTuple();
 							//start vertex, end vertex, length, cost, path
-							temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
-							temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
+							temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
+							temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
 							temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 							temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 							//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -1003,20 +1039,20 @@ void GraphView::SubGraphLoop(int startVertexId, int length)
 	}
 	executeTraversal = false;
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << "SubGraphLoop: from = " << startVertexId << ", length = " << length << ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "BFS", 302, paramsToPrint.str());
 }
 
 void GraphView::fillGraphFromRelationalTables()
 {
+	cout << "graphView:1049" << endl;
 	this->m_vertexes.clear();
 	this->m_edges.clear();
 
 	const TupleSchema* schema;
-	int id, from, to;
 
-	std::stringstream paramsToPrint;
+	stringstream paramsToPrint;
 	paramsToPrint << " vertex column names = ";
 	for(int i = 0; i < m_vertexColumnNames.size(); i++)
 	{
@@ -1051,7 +1087,9 @@ void GraphView::fillGraphFromRelationalTables()
 	bool vPropExists = (m_vPropColumnIndex >= 0);
 	bool ePropExists = (m_ePropColumnIndex >= 0);
 
+	string id = "", from = "", to = ""; // LX FEAT2
 	//fill the vertex collection
+	cout << "graphView:1092" << endl;
 	// LX FEAT2
 	for (int i = 0; i < this->m_vertexTables.size(); i++){
 		Table* curTable = this->m_vertexTables[i];
@@ -1068,7 +1106,9 @@ void GraphView::fillGraphFromRelationalTables()
 				if (tuple.isActive())
 				{
 					// id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColumnIndex));
-					id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel]));
+					cout << "graphView:1109" << endl;
+					cout << ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])) << endl;
+					id = curLabel + "." + to_string(ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])));
 					vertex = new Vertex();
 					vertex->setGraphView(this);
 					vertex->setId(id);
@@ -1082,17 +1122,24 @@ void GraphView::fillGraphFromRelationalTables()
 					this->m_idToVTableMap[id] = curTable;
 					//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 77, "vertex: " + vertex->toString());
 				}
+				id = "";
 			}
 		}
 	}
-		
-	
-	from = -1;
-	to = -1;
-	
+	// from = -1;
+	// to = -1;
+	cout << "graphView:1131" << endl;
 	Edge* edge = NULL;
-
 		
+	// TODO: LX need to figure out how to set the vertex label for the from vertex and to vertex
+	// TODO: add another layer for lookup
+	// we know the vertex table for the edge node (by foreign key)
+	// we then can lookup the label for this vertex table
+	// then we can prepend the label to the vertex of the edge
+
+	// hard-coded for now
+	string fromVertexLabel = "BALL.";
+	string toVertexLabel = "BALL.";
 	//fill the edge collection
 	TableIterator iter = this->m_edgeTable->iterator();
 	schema = this->m_edgeTable->schema();
@@ -1105,9 +1152,9 @@ void GraphView::fillGraphFromRelationalTables()
 		{
 			if (edgeTuple.isActive())
 			{
-				id = ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColumnIndex));
-				from = ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColumnIndex));
-				to = ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColumnIndex));
+				id = to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColumnIndex)));
+				from = fromVertexLabel + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColumnIndex)));
+				to = toVertexLabel + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColumnIndex)));
 				edge = new Edge();
 				edge->setGraphView(this);
 				edge->setId(id);
@@ -1140,7 +1187,7 @@ void GraphView::fillGraphFromRelationalTables()
 
 string GraphView::debug()
 {
-	std::stringstream output;
+	stringstream output;
 	output << "Name: " << this->name() << endl;
 	output << "Is directed? = " << this->isDirected() << endl;
 	int vCount, eCount;
@@ -1150,7 +1197,7 @@ string GraphView::debug()
 	output << "#Edges = " << eCount << endl;
 	output << "Vertexes" << endl;
 	Vertex* currentVertex;
-	for (std::map<int,Vertex* >::iterator it= this->m_vertexes.begin(); it != this->m_vertexes.end(); ++it)
+	for (std::map<string,Vertex* >::iterator it= this->m_vertexes.begin(); it != this->m_vertexes.end(); ++it)
 	{
 		currentVertex = it->second;
 		output << "\t" << currentVertex->toString() << endl;

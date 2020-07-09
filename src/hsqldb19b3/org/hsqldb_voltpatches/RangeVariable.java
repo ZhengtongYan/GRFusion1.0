@@ -75,11 +75,18 @@ final class RangeVariable {
     // GVoltDB extension
     final GraphView        rangeGraph;
     final boolean          isGraph;
-    final boolean          isVertexes;
-    final boolean          isEdges;
-    final boolean          isPaths;
+    final boolean          isGraph2Graph; // LX FEAT4
+    final String           newGraphName;  // LX FEAT4
+    final String           newGraphVertex; // LX FEAT4
+    final String           newGraphEdge; // LX FEAT4
+    final String           chosenVertexLabel; // LX FEAT4
+    boolean                isVertexes;
+    boolean                isEdges;
+    boolean                isPaths;
     final String           hint;
     final String[]         vertexLabels; // LX FEAT2: TODO make it a list later
+    SimpleName             vertexTableAlias; // LX FEAT4
+    SimpleName             edgeTableAlias; // LX FEAT4
     // End LX
     final SimpleName       tableAlias;
     private OrderedHashSet columnAliases;
@@ -127,15 +134,22 @@ final class RangeVariable {
         rangeTable       = null;
         rangeGraph       = null;// Added by LX
         isGraph          = false;// Added by LX
+        isGraph2Graph    = false;//LX FEAT4
         tableAlias       = null;
         emptyData        = null;
         columnsInGroupBy = null;
         usedColumns      = null;
+        newGraphName     = null; // LX FEAT4
+        newGraphVertex   = null; // LX FEAT4
+        newGraphEdge     = null; // LX FEAT4
         isVertexes       = false;// Added by LX
         isEdges          = false;// Added by LX
         isPaths          = false;// Added by LX
         hint             = null;// Added by LX
         vertexLabels     = null; // LX FEAT2
+        vertexTableAlias = null;// LX FEAT4
+        edgeTableAlias   = null; // LX FEAT4
+        chosenVertexLabel = null; // LX FEAT4
     }
 
     RangeVariable(Table table, SimpleName alias, OrderedHashSet columnList,
@@ -157,6 +171,13 @@ final class RangeVariable {
         isPaths          = false;
         hint             = null;
         vertexLabels     = null; // LX FEAT2
+        isGraph2Graph    = false;//LX FEAT4
+        vertexTableAlias = null;// LX FEAT4
+        edgeTableAlias   = null; // LX FEAT4
+        newGraphName     = null; // LX FEAT4
+        newGraphVertex   = null; // LX FEAT4
+        newGraphEdge     = null; // LX FEAT4
+        chosenVertexLabel = null; // LX FEAT4
         // End LX
         compileContext.registerRangeVariable(this);
     }
@@ -218,16 +239,59 @@ final class RangeVariable {
               usedColumns      = null;
           }
           rangeIndex       = null;//rangeGraph.getPrimaryIndex();
-        
+          isGraph2Graph    = false;//LX FEAT4
+          vertexTableAlias = null;// LX FEAT4
+          edgeTableAlias   = null; // LX FEAT4
+          newGraphName     = null; // LX FEAT4
+          newGraphVertex   = null; // LX FEAT4
+          newGraphEdge     = null; // LX FEAT4
+          chosenVertexLabel = null; // LX FEAT4
           compileContext.registerRangeVariable(this);
     }
 
-    // MODIFIED by LX FEAT2
-    // RangeVariable(GraphView graph, int type, SimpleName alias, OrderedHashSet columnList, SimpleName[] columnNameList, CompileContext compileContext, String hint) {
-    //       // FEAT2 for those that doesn't specify label explicitly
-    //       RangeVariable(graph, type, alias, columnList, columnNameList, compileContext, hint, "");
-    // }
-    // End LX
+    // LX FEAT4
+    RangeVariable(GraphView graph, boolean hasV, boolean hasE, SimpleName valias, SimpleName ealias, String newGraphName, String newGraphVertex, String newGraphEdge, String chosenVertexLabel, CompileContext compileContext) {
+          isGraph          = true;
+          isGraph2Graph    = true;
+          this.newGraphName     = newGraphName; 
+          this.newGraphVertex   = newGraphVertex; 
+          this.newGraphEdge     = newGraphEdge; 
+          if (hasV) { 
+              isVertexes = true;
+              isEdges = false;
+              isPaths = false;
+          }
+          else if (hasE) {
+              isVertexes = false;
+              isEdges = true;
+              isPaths = false;
+          }
+          
+          
+          rangeGraph       = graph;
+          hint = null;
+          vertexLabels = null;
+          
+          rangeTable       = null;
+          vertexTableAlias = valias;
+          edgeTableAlias   = ealias;
+          tableAlias       = null;
+          columnAliases    = null;
+          columnAliasNames = null;
+          emptyData        = null; //rangeGraph.getEmptyRowData();
+          
+          if (isGraph) {
+              columnsInGroupBy = new boolean[rangeGraph.getAllPropCount()];
+              usedColumns      = new boolean[rangeGraph.getAllPropCount()];
+          }
+          else { 
+              columnsInGroupBy = null;
+              usedColumns      = null;
+          }
+          rangeIndex       = null;//rangeGraph.getPrimaryIndex();
+          this.chosenVertexLabel = chosenVertexLabel;
+          compileContext.registerRangeVariable(this);
+    }
 /*
     RangeVariable(Table table, String alias, OrderedHashSet columnList,
                   Index index, CompileContext compileContext) {
@@ -261,6 +325,13 @@ final class RangeVariable {
         isPaths          = false;
         hint             = null;
         vertexLabels      = null;
+        isGraph2Graph    = false;//LX FEAT4
+        vertexTableAlias = null;// LX FEAT4
+        edgeTableAlias   = null; // LX FEAT4
+        newGraphName     = null; // LX FEAT4
+        newGraphVertex   = null; // LX FEAT4
+        newGraphEdge     = null; // LX FEAT4
+        chosenVertexLabel = null; // LX FEAT4
         // End LX
     }
 
@@ -320,6 +391,66 @@ final class RangeVariable {
     // LX FEAT2
     boolean isGraph() {
         return isGraph;
+    }
+
+    // LX FEAT4
+    boolean isGraph2Graph() {
+        return isGraph2Graph;
+    }
+
+    // LX FEAT4
+    boolean hasEdge() {
+        return isEdges;
+    }
+
+    // LX FEAT4
+    void setHasEdge(boolean t) {
+        isEdges = t;
+    }
+
+    // LX FEAT4
+    void setHasVertex(boolean t) {
+        isVertexes = t;
+    }
+
+    // LX FEAT4
+    boolean hasVertex() {
+        return isVertexes;
+    }
+
+    // LX FEAT4
+    SimpleName getEdgeTableAlias() {
+        return edgeTableAlias;
+    }
+
+    // LX FEAT4
+    SimpleName getVertexTableAlias() {
+        return vertexTableAlias;
+    }
+
+    // LX FEAT4
+    void setEdgeTableAlias(SimpleName ename) {
+        edgeTableAlias = ename;
+    }
+
+    // LX FEAT4
+    void setVertexTableAlias(SimpleName vname) {
+        vertexTableAlias = vname;
+    }
+
+    // LX FEAT4
+    String getNewGraphName() {
+        return newGraphName;
+    }
+
+    // LX FEAT4
+    String getNewGraphVertex() {
+        return newGraphVertex;
+    }
+
+    // LX FEAT4
+    String getNewGraphEdge() {
+        return newGraphEdge;
     }
 
     public OrderedHashSet getColumnNames() {
@@ -1614,6 +1745,112 @@ final class RangeVariable {
         }
     }    
     // End LX
+
+    // LX FEAT4
+    VoltXMLElement voltGetGraphG2GVariableXML(Session session) throws org.hsqldb_voltpatches.HSQLInterface.HSQLParseException 
+    {
+        Index        index;
+        Index        primaryIndex;
+
+        index        = rangeIndex;
+        primaryIndex = null;//rangeTable.getPrimaryIndex();
+
+        // get the index for this scan (/filter)
+        // note: ignored if scan is full table scan
+        if (index == null)
+            index = primaryIndex;
+
+        // output open tag
+        VoltXMLElement scan;
+        scan = new VoltXMLElement("graphscan");
+
+        scan.attributes.put("newgraph", newGraphName);
+        scan.attributes.put("newv", newGraphVertex);
+        scan.attributes.put("newe", newGraphEdge);
+        scan.attributes.put("oldgraph", rangeGraph.getName().name.toUpperCase());
+        if(chosenVertexLabel != null)
+            scan.attributes.put("chosenvertexlabel", chosenVertexLabel);
+        
+        if (isVertexes) {
+            scan.attributes.put("hasvertex", "true");
+        }
+        if (isEdges) {
+            scan.attributes.put("hasedge", "true");
+        }
+               
+        if (vertexTableAlias != null)
+          scan.attributes.put("vertextablealias", vertexTableAlias.name);
+        if (edgeTableAlias != null)
+          scan.attributes.put("edgetablealias", edgeTableAlias.name);
+
+        if (tableAlias != null && !rangeGraph.getName().name.equals(tableAlias)) {
+            scan.attributes.put("tablealias", tableAlias.name.toUpperCase());
+        }
+
+        // note if this is an outer join
+        if (isLeftJoin && isRightJoin) {
+            scan.attributes.put("jointype", "full");
+        } else if (isLeftJoin) {
+            scan.attributes.put("jointype", "left");
+        } else if (isRightJoin) {
+            scan.attributes.put("jointype", "right");
+        } else {
+            scan.attributes.put("jointype", "inner");
+        }
+
+        Expression joinCond = null;
+        Expression whereCond = null;
+        // if isJoinIndex and indexCondition are set then indexCondition is join condition
+        // else if indexCondition is set then it is where condition
+        if (isJoinIndex == true) {
+            joinCond = indexCondition;
+            if (indexEndCondition != null) {
+                joinCond = makeConjunction(joinCond, indexEndCondition);
+            }
+            // then go to the nonIndexJoinCondition
+            if (nonIndexJoinCondition != null) {
+                joinCond = makeConjunction(joinCond, nonIndexJoinCondition);
+            }
+            // then go to the nonIndexWhereCondition
+            whereCond = nonIndexWhereCondition;
+        } else {
+            joinCond = nonIndexJoinCondition;
+
+            whereCond = indexCondition;
+            if (indexEndCondition != null) {
+                whereCond = makeConjunction(whereCond, indexEndCondition);
+            }
+            // then go to the nonIndexWhereCondition
+            if (nonIndexWhereCondition != null) {
+                whereCond = makeConjunction(whereCond, nonIndexWhereCondition);
+            }
+
+        }
+        
+        if (joinCond != null) {
+            joinCond = joinCond.eliminateDuplicates(session);
+            VoltXMLElement joinCondEl = new VoltXMLElement("joincond");
+            
+            VoltXMLElement cond = joinCond.voltGetXML(session);
+            
+            updatescan(cond, scan);
+            
+            joinCondEl.children.add(joinCond.voltGetXML(session));
+            scan.children.add(joinCondEl);
+        }
+
+        if (whereCond != null) {
+            whereCond = whereCond.eliminateDuplicates(session);
+            VoltXMLElement whereCondEl = new VoltXMLElement("wherecond");
+            whereCondEl.children.add(whereCond.voltGetXML(session));
+            scan.children.add(whereCondEl);
+        }
+        
+        if (hint != null) scan.attributes.put("hint", hint);        
+        
+        return scan;
+    }
+
     // Added by LX
     /**
      * VoltDB added method to get a non-catalog-dependent

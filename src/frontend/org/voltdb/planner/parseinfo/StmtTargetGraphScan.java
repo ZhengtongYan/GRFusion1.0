@@ -6,6 +6,7 @@ import java.util.List;
 import org.voltcore.utils.Pair;
 import org.voltdb.catalog.Column;
 import org.voltdb.catalog.GraphView;
+import org.voltdb.catalog.SubGraph; // LX FEAT4
 import org.voltdb.catalog.Index;
 import org.voltdb.catalog.Table;
 import org.voltdb.expressions.TupleValueExpression;
@@ -31,6 +32,16 @@ public class StmtTargetGraphScan extends StmtTableScan {
     private final int m_prop4;
     private final int m_prop5;
     private final int m_length;
+
+    // private final String m_tableAlias; // LX FEAT4
+    private final String m_newGraphName; // LX FEAT4
+    private final boolean m_hasvertex; // LX FEAT4
+    private final boolean m_hasedge; // LX FEAT4
+    private final String m_vtablealias; // LX FEAT4
+    private final String m_etablealias; // LX FEAT4
+    private final boolean m_isgtog; // LX FEAT4
+    private final String m_chosenVertexLabel; // LX FEAT4
+
     private List<Index> m_indexes;
     private List<Column> m_columns;
 
@@ -52,11 +63,80 @@ public class StmtTargetGraphScan extends StmtTableScan {
         m_prop4 = prop4;
         m_prop5 = prop5;
         m_length = length;
+        m_newGraphName = null;
+        m_hasvertex = false;
+        m_hasedge = false;
+        m_vtablealias = null;
+        m_etablealias = null;
+        m_isgtog = false; // LX FEAT4
+        m_chosenVertexLabel = null;// LX FEAT4
         //findPartitioningColumns();
     }
 
     public StmtTargetGraphScan(GraphView graph, String tableAlias) {
         this(graph, tableAlias, 0, null, null, "", -1, -1, -1, -1, -1, -1, -1, -1);
+    }
+
+    // LX FEAT4
+    public StmtTargetGraphScan(GraphView oldgraph, String tableAlias, String newGraphName, 
+                                boolean hasvertex, boolean hasedge,
+                               String vtablealias, String etablealias, String chosenVertexLabel) {
+        super(tableAlias, 0); // what does this line do??
+        assert (oldgraph != null);
+        m_graph = oldgraph;
+        // m_tableAlias = tableAlias;
+        m_newGraphName = newGraphName;
+        m_hasvertex = hasvertex;
+        m_hasedge = hasedge;
+        m_vtablealias = vtablealias;
+        m_etablealias = etablealias;
+        m_isgtog = true;
+        m_chosenVertexLabel = chosenVertexLabel;
+        m_graphElement = null;
+        m_hint = null;
+        m_vLabel = null;
+        m_startvertexid = -1;
+        m_endvertexid = -1;
+        m_prop1 = -1;
+        m_prop2 = -1;
+        m_prop3 = -1;
+        m_prop4 = -1;
+        m_prop5 = -1;
+        m_length = 0;
+    }
+
+    // LX FEAT4
+    public boolean isGtoG() {
+        return m_isgtog;
+    }
+
+    public String getNewGraphName() {
+        return m_newGraphName;
+    }
+
+    // LX FEAT4
+    public boolean getHasVertex() {
+        return m_hasvertex;
+    }
+
+    // LX FEAT4
+    public boolean getHasEdge() {
+        return m_hasedge;
+    }
+
+    // LX FEAT4
+    public String getVertexTableAlias() {
+        return m_vtablealias;
+    }
+
+    // LX FEAT4
+    public String getEdgeTableAlias() {
+        return m_etablealias;
+    }
+
+    // LX FEAT4
+    public String getChosenVertexLabel() {
+        return m_chosenVertexLabel;
     }
 
     public String getHint() {
@@ -193,5 +273,11 @@ public class StmtTargetGraphScan extends StmtTableScan {
     }
     // End LX
 
+    // LX FEAT4
+    public void addSubgraphToGraph() {
+        SubGraph sg = m_graph.getSubgraphs().add(m_newGraphName);
+        sg.setSubgraphname(m_newGraphName);
+        return;
+    }
 }
 

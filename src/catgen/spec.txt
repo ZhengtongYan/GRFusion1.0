@@ -193,11 +193,16 @@ begin GraphView                              "A graph view in the database"
   int estimatedvertexescount                 "A rough estimate of the number of vertexes in the graph view; used for planning"
   int estimatededgescount                    "A rough estimate of the number of edges in the graph view; used for planning"
   string signature                           "Catalog version independent signature of the graph view consisting of name and schema"
+  SubGraph* subGraphs                        "The set of all subgraphs that originate from this graphview"
 end
 
 begin VertexLabel                            "A vertex type in the graph"
   string label                               "The label of this vertex type"
   Table? VTable                              "The reference of the vertex table or materialized view (equivalent to materializer in Table)"
+end
+
+begin SubGraph                                "To work around the issue of string*, using a separate structure for subgraph"
+  string subgraphName
 end
 
 begin TimeToLive javaonly             "Time to Live (TTL), limits the life span of data"

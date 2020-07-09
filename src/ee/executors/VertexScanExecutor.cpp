@@ -248,8 +248,8 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                     //get the vertex id
                     vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
                     cout << "VertexScanExecutor:250:" << vertexId << endl;
-                    fanOut = graphView->getVertex(vertexId)->fanOut();
-                    fanIn = graphView->getVertex(vertexId)->fanIn();
+                    fanOut = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanOut();
+                    fanIn = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanIn();
                     cout << "VertexScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;
                     for (int ctr = 0; ctr < num_of_columns ; ctr++) {
                     	//msaber: todo, need to check the projection operator construction

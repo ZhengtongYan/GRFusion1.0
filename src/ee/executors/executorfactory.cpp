@@ -83,6 +83,7 @@
 #include "executors/NestedLoopPathExecutor.h"
 #include "plannodes/abstractplannode.h"
 // End LX
+#include "executors/GraphVEScanExecutor.h" // LX FEAT4
 
 namespace voltdb {
 
@@ -159,6 +160,9 @@ AbstractExecutor* getNewExecutor(
       case PlanNodeType::NestedLoopPath:
          return new NestedLoopPathExecutor(engine, abstract_node);
       // End LX
+      // LX FEAT4
+      case PlanNodeType::GraphVEScan:
+         return new GraphVEScanExecutor(engine, abstract_node);
       case PlanNodeType::Invalid:
          VOLT_ERROR("INVALID plan node type %d", (int) PlanNodeType::Invalid);
          return NULL;

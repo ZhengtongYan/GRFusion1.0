@@ -76,6 +76,8 @@
 #include "plannodes/VertexScanNode.h"
 #include "plannodes/NestedLoopPathNode.h"
 // End LX
+#include "plannodes/GraphVEScanNode.h" // LX FEAT4
+
 namespace voltdb {
 namespace plannodeutil {
 
@@ -264,6 +266,11 @@ voltdb::AbstractPlanNode* getEmptyPlanNode(voltdb::PlanNodeType type) {
             // msaber: PathScan
             // ------------------------------------------------------------------
         // End LX
+        // LX FEAT4
+        case (voltdb::PlanNodeType::GraphVEScan):
+            std::cout << "plannodeutil:271" << endl;
+            ret = new voltdb::GraphVEScanPlanNode();
+            break;
         // default: Don't provide a default, let the compiler enforce complete coverage.
     }
 
