@@ -126,6 +126,7 @@ SET (VOLTDB_SRC
   catalog/graphview.cpp
   catalog/subgraph.cpp
   catalog/vertexlabel.cpp
+  catalog/edgelabel.cpp
   catalog/index.cpp
   catalog/indexref.cpp
   catalog/materializedviewhandlerinfo.cpp

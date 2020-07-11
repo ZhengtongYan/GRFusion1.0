@@ -503,6 +503,7 @@ System.out.println("tve:448:" + m_columnIndex);
             // assuming all properties in vertex table are exactly the same
             // as all columns in the referenced relation table
             // this is what the original author of GRFusion assumed
+            // LX FEAT2
             Column graphCol = graph.getVertexprops().getExact(m_columnName);
             if (m_graphObject == null) 
                 m_graphObject = "VERTEXES";
@@ -529,9 +530,15 @@ System.out.println("tve:448:" + m_columnIndex);
                 m_graphObject = "VERTEXES";
         }
         else {
-            column = graph.getEdgeprops().getExact(m_columnName);
+            // LX FEAT3
+            Column graphCol = graph.getEdgeprops().getExact(m_columnName);
             if (m_graphObject == null) 
                 m_graphObject = "EDGES";
+            Column tableCol = graphCol.getMatviewsource();
+            String eLabel = m_columnName.substring(0, m_columnName.indexOf("."));
+            String name = m_columnName.substring(m_columnName.indexOf(".") + 1);
+            Table eTable = graph.getEdgelabels().getExact(eLabel).getEtable();
+            column = eTable.getColumns().getExact(tableCol.getName());
         }
         
         assert(column != null);
@@ -555,7 +562,9 @@ System.out.println("tve:448:" + m_columnIndex);
             return index;
         }
         System.out.println("tve:545" + m_tableName + ", " + m_columnName);
-        if (m_graphObject != "VERTEXES")
+
+        // LX FEAT2 FEAT3
+        if (m_graphObject != "VERTEXES" && m_graphObject != "EDGES")
             setColumnIndex(index);
         if (getValueType() == null) {
             // In case of sub-queries the TVE may not have its

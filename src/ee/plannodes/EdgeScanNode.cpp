@@ -43,10 +43,18 @@ GraphView* EdgeScanPlanNode::getTargetGraphView() const
 	return m_gcd->getGraphView();
 }
 
+// LX FEAT3
+std::string EdgeScanPlanNode::getEdgeLabel() const
+{
+	return m_edgeLabel;
+}
+
 void EdgeScanPlanNode::loadFromJSONObject(PlannerDomValue obj)
 {
 	m_target_graph_name = obj.valueForKey("TARGET_GRAPH_NAME").asStr();
-
+cout << "EdgeScanPlanNode:55" << endl;
+	m_edgeLabel = obj.valueForKey("EDGE_LABEL").asStr(); // LX FEAT3
+cout << "EdgeScanPlanNode:57" << endl;
 	m_isEmptyScan = obj.hasNonNullKey("PREDICATE_FALSE");
 
 	// Set the predicate (if any) only if it's not a trivial FALSE expression

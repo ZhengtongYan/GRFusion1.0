@@ -112,13 +112,14 @@ public class PlannerTool {
             }
             try {
                 m_hsql.runDDLCommand(decoded_cmd);
+                System.out.println("PlannerTool:115");
             } catch (HSQLParseException e) {
                 // need a good error message here
                 throw new RuntimeException("Error creating hsql: " + e.getMessage() + " in DDL statement: " + decoded_cmd);
             }
         }
         hostLog.debug("hsql loaded");
-
+        System.out.println("PlannerTool:122");
         // Create and register a singleton planner stats collector, if this is the first time.
         if (m_plannerStats == null) {
             synchronized (this.getClass()) {
@@ -132,6 +133,7 @@ public class PlannerTool {
                 }
             }
         }
+        System.out.println("PlannerTool:136");
     }
 
     public PlannerTool(final Database database, byte[] catalogHash, SchemaPlus schemaPlus) {

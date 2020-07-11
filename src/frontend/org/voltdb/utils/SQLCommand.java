@@ -377,6 +377,10 @@ public class SQLCommand {
                 case "vertexlabels":
                     execListVertexLabels();
                     break;
+                // LX FEAT3
+                case "edgelabels":
+                    execListEdgeLabels();
+                    break;
                 /*
                 * This undocumented argument, CONFIG, is broken: returns an error that
                 * @SystemCatalog has no selector CONFIGURATION.
@@ -647,6 +651,15 @@ public class SQLCommand {
         while (tableData.advanceRow()) {
             String vlabel = tableData.getString("VERTEX_LABEL");
             System.out.println(vlabel);            
+        }
+        System.out.println();
+    }
+
+    private static void execListEdgeLabels() throws Exception {
+        VoltTable tableData = m_client.callProcedure("@SystemCatalog", "EdgeLabels").getResults()[0];
+        while (tableData.advanceRow()) {
+            String elabel = tableData.getString("EDGE_LABEL");
+            System.out.println(elabel);            
         }
         System.out.println();
     }

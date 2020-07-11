@@ -80,6 +80,7 @@ public class QuerySpecification extends QueryExpression {
     public String         newGraphEdge;// LX FEAT4 
     public String         chosenVertexLabel; // LX FEAT4
     public String         hint; // Added by LX
+    public boolean        isDDL; // LX FEAT3
     private HashSet       groupColumnNames;
     RangeVariable[]       rangeVariables;
     // GToGGraphVariable[]   graphVariables; // LX FEAT4
@@ -141,6 +142,7 @@ public class QuerySpecification extends QueryExpression {
 
         addRangeVariable(range);
         resolveReferences(session);
+        System.out.println("QuerySpecification:144");
         resolveTypes(session);
         resolveTypes(session);
 
@@ -160,6 +162,11 @@ public class QuerySpecification extends QueryExpression {
 
     void addRangeVariable(RangeVariable rangeVar) {
         rangeVariableList.add(rangeVar);
+    }
+
+    // LX FEAT3
+    void setDDL(boolean b) {
+        isDDL = b;
     }
 
     private void finaliseRangeVariables() {
@@ -222,13 +229,14 @@ public class QuerySpecification extends QueryExpression {
         resolveColumnReferencesForAsterisk();
         System.out.println("QuerySpecification:216");
         finaliseColumns();
-        // System.out.println("QuerySpecification:218");
+        System.out.println("QuerySpecification:218");
         resolveColumnReferences();
-// System.out.println("QuerySpecification:220");
+        System.out.println("QuerySpecification:220");
         unionColumnTypes = new Type[indexLimitVisible];
         unionColumnMap   = new int[indexLimitVisible];
 
         ArrayUtil.fillSequence(unionColumnMap);
+        System.out.println("QuerySpecification:239");
     }
 
     /**
@@ -417,23 +425,21 @@ public class QuerySpecification extends QueryExpression {
     }
 
     // LX FEAT2
-    private boolean hasVLabInRangeGraph(String tablename) {
+    private boolean hasLabelInRangeGraph(String tablename) {
         for (int i = 0; i < rangeVariables.length; i++) {
             RangeVariable rangeVar = rangeVariables[i];
-            System.out.println("QuerySpecification:416:" + rangeVar.getGraph());
             if (rangeVar.isGraph()) {
-
                 String[] vlablist = rangeVar.getVertexLabels();
-                System.out.println("QuerySpecification:418" + vlablist.length);
                 for (int j = 0; j < vlablist.length; j++) {
                     System.out.println("QuerySpecification:420:" + tablename + ", " + vlablist[j]);
-                    if (tablename.equals(vlablist[j])) {
-                        // String objectname = ((ExpressionColumn) e).getObjectName();
-                        // if (objectname) {
-                        //     addAllJoinedLabeledColumns(e);
-                            return true;
-                        // }
-                    }
+                    if (tablename.equals(vlablist[j])) 
+                        return true;
+                }
+                // LX FEAT3
+                String[] elablist = rangeVar.getEdgeLabels();
+                for (int j = 0; j < elablist.length; j++) {
+                    if (tablename.equals(elablist[j]))
+                        return true;
                 }
             }
         }
@@ -465,7 +471,7 @@ public class QuerySpecification extends QueryExpression {
 
                     if (rangeIndex == -1) {
                         // LX FEAT2
-                        if (!hasVLabInRangeGraph(tablename)) 
+                        if (!hasLabelInRangeGraph(tablename)) 
                            throw Error.error(ErrorCode.X_42501, tablename);  
                         else {
                             // String objectname = ((ExpressionColumn) e).getObjectName();
@@ -899,7 +905,7 @@ public class QuerySpecification extends QueryExpression {
         if (isResolved) {
             return;
         }
-
+System.out.println("QuerySpecification:901");
         resolveTypesPartOne(session);
         resolveTypesPartTwo(session);
         ArrayUtil.copyArray(resultTable.colTypes, unionColumnTypes,

@@ -1249,9 +1249,17 @@ public abstract class StatementDMQL extends Statement {
             // Add LX
             if (rangeVariable.isGraph && ! rangeVariable.isGraph2Graph) {
                 // LX FEAT2
-                String[] vlabels = rangeVariable.getVertexLabels();
-                for (String vlabel: vlabels)
-                    scans.children.add(rangeVariable.voltGetGraphRangeVariableXML(session, vlabel));
+                if (rangeVariable.hasVertex()){
+                    String[] vlabels = rangeVariable.getVertexLabels();
+                    for (String vlabel: vlabels)
+                        scans.children.add(rangeVariable.voltGetGraphRangeVariableXML(session, vlabel));
+                }
+                else if (rangeVariable.hasEdge()) {
+                    // LX FEAT3
+                    String[] elabels = rangeVariable.getEdgeLabels();
+                    for (String elabel: elabels)
+                        scans.children.add(rangeVariable.voltGetGraphRangeVariableXML(session, elabel));
+                }               
             }
             else if (!rangeVariable.isGraph)
                 scans.children.add(rangeVariable.voltGetRangeVariableXML(session));

@@ -57,12 +57,12 @@ public class ParserCommand extends ParserDDL {
     Statement compileStatement() {
 
         Statement cs = compilePart();
-        // System.out.println("ParserCommand:60");
+        System.out.println("ParserCommand:60");
         if (token.tokenType == Tokens.X_ENDPARSE) {
             if (cs.getSchemaName() == null) {
                 cs.setSchemaHsqlName(session.getCurrentSchemaHsqlName());
             }
-
+System.out.println("ParserCommand:65");
             return cs;
         }
 
@@ -193,6 +193,7 @@ public class ParserCommand extends ParserDDL {
             // DDL
             case Tokens.CREATE :
                 cs = compileCreate();
+                System.out.println("ParserCommand:196");
                 break;
 
             case Tokens.ALTER :
@@ -249,7 +250,7 @@ public class ParserCommand extends ParserDDL {
             default :
                 throw unexpectedToken();
         }
-        // System.out.println("ParserCommand:260");
+        System.out.println("ParserCommand:260");
         if (cs.type != StatementTypes.SET_SESSION_AUTHORIZATION) {
             cs.setSQL(getLastPart());
         }
@@ -257,7 +258,7 @@ public class ParserCommand extends ParserDDL {
         if (token.tokenType == Tokens.SEMICOLON) {
             read();
         } else if (token.tokenType == Tokens.X_ENDPARSE) {}
-        
+        System.out.println("ParserCommand:261");
         return cs;
     }
 

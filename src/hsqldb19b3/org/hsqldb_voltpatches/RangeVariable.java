@@ -84,7 +84,8 @@ final class RangeVariable {
     boolean                isEdges;
     boolean                isPaths;
     final String           hint;
-    final String[]         vertexLabels; // LX FEAT2: TODO make it a list later
+    final String[]         vertexLabels; // LX FEAT2
+    final String[]         edgeLabels; // LX FEAT3
     SimpleName             vertexTableAlias; // LX FEAT4
     SimpleName             edgeTableAlias; // LX FEAT4
     // End LX
@@ -147,6 +148,7 @@ final class RangeVariable {
         isPaths          = false;// Added by LX
         hint             = null;// Added by LX
         vertexLabels     = null; // LX FEAT2
+        edgeLabels       = null; // LX FEAT3
         vertexTableAlias = null;// LX FEAT4
         edgeTableAlias   = null; // LX FEAT4
         chosenVertexLabel = null; // LX FEAT4
@@ -171,6 +173,7 @@ final class RangeVariable {
         isPaths          = false;
         hint             = null;
         vertexLabels     = null; // LX FEAT2
+        edgeLabels       = null; // LX FEAT3
         isGraph2Graph    = false;//LX FEAT4
         vertexTableAlias = null;// LX FEAT4
         edgeTableAlias   = null; // LX FEAT4
@@ -182,8 +185,8 @@ final class RangeVariable {
         compileContext.registerRangeVariable(this);
     }
 
-    // Implement LX FEAT2
-    RangeVariable(GraphView graph, int type, SimpleName alias, OrderedHashSet columnList, SimpleName[] columnNameList, CompileContext compileContext, String hint, HashSet vertexLabels) {
+    // Implement LX FEAT2 FEAT3
+    RangeVariable(GraphView graph, int type, SimpleName alias, OrderedHashSet columnList, SimpleName[] columnNameList, CompileContext compileContext, String hint, HashSet vertexLabels, HashSet edgeLabels) {
           isGraph          = true;
           
           if (type == Tokens.VERTEXES) { 
@@ -211,6 +214,8 @@ final class RangeVariable {
           this.hint        = hint;
           this.vertexLabels = new String[vertexLabels.size()];
           vertexLabels.toArray(this.vertexLabels);// LX FEAT2
+          this.edgeLabels = new String[edgeLabels.size()];
+          edgeLabels.toArray(this.edgeLabels); // LX FEAT3 
           
           rangeTable       = null;
           tableAlias       = alias;
@@ -271,6 +276,7 @@ final class RangeVariable {
           rangeGraph       = graph;
           hint = null;
           vertexLabels = null;
+          edgeLabels = null;
           
           rangeTable       = null;
           vertexTableAlias = valias;
@@ -325,6 +331,7 @@ final class RangeVariable {
         isPaths          = false;
         hint             = null;
         vertexLabels      = null;
+        edgeLabels       = null;
         isGraph2Graph    = false;//LX FEAT4
         vertexTableAlias = null;// LX FEAT4
         edgeTableAlias   = null; // LX FEAT4
@@ -387,6 +394,11 @@ final class RangeVariable {
     // Implement LX FEAT2
     String[] getVertexLabels(){
         return vertexLabels;
+    }
+
+    // LX FEAT3
+    String[] getEdgeLabels() {
+        return edgeLabels;
     }
     // LX FEAT2
     boolean isGraph() {
@@ -759,7 +771,11 @@ final class RangeVariable {
         for (int i = 0; i < count; i++) {
             ColumnSchema column = null;
             if (isEdges && graph.isEdge(i)) {
-                column = graph.getEdgeProp(i);
+                // column = graph.getEdgeProp(i);
+                // LX FEAT3
+                for (String edgeLabel: edgeLabels)
+                  if (edgeLabel.equals(graph.getEdgeLabelByIndex(graph.getELabelIdxByIndex(i))))
+                    column = graph.getEdgeProp(i);
             }
             else if (isVertexes && graph.isVertex(i)) {
                 // LX FEAT2
@@ -1860,7 +1876,7 @@ final class RangeVariable {
      * @return XML, correctly indented, representing this object.
      * @throws HSQLParseException
      */
-    VoltXMLElement voltGetGraphRangeVariableXML(Session session, String vLabel) throws org.hsqldb_voltpatches.HSQLInterface.HSQLParseException // modified by LX FEAT2
+    VoltXMLElement voltGetGraphRangeVariableXML(Session session, String label) throws org.hsqldb_voltpatches.HSQLInterface.HSQLParseException // modified by LX FEAT2
     {
         Index        index;
         Index        primaryIndex;
@@ -1878,10 +1894,13 @@ final class RangeVariable {
         if (isVertexes) {
             scan = new VoltXMLElement("vertexscan");
             // LX FEAT2
-            scan.attributes.put("label", vLabel);
+            scan.attributes.put("vlabel", label);
         }
-        else if (isEdges)
+        else if (isEdges){
             scan = new VoltXMLElement("edgescan");
+            // LX FEAT3
+            scan.attributes.put("elabel", label);
+        }
         else if (isPaths)
             scan = new VoltXMLElement("pathscan");
         else scan = new VoltXMLElement("graphscan");

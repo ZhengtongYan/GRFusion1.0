@@ -281,26 +281,24 @@ public class ParserDDL extends ParserRoutine {
     // Added by LX    
     private StatementSchema compileCreateGraph(int type) {
     // TODO
+        System.out.println("ParserDDL:284");
         HsqlName schema = readNewSchemaObjectNameNoCheck(SchemaObject.GRAPHVIEW);
         schema.setSchemaIfNull(session.getCurrentSchemaHsqlName());
 
         GraphView graph = new GraphView(database, schema, type);
         graph.setSQL(session.parser.getScanner().sqlString);
 
-        // Add Def Path Properties
-        graph.addDefPathProps(schema, isDelimitedIdentifier());
+        
 
         HsqlName propName;
         HsqlName colName;
         StringBuilder br;
         String partsql;
         int position;
-        // ArrayList<ArrayList<HsqlName>> vertexProps = new ArrayList<ArrayList<HsqlName>>();// LX FEAT2
-        // ArrayList<ArrayList<HsqlName>> vertexCols = new ArrayList<ArrayList<HsqlName>>();// LX FEAT2
+        
         boolean hasLabel = false; // LX FEAT2
         int vertexCount = 0; // LX FEAT2
         boolean endVertex = false; // LX FEAT2
-        // ArrayList<String> labelList = new ArrayList<String>(); // LX FEAT2
 
         // LX FEAT2
         while (!endVertex){
@@ -366,15 +364,17 @@ public class ParserDDL extends ParserRoutine {
             position = getPosition();
             QuerySpecification selectVertices = new QuerySpecification(compileContext);
             // TODO NO SELECT statement in select
+            selectVertices.setDDL(true);
             XreadTableExpression(selectVertices);
             partsql = getLastPartAndCurrent(position);
             br = new StringBuilder("SELECT ");
-            
+            System.out.println("ParserDDL:372");
             // Import columns as properties from the vertex-source table
             selectVertices.resolveReferences(session);
             // TODO set multiple vtables in graphview
             Table Vtable = selectVertices.rangeVariables[0].rangeTable;
             graph.addVTableName(Vtable.getName(), curLabel);// LX FEAT2
+            System.out.println("ParserDDL:378:" + Vtable.getName());
             // graph.VTableName = Vtable.getName();
             for (int i = 0; i < curProps.size(); i++) {
                 ColumnSchema column = Vtable.getColumn(Vtable.findColumn(curCols.get(i).name)).duplicate();
@@ -389,7 +389,7 @@ public class ParserDDL extends ParserRoutine {
             graph.addDefVertexProps(schema, isDelimitedIdentifier(), curLabel);
             
             br.append(partsql);
-            
+            System.out.println("ParserDDL:392:" + br.toString());
             graph.addVSubQuery(br.toString(), curLabel);
 
         }
@@ -401,126 +401,150 @@ public class ParserDDL extends ParserRoutine {
         }       
 
         
-        readThis(Tokens.EDGES);
-        readThis(Tokens.OPENBRACKET);
+        // readThis(Tokens.EDGES);
         
-        //start     = true;
-        //startPart = true;
-        boolean end       = false;
-        ArrayList<HsqlName> props = new ArrayList<HsqlName>();
-        ArrayList<HsqlName> cols = new ArrayList<HsqlName>();
-        // Read ID
-        readThis(Tokens.ID);
-        propName = database.nameManager.newColumnHsqlName(schema, "ID", isDelimitedIdentifier());
-        props.add(propName);        
-        readThis(Tokens.EQUALS);
-        colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
-        cols.add(colName);
-        read();
-        readThis(Tokens.COMMA);
-        // Read FROM
-        readThis(Tokens.FROM);
-        propName = database.nameManager.newColumnHsqlName(schema, "FROM", isDelimitedIdentifier());
-        props.add(propName);        
-        readThis(Tokens.EQUALS);
-        colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
-        cols.add(colName);
-        read();
-        readThis(Tokens.COMMA);
-        // Read TO
-        readThis(Tokens.TO);
-        propName = database.nameManager.newColumnHsqlName(schema, "TO", isDelimitedIdentifier());
-        props.add(propName);        
-        readThis(Tokens.EQUALS);
-        colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
-        cols.add(colName);
-        read();
-        // Read others
-        while (!end) {
-            switch (token.tokenType) {
-                case Tokens.COMMA :
-                    //if (startPart) {
-                    //    throw unexpectedToken();
-                    //}
-
-                    read();
-
-                    //startPart = true;
-                    break;
-
-                case Tokens.CLOSEBRACKET :
-                    read();
-
-                    end = true;
-                    break;
-                    
-                default :
-                    //if (!startPart) {
-                    //    throw unexpectedToken();
-                    //}
-
-                    propName =
-                            database.nameManager.newColumnHsqlName(schema,
-                                    token.tokenString, isDelimitedIdentifier());
-                    props.add(propName);
-                    read();
-                    readThis(Tokens.EQUALS);
-                    
-                    colName =
-                            database.nameManager.newColumnHsqlName(schema,
-                                token.tokenString, isDelimitedIdentifier());
-                    
-                    cols.add(colName);
-                    read();
-                    //start     = false;
-                    //startPart = false;
+        
+        int edgeCount = 0; // LX FEAT3
+        boolean endEdge = false; // LX FEAT3
+        hasLabel = false;
+        // LX FEAT3
+        while (!endEdge) {
+            if (! readIfThis(Tokens.EDGES)){
+                endEdge = true;
+                break;
             }
-        }
-        /*
-        graph.EdgeProperties = new HsqlName[props.size()];
-        graph.EdgeColumns =  new HsqlName[cols.size()];
-        for (int i = 0; i < props.size(); i++) {
-            graph.EdgeProperties[i] = props.get(i);
-            graph.EdgeColumns[i] = cols.get(i);
-        }
-        */
-        
-        position = getPosition();
-        
-        QuerySpecification selectEdges = new QuerySpecification(compileContext);
-        // TODO NO SELECT statement in select
-        XreadTableExpression(selectEdges);
+            edgeCount++;
+            readThis(Tokens.OPENBRACKET);
+            ArrayList<HsqlName> curProps = new ArrayList<HsqlName>();
+            ArrayList<HsqlName> curCols = new ArrayList<HsqlName>();
+            boolean end = false;
+            String curLabel;
 
-        partsql = getLastPartAndCurrent(position);
-        
-        
-        br = new StringBuilder("SELECT ");
-        
-        // Import columns as properties from the edges-source table
-        selectEdges.resolveReferences(session);
-        Table Etable = selectEdges.rangeVariables[0].rangeTable;
-        graph.ETableName = Etable.getName();
-        for (int i = 0; i < props.size(); i++) {
-            ColumnSchema column = Etable.getColumn(Etable.findColumn(cols.get(i).name)).duplicate();
-            column.setName(props.get(i));
-            graph.addEdgePropNoCheck(column);
-            br.append(cols.get(i).name);
-            if (i < props.size()-1) br.append(", ");
-            else br.append(" ");
+            if (readIfThis(Tokens.LABEL)){
+                hasLabel = true;
+                readThis(Tokens.EQUALS);
+                // TODO set label into the graphview
+                graph.addEdgeLabel(token.tokenString);
+                curLabel = token.tokenString;
+                read();
+                readThis(Tokens.COMMA);
+            }
+            else{
+                graph.addEdgeLabel("");
+                curLabel = "";
+            }
+
+            if (readIfThis(Tokens.FROMLABEL)) {
+                readThis(Tokens.EQUALS);
+                graph.addStartVertexLabel(curLabel, token.tokenString);
+                read();
+                readThis(Tokens.COMMA);
+                readThis(Tokens.TOLABEL);
+                readThis(Tokens.EQUALS);
+                graph.addEndVertexLabel(curLabel, token.tokenString);
+                read();
+                readThis(Tokens.COMMA);
+            }
+            else {
+                if (vertexCount > 1) {
+                    // Must have a vertex label for start and end vertex
+                    System.out.println("Error");
+                    throw new RuntimeException("more than one vertex types without specifying startvertex label. Error");
+                }
+                graph.addStartVertexLabel(curLabel, "");
+                graph.addEndVertexLabel(curLabel, "");
+            }
+
+            // Read ID
+            readThis(Tokens.ID);
+            propName = database.nameManager.newColumnHsqlName(schema, curLabel + ".ID", isDelimitedIdentifier());
+            curProps.add(propName);        
+            readThis(Tokens.EQUALS);
+            colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
+            curCols.add(colName);
+            read();
+            readThis(Tokens.COMMA);
+             // Read FROM
+            readThis(Tokens.FROM);
+            propName = database.nameManager.newColumnHsqlName(schema, curLabel + ".FROM", isDelimitedIdentifier());
+            curProps.add(propName);        
+            readThis(Tokens.EQUALS);
+            colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
+            curCols.add(colName);
+            read();
+            readThis(Tokens.COMMA);
+            // Read TO
+            readThis(Tokens.TO);
+            propName = database.nameManager.newColumnHsqlName(schema, curLabel + ".TO", isDelimitedIdentifier());
+            curProps.add(propName);        
+            readThis(Tokens.EQUALS);
+            colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
+            curCols.add(colName);
+            read();
+
+            // Read others
+            while (!end) {
+                switch (token.tokenType) {
+                    case Tokens.COMMA :
+                        read();
+                        break;
+
+                    case Tokens.CLOSEBRACKET :
+                        read();
+                        end = true;
+                        break;
+                        
+                    default :
+                        propName = database.nameManager.newColumnHsqlName(schema, curLabel + "." + token.tokenString, isDelimitedIdentifier());
+                        curProps.add(propName);
+                        read();
+                        readThis(Tokens.EQUALS);
+                        
+                        colName = database.nameManager.newColumnHsqlName(schema, token.tokenString, isDelimitedIdentifier());
+                        
+                        curCols.add(colName);
+                        read();
+                }
+            }
+            position = getPosition();
+            QuerySpecification selectEdges = new QuerySpecification(compileContext);
+            // TODO NO SELECT statement in select
+            selectEdges.setDDL(true);
+            XreadTableExpression(selectEdges);
+            partsql = getLastPartAndCurrent(position);
+            br = new StringBuilder("SELECT ");
+            // Import columns as properties from the edges-source table
+            selectEdges.resolveReferences(session);
+            Table Etable = selectEdges.rangeVariables[0].rangeTable;
+            // graph.ETableName = Etable.getName();
+            graph.addETableName(Etable.getName(), curLabel);
+            for (int i = 0; i < curProps.size(); i++) {
+                ColumnSchema column = Etable.getColumn(Etable.findColumn(curCols.get(i).name)).duplicate();
+                column.setName(curProps.get(i));
+                // graph.addEdgePropNoCheck(column);
+                graph.addEdgePropNoCheck(column, curLabel);
+                br.append(curCols.get(i).name);
+                if (i < curProps.size()-1) br.append(", ");
+                else br.append(" ");
+            }
+            br.append(partsql);          
+            // graph.ESubQuery = br.toString();
+            graph.addESubQuery(br.toString(), curLabel);
+            System.out.println("ParserDDL:392:" + br.toString());
         }
-        
-        br.append(partsql);
-        
-        //System.out.println(br);
-        
-        graph.ESubQuery = br.toString();
-        //
-        
+        // LX FEAT3
+        if (edgeCount > 1 && !hasLabel){
+            // TODO: throw some error
+            System.out.println("Error");
+            throw new RuntimeException("more than one edge types without specifying label. Error");
+        } 
+        // Add Def Path Properties
+        graph.addDefPathProps(schema, isDelimitedIdentifier());
+
         String   sql  = getLastPart();
         Object[] args = new Object[] { graph };
-
-        return new StatementSchema(sql, StatementTypes.CREATE_GRAPHVIEW, args,
-                                       null, null);
+System.out.println("ParserDDL:548");
+        return new StatementSchema(sql, StatementTypes.CREATE_GRAPHVIEW, args, null, null);
         
     }
     // End LX

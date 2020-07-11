@@ -50,6 +50,7 @@ bool EdgeScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVect
 	assert(isSubquery || node->getTargetGraphView());
 	assert((! isSubquery) || (node->getChildren().size() == 1));
 	graphView = node->getTargetGraphView();
+	m_eLabel = node->getEdgeLabel(); // LX FEAT3
 
 	//
 	// OPTIMIZATION: If there is no predicate for this SeqScan,
@@ -71,7 +72,8 @@ bool EdgeScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVect
 		// Create output table based on output schema from the plan
 		const std::string& temp_name = (node->isSubQuery()) ?
 				node->getChildren()[0]->getOutputTable()->name():
-				graphView->getEdgeTable()->name();
+				graphView->getEdgeTableFromLabel(m_eLabel)->name(); // LX FEAT3
+				// graphView->getEdgeTable()->name();
 		setTempOutputTable(executorVector, temp_name);
 		LogManager::GLog("EdgeScanExecutor", "p_init", 70,
 					"after calling setTempOutputTable with temp table = " + temp_name);
@@ -84,7 +86,8 @@ bool EdgeScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVect
 	else {
 		Table* temp_t = isSubquery ?
 				 node->getChildren()[0]->getOutputTable() :
-				 graphView->getEdgeTable();
+				 graphView->getEdgeTableFromLabel(m_eLabel); // LX FEAT3
+				 // graphView->getEdgeTable();
 		node->setOutputTable(temp_t);
 		LogManager::GLog("EdgeScanExecutor", "p_init", 83,
 						"after calling setOutputTable with temp table name = " + temp_t->name());
@@ -109,13 +112,15 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 	}
 
 	GraphView* graphView = node->getTargetGraphView();
-	Table* input_table = graphView->getEdgeTable();
-	assert(input_table);
-	//int vertexId = -1, fanIn = -1, fanOut = -1;
+	// Table* input_table = graphView->getEdgeTable();
+	// LX FEAT3
+    std::string edgeLabel = node->getEdgeLabel();
+    Table* input_table = graphView->getEdgeTableFromLabel(edgeLabel);
+    cout << "EdgeScanExecutor:122:" << edgeLabel << ", " << input_table->name() << endl;
+	vassert(input_table);
 
-	//* for debug */std::cout << "SeqScanExecutor: node id " << node->getPlanNodeId() <<
-	//* for debug */    " input table " << (void*)input_table <<
-	//* for debug */    " has " << input_table->activeTupleCount() << " tuples " << std::endl;
+	// int vertexId = -1, fanIn = -1, fanOut = -1;
+
 	VOLT_TRACE("Sequential Scanning edges in :\n %s",
 	              input_table->debug().c_str());
 	VOLT_DEBUG("Sequential Scanning edges table : %s which has %d active, %d"
@@ -138,7 +143,7 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 	if (projection_node != NULL) {
 		num_of_columns = static_cast<int> (projection_node->getOutputColumnExpressions().size());
 	}
-
+	cout << "EdgeScanExecutor:146:" << num_of_columns << endl;
 	//
 	// OPTIMIZATION: NESTED LIMIT
 	// How nice! We can also cut off our scanning with a nested limit!
@@ -200,7 +205,7 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 					   tuple.debug(input_table->name()).c_str(), tuple_ctr,
 					   (int)input_table->activeTupleCount());
 			pmp.countdownProgress();
-
+cout << "EdgeScanExecutor:208:" << tuple.debug(input_table->name()).c_str() << endl;
 			//
 			// For each tuple we need to evaluate it against our predicate and limit/offset
 			//
@@ -214,18 +219,24 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 				{
 					VOLT_TRACE("inline projection...");
 
+					cout << "EdgeScanExecutor:222:" << ValuePeeker::peekInteger(tuple.getNValue(0)) << endl;
+
 					for (int ctr = 0; ctr < num_of_columns; ctr++) {
 						//msaber: todo, need to check the projection operator construction
+						string t_coln = projection_node->getOutputColumnNames()[ctr];
+                        cout << "EdgeScanExecutor:227:" << t_coln << endl;
 
 						NValue value = projection_node->getOutputColumnExpressions()[ctr]->eval(&tuple, NULL);
 						temp_tuple.setNValue(ctr, value);
 					}
 
-					outputTuple(postfilter, temp_tuple);
+					// outputTuple(postfilter, temp_tuple);
+					outputTuple(temp_tuple);
 				}
 				else
 				{
-					outputTuple(postfilter, tuple);
+					// outputTuple(postfilter, tuple);
+					outputTuple( tuple);
 				}
 				pmp.countdownProgress();
 			}
@@ -242,7 +253,7 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 	return true;
 }
 
-void EdgeScanExecutor::outputTuple(CountingPostfilter& postfilter, TableTuple& tuple)
+void EdgeScanExecutor::outputTuple(TableTuple& tuple)
 {
     if (m_aggExec != NULL) {
         m_aggExec->p_execute_tuple(tuple);

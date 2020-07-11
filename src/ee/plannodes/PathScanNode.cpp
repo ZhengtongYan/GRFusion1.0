@@ -50,7 +50,9 @@ int PathScanPlanNode::getSPColumnIdInEdgesTable() const
 		GraphView* gv = this->getTargetGraphView();
 		if (gv != NULL)
 		{
-			id = gv->getEdgeTable()->columnIndex(this->getSPColumnName());
+			// TODO: fix this later LX 
+			// id = gv->getEdgeTable()->columnIndex(this->getSPColumnName());
+			id = gv->getEdgeTableFromLabel("")->columnIndex(this->getSPColumnName());
 		}
 	}
 

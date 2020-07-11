@@ -870,8 +870,9 @@ public class Session implements SessionInterface {
     public Statement compileStatement(String sql) {
 
         parser.reset(sql);
-        Statement cs = parser.compileStatement();
 
+        Statement cs = parser.compileStatement();
+ 
         return cs;
     }
 
@@ -1126,7 +1127,6 @@ public class Session implements SessionInterface {
 
         Result result = executeCompiledStatement(cs,
             ValuePool.emptyObjectArray);
-
         return result;
     }
 

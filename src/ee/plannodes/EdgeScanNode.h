@@ -27,6 +27,7 @@ public:
 	std::string debugInfo(const std::string& spacer) const;
 
 	GraphView* getTargetGraphView() const;
+    std::string getEdgeLabel() const; // LX FEAT3
 	void setTargetGraphViewDelegate(GraphViewCatalogDelegate* gcd) { m_gcd = gcd; } // DEPRECATED?
 
 	std::string getTargetGraphViewName() const { return m_target_graph_name; } // DEPRECATED?
@@ -38,6 +39,7 @@ public:
 
 protected:
     void loadFromJSONObject(PlannerDomValue obj);
+    std::string m_edgeLabel; // LX FEAT2
     std::string m_target_graph_name;
     GraphViewCatalogDelegate* m_gcd;
     //

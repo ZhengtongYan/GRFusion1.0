@@ -205,6 +205,18 @@ public class ExpressionColumn extends Expression {
             }
             else if (range.isEdges) {
                 objectName = "EDGES";
+                // LX FEAT3
+                if (this.schema != null) {
+                    this.schema = null;
+                    labelName  = tableName;
+                    tableName = null;
+                    columnName  = labelName + "." + columnName;
+                }
+                else if (tableName != null) {
+                    tableName = null;
+                    labelName = "";
+                    columnName = "." + columnName;
+                }
             }
         }
     }
@@ -457,7 +469,7 @@ System.out.println("ExpressionColumn:357:" + opType);
                     }
 
                     // LX FEAT2
-                    if (objectName != null && labelName == null){ // not specify label
+                    if (labelName == null && objectName != null && objectName.equals("VERTEXES") ){ // not specify label
                         ArrayList<String> vl = rangeVar.getGraph().getVertexLabelList();
                         for (int j = 0; j < vl.size(); j++) {
                             prependColname(vl.get(j));
@@ -482,7 +494,32 @@ System.out.println("ExpressionColumn:357:" + opType);
                             trimColname();
                         }
                     }
-
+                    // LX FEAT3
+                    else if (labelName == null && objectName != null && objectName.equals("EDGES") ){ // not specify label
+                        ArrayList<String> el = rangeVar.getGraph().getEdgeLabelList();
+                        for (int j = 0; j < el.size(); j++) {
+                            prependColname(el.get(j));
+                            if (rangeVar.getGraph().findEdgeProp(columnName) != -1) {
+                                ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
+                                if (resolution != null) {
+                                    if (resolution instanceof ExpressionColumnReferenceResolution) {
+                                        if (usingResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    else {
+                                        assert(resolution instanceof RangeVariableColumnReferenceResolution);
+                                        if (rangeVariableResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    // Cache this in case this is the only resolution.
+                                    lastRes = resolution;
+                                }
+                            }
+                            trimColname();
+                        }
+                    }  
                     else {
                         ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
                         if (resolution != null) {
@@ -500,8 +537,7 @@ System.out.println("ExpressionColumn:357:" + opType);
                             // Cache this in case this is the only resolution.
                             lastRes = resolution;
                         }
-                    }
-                        
+                    }                
                 }
                 if (foundSize == 1) {
                     lastRes.finallyResolve();

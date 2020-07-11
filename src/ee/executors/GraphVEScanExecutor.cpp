@@ -105,7 +105,8 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
     // std::string vertexLabel = "BALL";
     std::string vertexLabel = node->getChosenVertexLabel();
     Table* inputVertexTable = graphView->getVertexTableFromLabel(vertexLabel);
-    Table* inputEdgeTable = graphView->getEdgeTable();
+    std::string edgeLabel = ""; //node->getChosenVertexLabel();
+    Table* inputEdgeTable = graphView->getVertexTableFromLabel(edgeLabel);
 
     cout << "GraphVEScanExecutor:122:" << vertexLabel << ", " << inputVertexTable->name() << endl;
 

@@ -38,6 +38,7 @@ import org.voltdb.catalog.Procedure;
 import org.voltdb.catalog.Table;
 import org.voltdb.catalog.GraphView; // LX FEAT2
 import org.voltdb.catalog.VertexLabel; // LX FEAT2
+import org.voltdb.catalog.EdgeLabel; // LX FEAT3
 import org.voltdb.catalog.Task;
 import org.voltdb.catalog.TaskParameter;
 import org.voltdb.task.TaskScope;
@@ -227,7 +228,13 @@ public class JdbcDatabaseMetaDataGenerator
     // LX FEAT2
     static public final ColumnInfo[] GRAPH_VLABEL_SCHEMA = new ColumnInfo[] {
             new ColumnInfo("GRAPHVIEW_NAME", VoltType.STRING),
-            new ColumnInfo("LABEL", VoltType.STRING)
+            new ColumnInfo("VERTEX_LABEL", VoltType.STRING)
+    };
+
+    // LX FEAT3
+    static public final ColumnInfo[] GRAPH_ELABEL_SCHEMA = new ColumnInfo[] {
+            new ColumnInfo("GRAPHVIEW_NAME", VoltType.STRING),
+            new ColumnInfo("EDGE_LABEL", VoltType.STRING)
     };
 
     // Implement by LX
@@ -282,6 +289,11 @@ public class JdbcDatabaseMetaDataGenerator
         else if (selector.equalsIgnoreCase("VERTEXLABELS"))
         {
             result = getVLabels();
+        }
+        // LX FEAT3
+        else if (selector.equalsIgnoreCase("EDGELABELS"))
+        {
+            result = getELabels();
         }
         // Implement LX
         else if (selector.equalsIgnoreCase("GRAPHVIEWS"))
@@ -379,6 +391,18 @@ public class JdbcDatabaseMetaDataGenerator
         for (GraphView gv : m_database.getGraphviews())
         {
             for (VertexLabel vl : gv.getVertexlabels())
+                results.addRow(gv.getTypeName(), vl.getTypeName());
+        }
+        return results;
+    }
+
+    // LX FEAT3
+    VoltTable getELabels()
+    {
+        VoltTable results = new VoltTable(GRAPH_ELABEL_SCHEMA);
+        for (GraphView gv : m_database.getGraphviews())
+        {
+            for (EdgeLabel vl : gv.getEdgelabels())
                 results.addRow(gv.getTypeName(), vl.getTypeName());
         }
         return results;

@@ -24,6 +24,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
     private final String m_graphElement;
     private final String m_hint;
     private final String m_vLabel; // LX FEAT2
+    private final String m_eLabel; // LX FEAT3
     private final int m_startvertexid;
     private final int m_endvertexid;
     private final int m_prop1;
@@ -46,7 +47,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
     private List<Column> m_columns;
 
     public StmtTargetGraphScan(GraphView graph, String tableAlias, int stmtId, String object,
-    		                   String hint, String vertexLabel, int startvertexid, int endvertexid,
+    		                   String hint, String vertexLabel, String edgeLabel, int startvertexid, int endvertexid,
     		                   int prop1, int prop2, int prop3, int prop4,int prop5, int length
     		                   ) {// LX FEAT2
         super(tableAlias, stmtId);
@@ -55,6 +56,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
         m_graphElement = object;
         m_hint = hint;
         m_vLabel = vertexLabel; // LX FEAT2
+        m_eLabel = edgeLabel; // LX FEAT3
         m_startvertexid = startvertexid;
         m_endvertexid = endvertexid;
         m_prop1 = prop1;
@@ -74,7 +76,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
     }
 
     public StmtTargetGraphScan(GraphView graph, String tableAlias) {
-        this(graph, tableAlias, 0, null, null, "", -1, -1, -1, -1, -1, -1, -1, -1);
+        this(graph, tableAlias, 0, null, null, "", "", -1, -1, -1, -1, -1, -1, -1, -1);
     }
 
     // LX FEAT4
@@ -95,6 +97,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
         m_graphElement = null;
         m_hint = null;
         m_vLabel = null;
+        m_eLabel = null;
         m_startvertexid = -1;
         m_endvertexid = -1;
         m_prop1 = -1;
@@ -146,6 +149,11 @@ public class StmtTargetGraphScan extends StmtTableScan {
     public String getVLabel() {
         return m_vLabel;
     }
+
+    // LX FEAT3
+    public String getELabel() {
+        return m_eLabel;
+    }    
 
 	public int getStartvertexid() {
 		return m_startvertexid;

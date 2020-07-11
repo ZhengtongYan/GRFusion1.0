@@ -55,6 +55,7 @@
 #include "catalog/functionparameter.h"
 #include "catalog/graphview.h" // Added by LX
 #include "catalog/vertexlabel.h" // Implement LX FEAT2
+#include "catalog/edgelabel.h" // Implement LX FEAT3
 #include "catalog/index.h"
 #include "catalog/materializedviewhandlerinfo.h"
 #include "catalog/materializedviewinfo.h"
@@ -136,6 +137,7 @@ typedef std::pair<std::string, catalog::Index*> LabeledIndex;
 typedef std::pair<std::string, catalog::Table*> LabeledTable;
 typedef std::pair<std::string, catalog::GraphView*> LabeledGraphView; // Added by LX
 typedef std::pair<std::string, catalog::VertexLabel*> LabeledVertexLabel; // Implement LX FEAT2
+typedef std::pair<std::string, catalog::EdgeLabel*> LabeledEdgeLabel; // Implement LX FEAT3
 typedef std::pair<std::string, catalog::MaterializedViewInfo*> LabeledView;
 typedef std::pair<std::string, catalog::Function*> LabeledFunction;
 typedef std::pair<std::string, StreamedTable*> LabeledStream;
@@ -1729,7 +1731,23 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
 
             // use the delegate to init the table and create indexes n' stuff
             // Table* vTable = findInMapOrNull(catalogGraphView->VTable()->path(), m_catalogDelegates)->getTable();
-            Table* eTable = findInMapOrNull(catalogGraphView->ETable()->path(), m_catalogDelegates)->getTable();
+            // Table* eTable = findInMapOrNull(catalogGraphView->ETable()->path(), m_catalogDelegates)->getTable();
+
+            // LX FEAT3
+            Table *eTable = NULL;
+            vector<Table*> eTables;
+            vector<std::string> eLabels;
+            vector<std::string> startVLabels;
+            vector<std::string> endVLabels;
+            for (LabeledEdgeLabel edgeLabel : catalogGraphView->edgeLabels()) {
+                catalog::EdgeLabel *elabel = edgeLabel.second;
+                eTable = findInMapOrNull(elabel->ETable()->path(), m_catalogDelegates)->getTable();
+                eTables.push_back(eTable);
+                eLabels.push_back(elabel->name());
+                startVLabels.push_back(elabel->startVertex());
+                endVLabels.push_back(elabel->endVertex());
+                // cout << "VoltDBEngine:1723:add table"<< vTable->name() << endl;
+            }
             string pathsTableName = "TEMPPATHS";
             // if (vTable == NULL || eTable == NULL)
             // {
@@ -1740,7 +1758,7 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             //TODO: pTable is not used as we assume one path table schema. The parameter may allow varying the path schema according to the view definition in the future
             Table* pTable = NULL;
             // gcd->init(*m_database, *catalogGraphView, vTable, eTable, pTable);
-            gcd->init(*m_database, *catalogGraphView, vLabels, vTables, eTable, pTable); // LX FEAT2
+            gcd->init(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable); // LX FEAT2
             m_graphViewCatalogDelegates[catalogGraphView->path()] = gcd;
             GraphView* graphView = gcd->getGraphView();
             m_graphViewDelegatesByName[graphView->name()] = gcd;

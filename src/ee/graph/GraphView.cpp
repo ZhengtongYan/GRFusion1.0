@@ -43,6 +43,12 @@ Table* GraphView::getVertexTableById(string id)
 	return this->m_idToVTableMap[id];
 }
 
+// LX FEAT3
+Table* GraphView::getEdgeTableById(string id)
+{
+	return this->m_idToETableMap[id];
+}
+
 // LX FEAT4
 void GraphView::addToSubgraphList(string name) {
 	this->m_subgraphList.push_back(name);
@@ -59,7 +65,7 @@ void GraphView::addToSubgraphEdge(std::vector<Edge*> subgraphEdge) {
 }
 
 // TableTuple* GraphView::getVertexTuple(int id)
-TableTuple* GraphView::getVertexTuple(string id) // LX FEAT4
+TableTuple* GraphView::getVertexTuple(string id) // LX FEAT2
 {
 	Vertex* v = this->getVertex(id);
 	Table* t = this->getVertexTableById(id);
@@ -76,13 +82,14 @@ Edge* GraphView::getEdge(string id) // LX FEAT2
 TableTuple* GraphView::getEdgeTuple(string id) // LX FEAT2
 {
 	Edge* e = this->getEdge(id);
-	return new TableTuple(e->getTupleData(), this->m_edgeTable->schema());
+	Table* t = this->getEdgeTableById(id);
+	return new TableTuple(e->getTupleData(), t->schema());
 }
 
-TableTuple* GraphView::getEdgeTuple(char* data)
-{
-	return new TableTuple(data, this->m_edgeTable->schema());
-}
+// TableTuple* GraphView::getEdgeTuple(char* data)
+// {
+// 	return new TableTuple(data, this->m_edgeTable->schema());
+// }
 
 // void GraphView::addVertex(int id, Vertex* vertex)
 void GraphView::addVertex(string id, Vertex* vertex) // LX FEAT2
@@ -111,10 +118,20 @@ Table* GraphView::getVertexTableFromLabel(string vlabel)
 	return NULL;
 }
 
-Table* GraphView::getEdgeTable()
+// LX FEAT3
+Table* GraphView::getEdgeTableFromLabel(string elabel)
 {
-	return this->m_edgeTable;
+	for (int i = 0; i < (this->m_edgeLabels).size(); i++){
+		if (((this->m_edgeLabels[i]).compare(elabel)) == 0)
+			return this->m_edgeTables[i];
+	}
+	return NULL;
 }
+
+// Table* GraphView::getEdgeTable()
+// {
+// 	return this->m_edgeTable;
+// }
 
 Table* GraphView::getPathTable()
 {
@@ -417,12 +434,15 @@ void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
 		double edgeCost = 1;
 		for(int i = 0; i < fanOut; i++)
 		{
-			e = v->getOutEdge(i);
+			// e = v->getOutEdge(i);
+			string es = v->getOutEdgeId(i);
 			candVertexId = e->getEndVertex()->getId();
 
 			if (spColumnIndexInEdgesTable >= 0)
 			{
-				edgeTuple = this->getEdgeTuple(e->getTupleData());
+				// TODO: fix this later
+				// edgeTuple = this->getEdgeTuple(e->getTupleData());
+				edgeTuple = this->getEdgeTuple(es);
 				edgeCost = ValuePeeker::peekDouble(edgeTuple->getNValue(spColumnIndexInEdgesTable));
 			}
 
@@ -1046,7 +1066,6 @@ void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
 
 void GraphView::fillGraphFromRelationalTables()
 {
-	cout << "graphView:1049" << endl;
 	this->m_vertexes.clear();
 	this->m_edges.clear();
 
@@ -1087,9 +1106,8 @@ void GraphView::fillGraphFromRelationalTables()
 	bool vPropExists = (m_vPropColumnIndex >= 0);
 	bool ePropExists = (m_ePropColumnIndex >= 0);
 
-	string id = "", from = "", to = ""; // LX FEAT2
+	string id = ""; // LX FEAT2
 	//fill the vertex collection
-	cout << "graphView:1092" << endl;
 	// LX FEAT2
 	for (int i = 0; i < this->m_vertexTables.size(); i++){
 		Table* curTable = this->m_vertexTables[i];
@@ -1106,8 +1124,7 @@ void GraphView::fillGraphFromRelationalTables()
 				if (tuple.isActive())
 				{
 					// id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColumnIndex));
-					cout << "graphView:1109" << endl;
-					cout << ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])) << endl;
+					cout << "graphView:1109:" << ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])) << endl;
 					id = curLabel + "." + to_string(ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])));
 					vertex = new Vertex();
 					vertex->setGraphView(this);
@@ -1126,11 +1143,8 @@ void GraphView::fillGraphFromRelationalTables()
 			}
 		}
 	}
-	// from = -1;
-	// to = -1;
-	cout << "graphView:1131" << endl;
-	Edge* edge = NULL;
-		
+	
+	string from = "", to = "";	
 	// TODO: LX need to figure out how to set the vertex label for the from vertex and to vertex
 	// TODO: add another layer for lookup
 	// we know the vertex table for the edge node (by foreign key)
@@ -1138,47 +1152,63 @@ void GraphView::fillGraphFromRelationalTables()
 	// then we can prepend the label to the vertex of the edge
 
 	// hard-coded for now
-	string fromVertexLabel = "BALL.";
-	string toVertexLabel = "BALL.";
+	// string fromVertexLabel = "BALL.";
+	// string toVertexLabel = "BALL.";
 	//fill the edge collection
-	TableIterator iter = this->m_edgeTable->iterator();
-	schema = this->m_edgeTable->schema();
-	TableTuple edgeTuple(schema);
-	Vertex* vFrom = NULL;
-	Vertex* vTo = NULL;
-	if (this->m_edgeTable->activeTupleCount() != 0)
-	{
-		while (iter.next(edgeTuple))
+	for (int i = 0; i < this->m_edgeTables.size(); i++){
+		Table* curTable = this->m_edgeTables[i];
+		string curLabel = this->m_edgeLabels[i];
+		string fromVertexLabel = this->m_startVLabels[i];
+		string endVertexLabel = this->m_endVLabels[i];
+
+		TableIterator iter = curTable->iterator();
+		schema = curTable->schema();
+		TableTuple edgeTuple(schema);
+		Edge* edge = NULL;
+		Vertex* vFrom = NULL;
+		Vertex* vTo = NULL;
+
+		if (curTable->activeTupleCount() != 0)
 		{
-			if (edgeTuple.isActive())
+			while (iter.next(edgeTuple))
 			{
-				id = to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColumnIndex)));
-				from = fromVertexLabel + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColumnIndex)));
-				to = toVertexLabel + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColumnIndex)));
-				edge = new Edge();
-				edge->setGraphView(this);
-				edge->setId(id);
-				edge->setTupleData(edgeTuple.address());
-				edge->setStartVertexId(from);
-				edge->setEndVertexId(to);
-				if(ePropExists)
+				if (edgeTuple.isActive())
 				{
-					edge->eProp = ValuePeeker::peekInteger(edgeTuple.getNValue(m_ePropColumnIndex));
+					cout << "graphView:1178:" << ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])) << endl;
+					id = curLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])));
+					from = fromVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColIdxList[curLabel])));
+					to = endVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColIdxList[curLabel])));
+					edge = new Edge();
+					edge->setGraphView(this);
+					edge->setId(id);
+					edge->setTupleData(edgeTuple.address());
+					edge->setStartVertexId(from);
+					edge->setEndVertexId(to);
+					if(ePropExists)
+					{
+						edge->eProp = ValuePeeker::peekInteger(edgeTuple.getNValue(m_ePropColumnIndex));
+					}
+					//update the endpoint vertexes in and out lists
+					vFrom = edge->getStartVertex();
+					vTo = edge->getEndVertex();
+					vFrom->addOutEdge(edge);
+					vTo->addInEdge(edge);
+					if(!this->isDirected())
+					{
+						vTo->addOutEdge(edge);
+						vFrom->addInEdge(edge);
+					}
+					this->addEdge(id, edge);
+					this->m_idToETableMap[id] = curTable;
 				}
-				//update the endpoint vertexes in and out lists
-				vFrom = edge->getStartVertex();
-				vTo = edge->getEndVertex();
-				vFrom->addOutEdge(edge);
-				vTo->addInEdge(edge);
-				if(!this->isDirected())
-				{
-					vTo->addOutEdge(edge);
-					vFrom->addInEdge(edge);
-				}
-				this->addEdge(id, edge);
+				id = "";
 			}
 		}
-	}
+
+	}	
+	
+		
+		
 	LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 159, "graph: " + this->debug());
 	//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 73, "vTable: " + this->m_vertexTable->debug());
 	//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 73, "eTable: " + this->m_edgeTable->debug());

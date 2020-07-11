@@ -43,9 +43,10 @@ public:
         bool p_execute(const NValueArray &params);
 
     private:
-        void outputTuple(CountingPostfilter& postfilter, TableTuple& tuple);
+        void outputTuple(TableTuple& tuple);
         AggregateExecutorBase* m_aggExec;
         GraphView* graphView;
+        std::string m_eLabel; // LX FEAT3
 };
 
 }

@@ -114,6 +114,7 @@ import org.voltdb.catalog.GraphView; // Add LX
 import org.voltdb.planner.ParsedColInfo; // Add LX
 import org.voltdb.types.ExpressionType; // Add LX
 import org.voltdb.catalog.VertexLabel; // Implement LX FEAT2
+import org.voltdb.catalog.EdgeLabel; // Implement LX FEAT3
 
 /**
  * Compiles schema (SQL DDL) text files and stores the results in a given catalog.
@@ -983,6 +984,7 @@ public class DDLCompiler {
         handlePartitions(db);
         handleTTL(db);
         m_mvProcessor.startProcessing(db, m_matViewMap, getExportTableNames());
+        // System.out.println("ddlCompiler:987");
     }
 
     private void addUserDefinedFunctionToCatalog(Database db, VoltXMLElement XMLfunc) {
@@ -1624,8 +1626,9 @@ public class DDLCompiler {
     // End LX
 
     // Implement LX FEAT2
-    private void processGraphPropMaterializerWithType(Database db, HashMap<String, Table> tables, HashMap<String, String> querys, List<Column> destColumnArray) throws VoltCompilerException {
+    private void processGraphPropMaterializerWithType(Database db, HashMap<String, Table> tables, HashMap<String, String> querys, List<Column> destColumnArray, String proptype) throws VoltCompilerException {
         int j = 0;
+        // System.out.println("DDLCompiler:1631:" + proptype + ", " + destColumnArray.size());
         while (j < destColumnArray.size()){
             // extract the label info from the dest col
             Column destColumn = destColumnArray.get(j);
@@ -1659,7 +1662,7 @@ public class DDLCompiler {
                 destColumn = destColumnArray.get(i + j);
 
                 if (col != null) {
-                    System.out.println("DDLCompiler:1655:table=" + table.getTypeName() +", src_column=" + col.getColumnName() + ", dest_col=" + destColumn.getName());
+                    // System.out.println("DDLCompiler:1655:table=" + table.getTypeName() +", src_column=" + col.getColumnName() + ", dest_col=" + destColumn.getName());
                     assert(col.getTableName().equalsIgnoreCase(table.getTypeName()));
                     String srcColName = col.getColumnName();
 
@@ -1672,7 +1675,10 @@ public class DDLCompiler {
                     //      "table =  " + table.getTypeName() +", column = null");
                 //}
             }
-            j = j + stmt.m_displayColumns.size() + 2; // include FANIN and FANOUT for each label
+            if (proptype == "vertex")
+                j = j + stmt.m_displayColumns.size() + 2; // include FANIN and FANOUT for each vertex label
+            else
+                j = j + stmt.m_displayColumns.size();
         }
          
     }
@@ -1684,27 +1690,14 @@ public class DDLCompiler {
         HashMap<String, Column> columnMap = new HashMap<String, Column>();
         HashMap<String, Table> vtableMap = new HashMap<String, Table>(); // LX FEAT2
         HashMap<String, String> vqueryMap = new HashMap<String, String>(); // LX FEAT2
+        HashMap<String, Table> etableMap = new HashMap<String, Table>(); // LX FEAT3
+        HashMap<String, String> equeryMap = new HashMap<String, String>(); // LX FEAT3
         HashMap<String, Index> indexMap = new HashMap<String, Index>();
 
         String name = node.attributes.get("name");
 
         // create a graph node in the catalog
         GraphView graph = db.getGraphviews().add(name);
-
-        // String vtablename = node.attributes.get("Vtable");
-        String etablename = node.attributes.get("Etable");
-        // assert(vtablename != null);
-        assert(etablename != null);
-        
-        // Table Vtable = db.getTables().get(vtablename);
-        Table Etable = db.getTables().get(etablename);
-        // graph.setVtable(Vtable);
-        graph.setEtable(Etable);
-        
-        // String Vquery  = node.attributes.get("Vquery");
-        String Equery  = node.attributes.get("Equery");
-        // assert(Vquery != null);
-        assert(Equery != null);
         
         boolean isdirected = Boolean.parseBoolean((node.attributes.get("isdirected")));
         
@@ -1729,7 +1722,7 @@ public class DDLCompiler {
         for (VoltXMLElement subNode : node.children) {
             if (subNode.name.equals("vertex")) {
                 // LX FEAT2 need to dissect each vertex type
-                String label = subNode.attributes.get("label");
+                String label = subNode.attributes.get("vlabel");
                 VertexLabel vLabel = graph.getVertexlabels().add(label);
                 vLabel.setLabel(label); // this may not be needed
                 String Vquery = subNode.attributes.get("Vquery");
@@ -1738,13 +1731,13 @@ public class DDLCompiler {
                 assert(vtablename != null);
                 Table Vtable = db.getTables().get(vtablename);
                 vLabel.setVtable(Vtable);
-                System.out.println(label);
+                // System.out.println(label);
                 vtableMap.put(label, Vtable);
                 vqueryMap.put(label, Vquery);
                 int colIndex = 0;
                 for (VoltXMLElement columnNode : subNode.children) {
                     if (columnNode.name.equals("column")) {
-                        addVertexPropertyToCatalog(graph, columnNode, columnTypes,
+                        addLabeledPropertyToCatalog(graph, columnNode, columnTypes,
                                 columnMap, m_compiler, "vertex");
                         colIndex++;
                     }
@@ -1752,11 +1745,30 @@ public class DDLCompiler {
                 // TODO Add graph indexes
             }
             if (subNode.name.equals("edge")) {
+                // LX FEAT3
+                String label = subNode.attributes.get("elabel");
+                EdgeLabel eLabel = graph.getEdgelabels().add(label);
+                eLabel.setLabel(label); // this may not be needed
+                String s = subNode.attributes.get("StartVLabel");
+                eLabel.setStartvertex(s);
+                String e = subNode.attributes.get("EndVLabel");
+                eLabel.setEndvertex(e);
+             
+                String Equery = subNode.attributes.get("Equery");
+                assert(Equery != null);
+                String etablename = subNode.attributes.get("Etable");
+                assert(etablename != null);
+
+                Table Etable = db.getTables().get(etablename);
+                eLabel.setEtable(Etable);
+                // System.out.println(label);
+                etableMap.put(label, Etable);
+                equeryMap.put(label, Equery);
                 int colIndex = 0;
                 for (VoltXMLElement columnNode : subNode.children) {
                     if (columnNode.name.equals("column")) {
-                        addPropertyToCatalog(graph, columnNode, columnTypes,
-                                columnMap, m_compiler, "edge");
+                        addLabeledPropertyToCatalog(graph, columnNode, columnTypes,
+                                columnMap, m_compiler, "edge"); // LX FEAT3
                         colIndex++;
                     }
                 }
@@ -1777,9 +1789,10 @@ public class DDLCompiler {
         
         // Set materializer for properties
         List<Column> destColumnArray = CatalogUtil.getSortedCatalogItems(graph.getVertexprops(), "index");
-        processGraphPropMaterializerWithType(db, vtableMap, vqueryMap, destColumnArray);
+        processGraphPropMaterializerWithType(db, vtableMap, vqueryMap, destColumnArray, "vertex");
+
         destColumnArray = CatalogUtil.getSortedCatalogItems(graph.getEdgeprops(), "index");
-        processGraphPropMaterializer(db, Etable, Equery, destColumnArray);
+        processGraphPropMaterializerWithType(db, etableMap, equeryMap, destColumnArray, "edge"); // LX FEAT3
         destColumnArray = null;
         
         graph.setSignature(CatalogUtil.getSignatureForTable(name, columnTypes));
@@ -1826,7 +1839,7 @@ public class DDLCompiler {
     // End LX
 
     // LX FEAT2
-    private static void addVertexPropertyToCatalog(GraphView graph, VoltXMLElement node, SortedMap<Integer, VoltType> columnTypes, Map<String, Column> columnMap, VoltCompiler compiler, String proptype) throws VoltCompilerException
+    private static void addLabeledPropertyToCatalog(GraphView graph, VoltXMLElement node, SortedMap<Integer, VoltType> columnTypes, Map<String, Column> columnMap, VoltCompiler compiler, String proptype) throws VoltCompilerException
     {
         assert node.name.equals("column");
 
@@ -1899,7 +1912,7 @@ public class DDLCompiler {
         else { // "edge"
             column = graph.getEdgeprops().add(name);
         }
-        
+        // System.out.println("ddlCompiler:1916");
         // need to set other column data here (default, nullable, etc)
         column.setName(name);
         column.setIndex(index);

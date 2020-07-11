@@ -69,6 +69,7 @@ public class ParserDQL extends ParserBase {
     boolean                        strictSQLNames;
     boolean                        strictSQLIdentifierParts;
     HashSet                        vertexLabels; // LX FEAT2
+    HashSet                        edgeLabels; // LX FEAT3
     // A VoltDB extension to reject quoted (delimited) names.
     // TODO: Set flag from property?
     boolean rejectQuotedSchemaObjectNames = true;
@@ -95,6 +96,7 @@ public class ParserDQL extends ParserBase {
         strictSQLIdentifierParts = database.getProperties().isPropertyTrue(
             HsqlDatabaseProperties.sql_enforce_keywords);
         vertexLabels = new HashSet(); // LX FEAT2
+        edgeLabels = new HashSet(); // LX FEAT3
     }
 
     /**
@@ -954,6 +956,7 @@ public class ParserDQL extends ParserBase {
 
     QuerySpecification XreadSelect() {
         vertexLabels = new HashSet(); // LX FEAT2
+        edgeLabels = new HashSet(); // LX FEAT3
 
         QuerySpecification select = new QuerySpecification(compileContext);
 
@@ -1147,7 +1150,11 @@ public class ParserDQL extends ParserBase {
 
         boolean       natural = false;
         System.out.println("parserDQL:1079");
-        RangeVariable range   = readTableOrSubquery();
+        RangeVariable range;
+        if (select.isDDL)
+            range = readTableOrSubqueryForDDL();
+        else
+            range   = readTableOrSubquery();
         select.addRangeVariable(range);
 
         while (true) {
@@ -1767,10 +1774,10 @@ public class ParserDQL extends ParserBase {
         // RangeVariable range = new RangeVariable(table, alias, columnList, columnNameList, compileContext);
         // End LX
         // Add LX
-        // System.out.println(token.tokenType);
+        System.out.println("parserDQL:1773:" + token.tokenType);
         if (token.tokenType != Tokens.EDGES && token.tokenType != Tokens.VERTEXES) {
             // LX FEAT2
-        
+            System.out.println("parserDQL:1776");
             if (isNonCoreReservedIdentifier()) {
                 boolean limit = token.tokenType == Tokens.LIMIT
                                 || token.tokenType == Tokens.OFFSET;
@@ -1807,7 +1814,7 @@ public class ParserDQL extends ParserBase {
                 for (int i = 0; i < columnList.size(); i++) {
                     SimpleName name =
                         HsqlNameManager.getSimpleName((String) columnList.get(i), columnNameQuoted.isSet(i));
-                    // System.out.println("dql: " + name.name);
+                    System.out.println("parserDQL:1813:" + name.name);
                     columnNameList[i] = name;
                 }
             }
@@ -1815,7 +1822,80 @@ public class ParserDQL extends ParserBase {
     
         RangeVariable range;
         if (isGraph){
-            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint, vertexLabels); // LX FEAT2
+            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint, vertexLabels, edgeLabels); // LX FEAT2
+        }
+        else
+            range = new RangeVariable(table, alias, columnList, columnNameList, compileContext);
+        // End LX
+        return range;
+    }
+
+    protected RangeVariable readTableOrSubqueryForDDL() {
+
+        Table          table            = null;
+        SimpleName     alias            = null;
+        OrderedHashSet columnList       = null;
+        BitMap         columnNameQuoted = null;
+        SimpleName[]   columnNameList   = null;
+        // Added by LX
+        GraphView      graph            = null;
+        boolean        isGraph          = false;
+        int            graphtype = -1;
+        String         hint      = null;
+        // End LX
+        if (token.tokenType == Tokens.OPENBRACKET) {
+            Expression e = XreadTableSubqueryOrJoinedTable();
+
+            table = e.subQuery.getTable();
+            if (table instanceof TableDerived) {
+                ((TableDerived)table).dataExpression = e;
+            }
+        } else {
+            // Added by LX
+            // TODO Identify SELECT from graph only
+            if (token.namePrefix != null && (token.tokenType == Tokens.VERTEXES || token.tokenType == Tokens.EDGES || token.tokenType == Tokens.PATHS)) {
+                
+                graphtype = token.tokenType;
+                
+                checkIsIdentifier();
+                // System.out.println("parserDQL:1597:" + token.namePrefix + ", " + token.namePrePrefix + ", " + token.tokenType);
+                graph = database.schemaManager.getGraph(session,
+                    token.namePrefix, token.namePrePrefix);
+                
+                if (graph != null) isGraph = true;
+                System.out.println("parserDQL:1602:" + token.namePrePrefix + "," + token.namePrefix + "," + token.tokenType);
+                read();                
+                
+            } else {     
+                table = readTableName();
+    
+                if (table.isView()) {
+                    SubQuery sq = getViewSubquery((View) table);
+    
+    //                sq.queryExpression = ((View) table).queryExpression;
+                    table = sq.getTable();
+                }
+
+            }
+        }
+
+        boolean hasAs = false;
+
+        if (token.tokenType == Tokens.AS) {
+            read();
+            checkIsNonCoreReservedIdentifier();
+
+            hasAs = true;
+        }
+        
+        // End LX
+        // Add LX
+        System.out.println("parserDQL:1773:" + token.tokenType);
+        // if (token.tokenType != Tokens.EDGES && token.tokenType != Tokens.VERTEXES) {
+        
+        RangeVariable range;
+        if (isGraph){
+            range = new RangeVariable(graph, graphtype, alias, columnList, columnNameList, compileContext, hint, vertexLabels, edgeLabels); // LX FEAT2
         }
         else
             range = new RangeVariable(table, alias, columnList, columnNameList, compileContext);
@@ -2292,20 +2372,32 @@ public class ParserDQL extends ParserBase {
                         return null;
                 }
             case Tokens.ASTERISK :
-                System.out.println("parserDQL:2200:" + token.namePrePrefix + ", " + token.namePrefix);
+                // System.out.println("parserDQL:2200:" + token.namePrePrefix + ", " + token.namePrefix);
                 // LX FEAT2
-                if (token.namePrePrefix != null && token.namePrePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) {
+                if (token.namePrePrefix != null && 
+                    ((token.namePrePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) ||
+                        (token.namePrePrefix.equals(Tokens.getKeyword(Tokens.EDGES))))) {
                     vertexLabels.add(token.namePrefix);
+                    edgeLabels.add(token.namePrefix);// LX FEAT3
                     e = new ExpressionColumn(null, null, token.namePrePrefix, token.namePrefix);
                 }
-                else if (token.namePrefix != null && token.namePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) {
+                else if (token.namePrefix != null && 
+                    ((token.namePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) ||
+                        (token.namePrefix.equals(Tokens.getKeyword(Tokens.EDGES))))){
                     vertexLabels.add("");
+                    edgeLabels.add("");// LX FEAT3
                     e = new ExpressionColumn(null, null, token.namePrefix, "");   
-                }
+                }                
                 else {
                     // LX FEAT2
-                    if (token.namePrePrefix != null) vertexLabels.add(token.namePrefix);
-                    else if (token.namePrefix != null) vertexLabels.add("");
+                    if (token.namePrePrefix != null) {
+                        vertexLabels.add(token.namePrefix);
+                        edgeLabels.add(token.namePrefix);// LX FEAT3
+                    }
+                    else if (token.namePrefix != null) {
+                        vertexLabels.add("");
+                        edgeLabels.add("");// LX FEAT3
+                    }
                     e = new ExpressionColumn(token.namePrePrefix, token.namePrefix);
                 }    
                     
@@ -2601,7 +2693,7 @@ public class ParserDQL extends ParserBase {
             switch (token.tokenType) {
 
                 case Tokens.ASTERISK :
-                    System.out.println("parserDQL:2495");
+                    // System.out.println("parserDQL:2495");
                     type  = OpTypes.MULTIPLY;
                     boole = false;
                     break;
@@ -2838,7 +2930,7 @@ public class ParserDQL extends ParserBase {
 
         while (true) {
             if (token.tokenType == Tokens.ASTERISK) {
-                System.out.println("parserDQL:2732");
+                // System.out.println("parserDQL:2732");
                 type = OpTypes.MULTIPLY;
             } else if (token.tokenType == Tokens.DIVIDE) {
                 type = OpTypes.DIVIDE;
@@ -4434,6 +4526,7 @@ public class ParserDQL extends ParserBase {
             Expression column;
             // System.out.println("parserDQL:4318:" + prefix);
             String vertexLabel = "";// LX FEAT2
+            String edgeLabel = ""; // LX FEAT3
             if (prefix != null && 
                      (prefix.equals(Tokens.getKeyword(Tokens.EDGES)) || 
                       prefix.equals(Tokens.getKeyword(Tokens.VERTEXES)) ||
@@ -4452,22 +4545,21 @@ public class ParserDQL extends ParserBase {
                 column = new ExpressionColumn(null, prePrefix, prefix, name, index);
             }
             // LX FEAT2
-            // TODO: hard-code for now. Need to find better way to distinguish schema.table.col in relation table
-            // from table.label.col in graphview
-            // two thoughts: delay calling ExpressionColumn() until we know it is graph or not;
-            // Or in ExpressionColumn(), delay assign schema until we know it is graph or not
             else if (prePrefix != null && prePrefix.equals(Tokens.getKeyword(Tokens.VERTEXES))) {
-                // System.out.println("ParserDQL:4337: "+prePrefix+'.'+prefix+'.'+name);
                 vertexLabel = prefix; 
+                edgeLabel = prefix; // LX FEAT3
                 column = new ExpressionColumn(null, null, prePrefix, prefix, name);    
             }
             else {
                 System.out.println("ParserDQL:4368: "+prePrefix+'.'+prefix+'.'+name);
-                if (prePrefix != null)
+                if (prePrefix != null) {
                     vertexLabel = prefix; 
+                    edgeLabel = prefix; // LX FEAT3
+                }
                 column = new ExpressionColumn(prePrefix, prefix, name);
             }
             vertexLabels.add(vertexLabel);
+            edgeLabels.add(edgeLabel); // LX FEAT3
             //org.voltdb.VLog.GLog("ParserDQL", "readColumnOrFunctionExpression", 4012, 
             //      "column = " + column.getColumnName() + " object " + ((ExpressionColumn)column).getObjectName());
             // End LX

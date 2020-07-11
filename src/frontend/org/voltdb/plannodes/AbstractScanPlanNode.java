@@ -62,6 +62,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         VERTEX_TABLE_ALIAS, // LX FEAT4
         EDGE_TABLE_ALIAS, // LX FEAT4
         CHOSEN_VERTEX_LABEL, // LX FEAT4
+        EDGE_LABEL, //LX FEAT3
         VERTEX_LABEL; // LX FEAT2
         // End LX
     }
@@ -82,6 +83,8 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
     protected String m_targetObjectName = null;
     protected boolean isGraph = false;
     protected String m_vLabel = null; // LX FEAT2
+    protected String m_eLabel = null; // LX FEAT3
+
     protected boolean isGraphtoGraph = false; // LX FEAT4
     protected String m_subGraphName = null; // LX FEAT4
     protected boolean m_subGraphVertex = false; // LX FEAT4
@@ -209,6 +212,12 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         isGraph = true;
     }
 
+    // LX FEAT3
+    public void setTargetEdgeLabel(String elabel) {
+        m_eLabel = elabel;
+        isGraph = true;
+    }
+
     // LX FEAT4
     public void setSubGraphName(String name) {
         m_subGraphName = name;
@@ -272,6 +281,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
             if (!((StmtTargetGraphScan)tableScan).isGtoG()) {
                 setTargetObjectName(((StmtTargetGraphScan)tableScan).getGraphElementName());
                 setTargetVertexLabel(((StmtTargetGraphScan)tableScan).getVLabel());// LX FEAT2
+                setTargetEdgeLabel(((StmtTargetGraphScan)tableScan).getELabel());// LX FEAT3
             }
             else {
                 setSubGraphName(((StmtTargetGraphScan)tableScan).getNewGraphName());
@@ -677,12 +687,14 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_NAME.name(), m_targetTableName);
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_ALIAS.name(), m_targetTableAlias);          
             stringer.keySymbolValuePair(Members.VERTEX_LABEL.name(), m_vLabel); // LX FEAT2
+            stringer.keySymbolValuePair(Members.EDGE_LABEL.name(), m_eLabel); // LX FEAT3
         }
         // LX FEAT4
         else {
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_NAME.name(), m_targetTableName);
             stringer.keySymbolValuePair(Members.TARGET_GRAPH_ALIAS.name(), m_targetTableAlias);          
             stringer.keySymbolValuePair(Members.VERTEX_LABEL.name(), m_vLabel); 
+            stringer.keySymbolValuePair(Members.EDGE_LABEL.name(), m_eLabel); 
             stringer.keySymbolValuePair(Members.SUB_GRAPH_NAME.name(), m_subGraphName);
             stringer.keySymbolValuePair(Members.SUB_GRAPH_VERTEX.name(), String.valueOf(m_subGraphVertex).toUpperCase());
             stringer.keySymbolValuePair(Members.SUB_GRAPH_EDGE.name(), String.valueOf(m_subGraphEdge).toUpperCase());
@@ -715,12 +727,14 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
             m_targetTableName = jobj.getString( Members.TARGET_GRAPH_NAME.name() );
             m_targetTableAlias = jobj.getString( Members.TARGET_GRAPH_ALIAS.name() );
             m_vLabel = jobj.getString( Members.VERTEX_LABEL.name() ); // LX FEAT2
+            m_eLabel = jobj.getString( Members.EDGE_LABEL.name() ); // LX FEAT3
         }
         // LX FEAT4
         else {
             m_targetTableName = jobj.getString( Members.TARGET_GRAPH_NAME.name() );
             m_targetTableAlias = jobj.getString( Members.TARGET_GRAPH_ALIAS.name() );
             m_vLabel = jobj.getString( Members.VERTEX_LABEL.name() ); 
+            m_eLabel = jobj.getString( Members.EDGE_LABEL.name() );
             m_subGraphName = jobj.getString( Members.SUB_GRAPH_NAME.name() ); 
             m_subGraphVertex = Boolean.valueOf( jobj.getString( Members.SUB_GRAPH_VERTEX.name() ));
             m_subGraphEdge = Boolean.valueOf( jobj.getString( Members.SUB_GRAPH_EDGE.name() ));

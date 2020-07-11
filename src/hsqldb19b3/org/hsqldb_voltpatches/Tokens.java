@@ -174,6 +174,7 @@ public class Tokens {
     static final String        T_FOREIGN           = "FOREIGN";
     static final String        T_FREE              = "FREE";
     static final String        T_FROM              = "FROM";
+    static final String        T_FROMLABEL         = "FROMLABEL"; // LX FEAT3
     static final String        T_FULL              = "FULL";
     static final String        T_FUNCTION          = "FUNCTION";
     static final String        T_FUSION            = "FUSION";
@@ -771,6 +772,7 @@ public class Tokens {
     public static final String T_TINYINT             = "TINYINT";
     static final String        T_TO_CHAR             = "TO_CHAR";
     static final String        T_TODAY               = "TODAY";
+    static final String        T_TOLABEL             = "TOLABEL"; // LX FEAT3
     static final String        T_TOP                 = "TOP";
     public static final String T_VARCHAR_IGNORECASE  = "VARCHAR_IGNORECASE";
     static final String        T_WRITE_DELAY         = "WRITE_DELAY";
@@ -1673,6 +1675,8 @@ public class Tokens {
     public static final int STARTVERTEX                = 750;
     public static final int HINT                       = 751;
     public static final int LABEL                      = 752;// implement LX FEAT2
+    public static final int FROMLABEL                  = 753; // LX FEAT3
+    public static final int TOLABEL                    = 754; // LX FEAT3
     // End LX
 
     public static final int X_UNKNOWN_TOKEN = -1;
@@ -1809,6 +1813,7 @@ public class Tokens {
         reservedKeys.put(Tokens.T_FOREIGN, FOREIGN);
         reservedKeys.put(Tokens.T_FREE, FREE);
         reservedKeys.put(Tokens.T_FROM, FROM);
+        reservedKeys.put(Tokens.T_FROMLABEL, FROMLABEL); // LX FEAT3
         reservedKeys.put(Tokens.T_FULL, FULL);
         reservedKeys.put(Tokens.T_FUNCTION, FUNCTION);
         reservedKeys.put(Tokens.T_FUSION, FUSION);
@@ -1996,6 +2001,7 @@ public class Tokens {
         reservedKeys.put(Tokens.T_TIMEZONE_HOUR, TIMEZONE_HOUR);
         reservedKeys.put(Tokens.T_TIMEZONE_MINUTE, TIMEZONE_MINUTE);
         reservedKeys.put(Tokens.T_TO, TO);
+        reservedKeys.put(Tokens.T_TOLABEL, TOLABEL); // LX FEAT3
         reservedKeys.put(Tokens.T_TRAILING, TRAILING);
         reservedKeys.put(Tokens.T_TRANSLATE, TRANSLATE);
         reservedKeys.put(Tokens.T_TRANSLATE_REGEX, TRANSLATE_REGEX);

@@ -856,11 +856,11 @@ public abstract class AbstractParsedStmt {
      * @param tableAlias
      * @return the cache entry
      */
-    protected StmtTableScan addGraphToStmtCache(GraphView graph, String tableAlias, String object, String hint, String vertexLabel, int startvertexid, int endvertexid, int prop1, int prop2, int prop3, int prop4, int prop5, int length) {
+    protected StmtTableScan addGraphToStmtCache(GraphView graph, String tableAlias, String object, String hint, String vertexLabel, String edgeLabel, int startvertexid, int endvertexid, int prop1, int prop2, int prop3, int prop4, int prop5, int length) {
         // Create an index into the query Catalog cache
         StmtTableScan tableScan = m_tableAliasMap.get(tableAlias);
         if (tableScan == null) {
-            tableScan = new StmtTargetGraphScan(graph, tableAlias, m_stmtId, object, hint, vertexLabel, startvertexid, endvertexid, prop1, prop2, prop3, prop4, prop5, length);
+            tableScan = new StmtTargetGraphScan(graph, tableAlias, m_stmtId, object, hint, vertexLabel, edgeLabel, startvertexid, endvertexid, prop1, prop2, prop3, prop4, prop5, length);
             m_tableAliasMap.put(tableAlias, tableScan);
         }
         return tableScan;
@@ -1594,10 +1594,18 @@ System.out.println("AbstractParsedStmt:1488:" + tableNode);
        // LX FEAT2
        String vertexLabel;
        if (object == "VERTEXES"){
-            vertexLabel = tableNode.attributes.get("label");
+            vertexLabel = tableNode.attributes.get("vlabel");
        }
        else
             vertexLabel = "";
+        // LX FEAT3
+       String edgeLabel;
+       if (object == "EDGES"){
+            edgeLabel = tableNode.attributes.get("elabel");
+       }
+       else
+            edgeLabel = "";
+
        int startvertexid = -1;
        int endvertexid = -1;
        int prop1 = -1;
@@ -1630,7 +1638,7 @@ System.out.println("AbstractParsedStmt:1488:" + tableNode);
        if (tableNode.attributes.get("length") != null) {
            length = Integer.parseInt(tableNode.attributes.get("length"));
        }
-       graphScan = addGraphToStmtCache(graph, tableAlias, object, hint, vertexLabel, startvertexid, endvertexid,
+       graphScan = addGraphToStmtCache(graph, tableAlias, object, hint, vertexLabel, edgeLabel, startvertexid, endvertexid,
                                        prop1, prop2, prop3, prop4, prop5, length); // LX FEAT2
 
        AbstractExpression joinExpr = parseJoinCondition(tableNode);

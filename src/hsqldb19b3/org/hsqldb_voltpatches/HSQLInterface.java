@@ -226,6 +226,7 @@ public class HSQLInterface {
         }
 
         runDDLCommand(ddl);
+        System.out.println("HSQLInterface:229");
         // If we expect to fail, but the statement above didn't bail...
         // (Shouldn't get here ever I think)
         if (expectFailure) {
@@ -239,11 +240,13 @@ public class HSQLInterface {
         if (expectedTableAffected != null) {
             // tableXMLNew = getXMLForTable(expectedTableAffected); comment LX
             // Add LX
+            System.out.println("HSQLInterface:243");
             if (stmtInfo.noun == HSQLDDLInfo.Noun.GRAPH)
                 tableXMLNew = getXMLForGraph(expectedTableAffected);
             else tableXMLNew = getXMLForTable(expectedTableAffected);
             // End LX
             tableXMLOld = lastSchema.get(expectedTableAffected);
+            System.out.println("HSQLInterface:249");
         }
 
         // valid reasons for tableXMLNew to be null are DROP IF EXISTS and not much else
@@ -282,6 +285,7 @@ public class HSQLInterface {
         if (expectedTableAffected != null) {
             lastSchema.put(expectedTableAffected, tableXMLNew.duplicate());
         }
+        System.out.println("HSQLInterface:229");
         return diff;
     }
 
@@ -325,9 +329,11 @@ public class HSQLInterface {
     public void runDDLCommand(String ddl) throws HSQLParseException {
         sessionProxy.clearLocalTables();
         Result result = sessionProxy.executeDirectStatement(ddl);
+        System.out.println("HSQLInterface:328");
         if (result.hasError()) {
             throw new HSQLParseException(result.getMainString());
         }
+        System.out.println("HSQLInterface:332");
     }
 
     /**
@@ -371,7 +377,7 @@ public class HSQLInterface {
 
         try {
             cs = sessionProxy.compileStatement(sql);
-            // System.out.println("HSQLInterface:374");
+            System.out.println("HSQLInterface:374");
         } catch (HsqlException caught) {
             // a switch in case we want to give more error details on additional error codes
             switch(caught.getErrorCode()) {
@@ -406,7 +412,7 @@ public class HSQLInterface {
                     "An unexpected system error was logged by the SQL parser for statement \"" + sql + "\" ",
                     caught);
         }
-        // System.out.println("HSQLInterface:409");
+        System.out.println("HSQLInterface:409");
         //Result result = Result.newPrepareResponse(cs.id, cs.type, rmd, pmd);
         Result result = Result.newPrepareResponse(cs);
         if (result.hasError()) {
@@ -414,9 +420,9 @@ public class HSQLInterface {
         }
 
         VoltXMLElement xml = null;
-        // System.out.println("HSQLInterface:417");
+        System.out.println("HSQLInterface:417");
         xml = cs.voltGetStatementXML(sessionProxy);
-        // System.out.println("HSQLInterface:419");
+        System.out.println("HSQLInterface:419");
         if (m_logger.isDebugEnabled()) {
             try {
                 /*

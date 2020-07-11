@@ -80,11 +80,14 @@ public:
 	// Table* getVertexTable(); // TODO: remove after fixing vertexscan
 	Table* getVertexTableFromLabel(string vlabel); // LX FEAT2
 	Table* getVertexTableById(string id); // LX FEAT2
+	Table* getEdgeTableFromLabel(string elabel); // LX FEAT3
+	Table* getEdgeTableById(string id); // LX FEAT3
+
 	void addToSubgraphList(string graphname); // LX FEAT4
 	void addToSubgraphVertex(std::vector<Vertex*> subgraphVertex); // LX FEAT4
 	void addToSubgraphEdge(std::vector<Edge*> subgraphEdge); // LX FEAT4
 	
-	Table* getEdgeTable();
+	// Table* getEdgeTable();
 	Table* getPathTable();
 	TupleSchema* getVertexSchema();
 	TupleSchema* getEdgeSchema();
@@ -154,7 +157,13 @@ protected:
 	std::vector<Table*> m_vertexTables; // LX FEAT2
 	std::vector<string> m_vertexLabels; // LX FEAT2
 	std::map<string, Table*> m_idToVTableMap; // LX FEAT2
-	Table* m_edgeTable;
+	// Table* m_edgeTable;
+	std::vector<Table*> m_edgeTables; // LX FEAT3
+	std::vector<string> m_edgeLabels; // LX FEAT3
+	std::vector<string> m_startVLabels; // LX FEAT3
+	std::vector<string> m_endVLabels; // LX FEAT3
+	std::map<string, Table*> m_idToETableMap; // LX FEAT3
+
 	TempTable* m_pathTable;
 	TableIterator* m_pathTableIterator;
 	PathIterator* m_pathIterator;
@@ -169,10 +178,15 @@ protected:
 	std::vector<int> m_columnIDsInEdgeTable;
 	int m_vertexIdColumnIndex;
 	std::map<string, int> m_vertexIdColIdxList;// LX FEAT2: store the id col index for each label
+	
 
 	int m_edgeIdColumnIndex;
 	int m_edgeFromColumnIndex;
 	int m_edgeToColumnIndex;
+	std::map<string, int> m_edgeIdColIdxList;// LX FEAT3
+	std::map<string, int> m_edgeFromColIdxList;// LX FEAT3
+	std::map<string, int> m_edgeToColIdxList;// LX FEAT3
+
 	int m_vPropColumnIndex, m_ePropColumnIndex;
 	string m_pathTableName = "PATHS_TEMP_TABLE";
 	GraphOperationType currentPathOperationType;
