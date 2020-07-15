@@ -211,6 +211,30 @@ AbstractExpression* AbstractExpression::buildExpressionTree_recurse(PlannerDomVa
 
         finalExpr->setInBytes(inBytes);
 
+        // LX FEAT4: this predicate needs vertexscan or edgescan
+        std::string leftGraphObj, rightGraphObj;
+        if (obj.hasNonNullKey("GRAPH_OBJECT")) {
+            finalExpr->setGraphObject(obj.valueForKey("GRAPH_OBJECT").asStr());
+        }
+        else {
+            // leftGraphObj = left_child->getGraphObject();
+            // rightGraphObj = right_child->getGraphObject();
+            finalExpr->setGraphObject("");
+            // cout << "abstractexpression:223:" << leftGraphObj << "," << rightGraphObj << endl;
+            // if (leftGraphObj.empty() && rightGraphObj.empty())
+            //     finalExpr->setGraphObject("");
+            // else if (leftGraphObj.empty())
+            //     finalExpr->setGraphObject(rightGraphObj);
+            // else if (rightGraphObj.empty())
+            //     finalExpr->setGraphObject(leftGraphObj);
+            // else {
+            //     if (leftGraphObj.compare(rightGraphObj) == 0)
+            //         finalExpr->setGraphObject("SAME");
+            //     else
+            //         finalExpr->setGraphObject("DIFF");
+            // }
+        }
+
         return finalExpr;
     }
     catch (const SerializableEEException &ex) {

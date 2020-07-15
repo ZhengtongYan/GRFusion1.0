@@ -981,17 +981,19 @@ public class ParserDQL extends ParserBase {
         // LX FEAT4 Fix the format to be:
         // select Graph(V.Label.*, E.*) into newGraph from oldGraph
         if (token.tokenType == Tokens.GRAPH) {
+            System.out.println("parserDQL:984");
             read();
             readThis(Tokens.OPENBRACKET);
             select.isGraph2Graph = true;
 
             // read requirements for vertex
             StringBuilder vsb = new StringBuilder();
-            if (token.namePrefix.equals("*"))
+            System.out.println(token.namePrefix + "," + token.tokenString);
+            if (token.tokenString.equals("*"))
                 select.chosenVertexLabel = null;
             else
-                select.chosenVertexLabel = token.namePrefix;
-            vsb.append(token.namePrePrefix);
+                select.chosenVertexLabel = token.tokenString;
+            vsb.append(token.namePrefix);
             select.newGraphVertex = vsb.toString();
             read();
 
@@ -999,7 +1001,12 @@ public class ParserDQL extends ParserBase {
 
             // read requirements for edges
             StringBuilder esb = new StringBuilder();
-            esb.append(token.namePrefix); // TODO: fix edge label later
+            System.out.println(token.namePrefix + "," + token.tokenString);
+            if (token.tokenString.equals("*"))
+                select.chosenEdgeLabel = null;
+            else
+                select.chosenEdgeLabel = token.tokenString;
+            esb.append(token.namePrefix); 
             select.newGraphEdge = esb.toString();
             read();
 
@@ -1007,7 +1014,7 @@ public class ParserDQL extends ParserBase {
             readThis(Tokens.INTO);
             select.newGraphName = token.tokenString;
             read();
-            // System.out.println("ParserDQL:994:" + select.newGraphVertex + ", " + select.newGraphEdge + ", " + select.newGraphName);
+            System.out.println("ParserDQL:994:" + select.newGraphVertex + ", " + select.newGraphEdge + ", " + select.newGraphName);
         }
 
         // while (true) {
@@ -1089,7 +1096,7 @@ public class ParserDQL extends ParserBase {
         if (token.tokenType == Tokens.EDGES) {
             hasE = true;
         }
-        if (token.tokenType == Tokens.VERTEXES) {
+        else if (token.tokenType == Tokens.VERTEXES) {
             hasV = true;
         }
         read();
@@ -1100,7 +1107,7 @@ public class ParserDQL extends ParserBase {
             read();
         }
                    
-        return new RangeVariable(graph, hasV, hasE, valias, ealias, select.newGraphName, select.newGraphVertex, select.newGraphEdge, select.chosenVertexLabel, compileContext);
+        return new RangeVariable(graph, hasV, hasE, valias, ealias, select.newGraphName, select.newGraphVertex, select.newGraphEdge, select.chosenVertexLabel, select.chosenEdgeLabel, compileContext);
     }
 
     // LX FEAT4

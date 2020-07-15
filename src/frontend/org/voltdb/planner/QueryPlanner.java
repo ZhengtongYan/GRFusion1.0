@@ -271,9 +271,10 @@ public class QueryPlanner implements AutoCloseable {
         Set<Integer> paramIds = new HashSet<>();
         ParameterizationInfo.findUserParametersRecursively(m_xmlSQL, paramIds);
         m_adhocUserParamsCount = paramIds.size();
-
+System.out.println("QueryPlanner:274:parameterize:" + m_adhocUserParamsCount);
         m_paramzInfo = null;
         if (paramIds.size() == 0) {
+            System.out.println("QueryPlanner:277");
             m_paramzInfo = ParameterizationInfo.parameterize(m_xmlSQL);
         }
 
@@ -282,6 +283,7 @@ public class QueryPlanner implements AutoCloseable {
         if (m_paramzInfo != null) {
             // if requested output the second version of the parsed plan
             m_planSelector.outputParameterizedCompiledStatement(m_paramzInfo.getParameterizedXmlSQL());
+            System.out.println("QueryPlanner:277");
             return m_paramzInfo.getParameterizedXmlSQL().toMinString();
         } else { // fallback when parameterization is
             return m_xmlSQL.toMinString();
@@ -318,10 +320,12 @@ public class QueryPlanner implements AutoCloseable {
         //  If a parameterized statement exists, try to make a plan with it
         //  On success return the plan.
         //  On failure, try the plan again without parameterization
-
+System.out.println("QueryPlanner:321" + m_paramzInfo);
         if (m_paramzInfo != null) {
             try {
                 // compile the plan with new parameters
+                System.out.println("QueryPlanner:325");
+
                 CompiledPlan plan = compileFromXML(m_paramzInfo.getParameterizedXmlSQL(),
                                                    m_paramzInfo.getParamLiteralValues());
                 if (plan != null) {
@@ -329,6 +333,8 @@ public class QueryPlanner implements AutoCloseable {
                         return plan;
                     }
                 } else if (DEBUGGING_STATIC_MODE_TO_RETRY_ON_ERROR) {
+                    System.out.println("QueryPlanner:334");
+
                     compileFromXML(m_paramzInfo.getParameterizedXmlSQL(),
                                    m_paramzInfo.getParamLiteralValues());
                 }
@@ -345,9 +351,13 @@ public class QueryPlanner implements AutoCloseable {
         }
 
         // if parameterization isn't requested or if it failed, plan here
+        System.out.println("QueryPlanner:353");
+
         CompiledPlan plan = compileFromXML(m_xmlSQL, null);
         if (plan == null) {
             if (DEBUGGING_STATIC_MODE_TO_RETRY_ON_ERROR) {
+                System.out.println("QueryPlanner:357");
+
                 compileFromXML(m_xmlSQL, null);
             }
             throw new PlanningErrorException(m_recentErrorMsg);
@@ -417,9 +427,12 @@ public class QueryPlanner implements AutoCloseable {
         // The callers of compilePlan are ready to catch any exceptions thrown here.
         // Simple constant expressions (i.e. "1 + 1" or "(2 * 4 + 2)/3") are evaluated and substituted by HSQL;
         // but expressions with functions (i.e. "cast(power(2, 3) to int)" are not.
+        System.out.println("QueryPlanner:420");
         AbstractParsedStmt parsedStmt = AbstractParsedStmt.parse(null, m_sql, xmlSQL, paramValues, m_db, m_joinOrder);
+        System.out.println("QueryPlanner:432");
         if (parsedStmt == null) {
             m_recentErrorMsg = "Failed to parse SQL statement: " + getOriginalSql();
+            System.out.println("QueryPlanner:434:" + xmlSQL);
             return null;
         }
 
@@ -427,6 +440,7 @@ public class QueryPlanner implements AutoCloseable {
             // no insert/upsert with joins
             if (parsedStmt.m_tableList.size() != 1) {
                 m_recentErrorMsg = "UPSERT is supported only with one single table: " + getOriginalSql();
+                System.out.println("QueryPlanner:442:" + xmlSQL);
                 return null;
             }
 
@@ -441,9 +455,12 @@ public class QueryPlanner implements AutoCloseable {
 
             if (pkey == null) {
                 m_recentErrorMsg = "Unsupported UPSERT table without primary key: " + getOriginalSql();
+                System.out.println("QueryPlanner:457:" + xmlSQL);
                 return null;
             }
         }
+                System.out.println("QueryPlanner:462");
+
         if (parsedStmt instanceof ParsedSelectStmt || parsedStmt instanceof ParsedUnionStmt) {
             final MVQueryRewriter rewriter;
             if (parsedStmt instanceof ParsedSelectStmt) {
@@ -455,21 +472,22 @@ public class QueryPlanner implements AutoCloseable {
                 m_paramzInfo.rewrite();
             }
         }
+        System.out.println("QueryPlanner:472:" + xmlSQL);
         m_planSelector.outputParsedStatement(parsedStmt);
-
+System.out.println("QueryPlanner:470");
         if (m_isLargeQuery && (parsedStmt.isDML() ||
                 (parsedStmt instanceof ParsedSelectStmt &&
                         ((ParsedSelectStmt)parsedStmt).hasWindowFunctionExpression()))) {
             m_isLargeQuery = false;
         }
-
+System.out.println("QueryPlanner:476");
         // Init Assembler. Each plan assembler requires a new instance of the PlanSelector
         // to keep track of the best plan
         PlanAssembler assembler = new PlanAssembler(m_db, m_partitioning,
                 (PlanSelector) m_planSelector.clone(), m_isLargeQuery);
         // find the plan with minimal cost
         CompiledPlan bestPlan = assembler.getBestCostPlan(parsedStmt);
-
+System.out.println("QueryPlanner:483");
         // This processing of bestPlan outside/after getBestCostPlan
         // allows getBestCostPlan to be called both here and
         // in PlanAssembler.getNextUnion on each branch of a union.
@@ -485,7 +503,7 @@ public class QueryPlanner implements AutoCloseable {
             }
             return null;
         }
-
+System.out.println("QueryPlanner:499");
         // Calculate the UDF dependences.
         Collection<String> dependees = parsedStmt.calculateUDFDependees();
         if (dependees != null) {
@@ -499,7 +517,7 @@ public class QueryPlanner implements AutoCloseable {
             // this plan is final, generate schema and resolve all the column index references
             bestPlan.rootPlanGraph = sendNode;
         }
-
+System.out.println("QueryPlanner:513");
         // Execute the generateOutputSchema and resolveColumnIndexes once for the best plan
         bestPlan.rootPlanGraph.generateOutputSchema(m_db);
         // Make sure the schemas for base and recursive plans in common table scans
@@ -513,14 +531,14 @@ public class QueryPlanner implements AutoCloseable {
         if (parsedStmt instanceof ParsedSelectStmt) {
             ((ParsedSelectStmt)parsedStmt).checkPlanColumnMatch(bestPlan.rootPlanGraph.getOutputSchema());
         }
-
+System.out.println("QueryPlanner:527");
         // reset all the plan node ids for a given plan
         // this makes the ids deterministic
         bestPlan.resetPlanNodeIds(1);
-
+System.out.println("QueryPlanner:531");
         // Output the best plan debug info
         assembler.finalizeBestCostPlan();
-
+System.out.println("QueryPlanner:534");
         // split up the plan everywhere we see send/receive into multiple plan fragments
         List<AbstractPlanNode> receives = bestPlan.rootPlanGraph.findAllNodesOfClass(AbstractReceivePlanNode.class);
         if (receives.size() > 1) {
@@ -529,7 +547,7 @@ public class QueryPlanner implements AutoCloseable {
                     + "Consider simplifying its subqueries: " + getOriginalSql();
             return null;
         }
-
+System.out.println("QueryPlanner:543");
         /*/ enable for debug ...
         if (receives.size() > 1) {
             System.out.println(plan.rootPlanGraph.toExplainPlanString());
@@ -539,7 +557,7 @@ public class QueryPlanner implements AutoCloseable {
             AbstractReceivePlanNode recvNode = (AbstractReceivePlanNode) receives.get(0);
             fragmentize(bestPlan, recvNode);
         }
-
+System.out.println("QueryPlanner:553");
         return bestPlan;
     }
 

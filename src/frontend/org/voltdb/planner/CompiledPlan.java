@@ -300,12 +300,14 @@ public class CompiledPlan {
             for (ParameterValueExpression param : getParameters()) {
                 m_parameterTypes[ii++] = param.getValueType();
             }
+            System.out.println("CompiledPlan:303:" + ii);
         }
         return m_parameterTypes;
     }
 
     public boolean extractParamValues(ParameterizationInfo paramzInfo) throws Exception {
         VoltType[] paramTypes = parameterTypes();
+        System.out.println("CompiledPlan:309:" + paramTypes.length);
         if (paramTypes.length > MAX_PARAM_COUNT) {
             return false;
         }

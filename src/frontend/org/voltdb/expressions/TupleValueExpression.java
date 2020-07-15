@@ -494,32 +494,40 @@ System.out.println("tve:448:" + m_columnIndex);
         setTypeSizeAndInBytes(column);
     }
 
+    private Column findColumnInGraph(GraphView graph, String type) {
+        Column graphCol;
+        Column tableCol;
+        m_graphObject = type;
+        String label = m_columnName.substring(0, m_columnName.indexOf("."));
+        String name = m_columnName.substring(m_columnName.indexOf(".") + 1);
+        if (name.equals("FANIN") || name.equals("FANOUT"))
+            return graph.getVertexprops().getExact(m_columnName);
+
+        if (type == "VERTEXES") {
+            try {
+                graphCol = graph.getVertexprops().getExact(m_columnName);
+                tableCol = graphCol.getMatviewsource();
+                Table vTable = graph.getVertexlabels().getExact(label).getVtable();
+                return vTable.getColumns().getExact(tableCol.getName());
+            }
+            catch (NullPointerException e) {
+                return null;
+            }
+        }
+        else {
+            graphCol = graph.getEdgeprops().getExact(m_columnName);
+            tableCol = graphCol.getMatviewsource();
+            Table eTable = graph.getEdgelabels().getExact(label).getEtable();
+            return eTable.getColumns().getExact(tableCol.getName());
+        }
+    }
+
     // Added by LX
     public void resolveForGraph(GraphView graph, String type) {
         assert(graph != null);
         Column column;
-
-        if (type == "vertex") {
-            // assuming all properties in vertex table are exactly the same
-            // as all columns in the referenced relation table
-            // this is what the original author of GRFusion assumed
-            // LX FEAT2
-            Column graphCol = graph.getVertexprops().getExact(m_columnName);
-            if (m_graphObject == null) 
-                m_graphObject = "VERTEXES";
-            Column tableCol = graphCol.getMatviewsource();
-            String vLabel = m_columnName.substring(0, m_columnName.indexOf("."));
-            String name = m_columnName.substring(m_columnName.indexOf(".") + 1);
-            // System.out.println(name);
-            if (name.equals("FANIN") || name.equals("FANOUT"))
-                column = graph.getVertexprops().getExact(m_columnName);
-            else {
-                Table vTable = graph.getVertexlabels().getExact(vLabel).getVtable();
-                column = vTable.getColumns().getExact(tableCol.getName());
-            }
-            // System.out.println("tve:507:" + c.getName());
-        }
-        else if (type == "path") {
+System.out.println("TupleValueExpression:501" + m_columnName + ", " + type);
+        if (type == "path") {
             column = graph.getPathprops().getExact(m_columnName);
             if (m_graphObject == null) 
                 m_graphObject = "PATHS";
@@ -530,15 +538,10 @@ System.out.println("tve:448:" + m_columnIndex);
                 m_graphObject = "VERTEXES";
         }
         else {
-            // LX FEAT3
-            Column graphCol = graph.getEdgeprops().getExact(m_columnName);
-            if (m_graphObject == null) 
-                m_graphObject = "EDGES";
-            Column tableCol = graphCol.getMatviewsource();
-            String eLabel = m_columnName.substring(0, m_columnName.indexOf("."));
-            String name = m_columnName.substring(m_columnName.indexOf(".") + 1);
-            Table eTable = graph.getEdgelabels().getExact(eLabel).getEtable();
-            column = eTable.getColumns().getExact(tableCol.getName());
+            // LX FEAT 2/3/4
+            column = findColumnInGraph(graph, "VERTEXES");
+            if (column == null)
+                column = findColumnInGraph(graph, "EDGES");
         }
         
         assert(column != null);

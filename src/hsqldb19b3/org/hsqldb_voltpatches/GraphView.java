@@ -503,11 +503,14 @@ System.out.println("GraphView:354");
     /**
      *  Returns the index of given column name or -1 if not found.
      */
+    // LX FEAT4
     public int findVertexProp(String name) { // format: label.colName LX FEAT2
         // System.out.println("GraphView:437:" + name);
-        int index = (Integer)VertexPropList.get(name);
+        int index = VertexPropList.getIndex(name);
+        if (index == -1)
+            return -1;
         // System.out.println("GraphView:439:" + index + ", " + idxToVIdx0.size() + ", " + getAllPropCount() + ", " + VertexPropList.size());
-        return index; 
+        return (int)VertexPropList.get(index); 
     }
     
     public void addVertexPropNoCheck(ColumnSchema property, String label) {
@@ -575,9 +578,12 @@ System.out.println("GraphView:354");
     /**
      *  Returns the index of given edge property name or -1 if not found.
      */
+    // LX FEAT 4
     public int findEdgeProp(String name) {
-        int index = (Integer)EdgePropList.get(name);
-        return index;
+        int index = EdgePropList.getIndex(name);
+        if (index == -1)
+            return -1;
+        return (int)EdgePropList.get(index);
     }
     
     public void addEdgePropNoCheck(ColumnSchema property, String label) {

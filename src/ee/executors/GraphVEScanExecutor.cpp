@@ -1,10 +1,3 @@
-/*
- * GraphVEScanExecutor.cpp
- *
- *  Created on: Nov 30, 2016
- *      Author: msaberab
- */
-
 #include "GraphVEScanExecutor.h"
 
 #include "common/debuglog.h"
@@ -105,43 +98,19 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
     // std::string vertexLabel = "BALL";
     std::string vertexLabel = node->getChosenVertexLabel();
     Table* inputVertexTable = graphView->getVertexTableFromLabel(vertexLabel);
-    std::string edgeLabel = ""; //node->getChosenVertexLabel();
-    Table* inputEdgeTable = graphView->getVertexTableFromLabel(edgeLabel);
 
-    cout << "GraphVEScanExecutor:122:" << vertexLabel << ", " << inputVertexTable->name() << endl;
+    std::string edgeLabel = node->getChosenEdgeLabel();
+    Table* inputEdgeTable = graphView->getEdgeTableFromLabel(edgeLabel);
 
-    std::vector<Vertex*> vertexlist;
-    std::vector<Edge*> edgelist;
-    // vassert(inputVertexTable);
-    int vertexId = -1, fanIn = -1, fanOut = -1;
+    // cout << "GraphVEScanExecutor:122:" << vertexLabel << ", " << inputVertexTable->name() << endl;
 
-    // VOLT_TRACE("Sequential Scanning vertexes in :\n %s",
-    //            inputVertexTable->debug().c_str());
-    // VOLT_DEBUG("Sequential Scanning vertexes table : %s which has %d active, %d"
-    //            " allocated",
-    //            inputVertexTable->name().c_str(),
-    //            (int)inputVertexTable->activeTupleCount(),
-    //            (int)inputVertexTable->allocatedTupleCount());
-
-    // int num_of_columns = -1;
     ProjectionPlanNode* projectionNode = dynamic_cast<ProjectionPlanNode*>(node->getInlinePlanNode(PlanNodeType::Projection));
-    // if (projectionNode != NULL) {
-        // cout << "GraphVEScanExecutor:150" << endl;
-        // num_of_columns = 1;
-        // num_of_columns = static_cast<int> (projectionNode->getOutputColumnExpressions().size());
-        // LogManager::GLog("GraphVEScanExecutor", "p_execute", 151, projectionNode->getOutputColumnNames()[0] + projectionNode->getOutputColumnNames()[1]);
-    // }
-    // LogManager::GLog("GraphVEScanExecutor", "p_execute:140", num_of_columns, "num_of_columns"  );
-
-
+    
     LimitPlanNode* limit_node = dynamic_cast<LimitPlanNode*>(node->getInlinePlanNode(PlanNodeType::Limit));
 
     if (node->getPredicate() != NULL || projectionNode != NULL ||
         limit_node != NULL || m_aggExec != NULL)
     {
-        TableTuple tuple(inputVertexTable->schema());
-        TableTuple tuple1(inputEdgeTable->schema());
-        TableIterator iterator = inputVertexTable->iteratorDeletingAsWeGo();
         AbstractExpression *predicate = node->getPredicate();
 
         if (predicate)
@@ -149,91 +118,12 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
             VOLT_TRACE("SCAN PREDICATE :\n%s\n", predicate->debug(true).c_str());
         }
 
-        int limit = CountingPostfilter::NO_LIMIT;
-        int offset = CountingPostfilter::NO_OFFSET;
-        LogManager::GLog("GraphVEScanExecutor", "p_execute:189", offset, "offset");
-        if (limit_node) {
-            std::tie(limit, offset) = limit_node->getLimitAndOffset(params);
-            // limit_node->getLimitAndOffsetByReference(params, limit, offset);
-        }
-        // Initialize the postfilter
-        CountingPostfilter postfilter(m_tmpOutputTable, predicate, limit, offset);
+        std::vector<Vertex*> vertexlist;
+        std::vector<Edge*> edgelist;
+        checkTupleForPredicate(predicate, vertexlist, edgelist, inputVertexTable, vertexLabel, inputEdgeTable, edgeLabel, limit_node, graphView, params);
 
-        ProgressMonitorProxy pmp(m_engine->getExecutorContext(), this);
-        TableTuple temp_tuple;
-        vassert(m_tmpOutputTable);
-        if (m_aggExec != NULL){//} || m_insertExec != NULL) {
-            LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "1");
-            const TupleSchema * inputSchema = inputVertexTable->schema();
-            // if (projectionNode != NULL) {
-            //     inputSchema = projectionNode->getOutputTable()->schema();
-            // }
-            
-            temp_tuple = m_aggExec->p_execute_init(params, &pmp, inputSchema, m_tmpOutputTable, &postfilter);
-
-        } else {
-            LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "2");
-            temp_tuple = m_tmpOutputTable->tempTuple();
-        }
-        
-        while (postfilter.isUnderLimit() && iterator.next(tuple))
-        {
-#if   defined(VOLT_TRACE_ENABLED)
-            int tuple_ctr = 0;
-#endif
-            VOLT_TRACE("INPUT TUPLE: %s, %d/%d\n",
-                       tuple.debug(inputVertexTable->name()).c_str(), tuple_ctr,
-                       (int)inputVertexTable->activeTupleCount());
-            pmp.countdownProgress();
-            // LogManager::GLog("GraphVEScanExecutor", "p_execute", 230, tuple.debug(inputVertexTable->name()).c_str());
-            cout << "GraphVEScanExecutor:233:" << tuple.debug(inputVertexTable->name()).c_str() << endl;
-            //
-            // For each tuple we need to evaluate it against our predicate and limit/offset
-            //
-            if (postfilter.eval(&tuple, NULL))
-            {
-
-                // if (projectionNode != NULL)
-                // {
-                    VOLT_TRACE("inline projection...");
-                    //get the vertex id
-                    vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
-                    vertexlist.push_back(graphView->getVertex(vertexLabel + "." + to_string(vertexId)));
-                    cout << "GraphVEScanExecutor:250:" << vertexId << endl;
-                    // fanOut = graphView->getVertex(vertexId)->fanOut();
-                    // fanIn = graphView->getVertex(vertexId)->fanIn();
-                    cout << "GraphVEScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;
-                    // for (int ctr = 0; ctr < num_of_columns ; ctr++) {
-                    // 	//msaber: todo, need to check the projection operator construction
-                    // 	//and modify it to allow selecting graph vertex attributes
-                        
-                    //     // LX: add workaround to solve inconsistent column index issue: given a ctr index, find the column name
-                    //     string t_coln = projectionNode->getOutputColumnNames()[ctr];
-                    //     cout << "GraphVEScanExecutor:257:" << t_coln << endl;
-                    //     if (t_coln.compare(vertexLabel + ".FANIN") == 0){
-                    //         temp_tuple.setNValue(ctr, ValueFactory::getIntegerValue(fanIn));
-                    //         continue;
-                    //     }
-                    //     else if (t_coln.compare(vertexLabel + ".FANOUT") == 0){
-                    //         temp_tuple.setNValue(ctr, ValueFactory::getIntegerValue(fanOut));
-                    //         continue;
-                    //     }
-                        
-                    //     // int newctr = graphView->getColumnIdInVertexTable(tbl_ctr);
-                    //     // NValue value = projectionNode->getOutputColumnExpressions()[newctr]->eval(&tuple, NULL);
-                    //     NValue value = projectionNode->getOutputColumnExpressions()[ctr]->eval(&tuple, NULL);
-                    //     temp_tuple.setNValue(ctr, value);
-                    // }
-                    // outputTuple(temp_tuple);
-                // }
-                // else
-                // {
-                //     outputTuple( tuple);
-                // }
-                pmp.countdownProgress();
-            }
-        }
         graphView->addToSubgraphVertex(vertexlist);
+        graphView->addToSubgraphEdge(edgelist);
         if (m_aggExec != NULL) {
             m_aggExec->p_execute_finish();
         }
@@ -245,30 +135,111 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
     return true;
 }
 
-/**
- * Set up a multi-column temp output table for those executors that require one.
- * Called from p_init.
-
-void GraphVEScanExecutor::setTempOutputTable(TempTableLimits* limits, const string tempTableName) {
-
-	LogManager::GLog("GraphVEScanExecutor", "setTempOutputTable", 255,
-							"setTempOutputTable in GraphVEScanExecutor called with tempTableName = " + tempTableName);
-
-    assert(limits);
-    TupleSchema* schema = m_abstractNode->generateTupleSchema();
-    int column_count = schema->columnCount();
-    std::vector<std::string> column_names(column_count);
-    assert(column_count >= 1);
-    const std::vector<SchemaColumn*>& outputSchema = m_abstractNode->getOutputSchema();
-
-    for (int ctr = 0; ctr < column_count; ctr++) {
-        column_names[ctr] = outputSchema[ctr]->getColumnName();
+/*
+    Returns the selected vertices with its adjacency list and the selected edges
+ */
+void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, std::vector<Vertex*> subVertex, std::vector<Edge*> subEdge, Table* inputVertexTable, std::string vlabel, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, GraphView* graphView, const NValueArray &params) {
+    
+    if (((!predicate->getLeftExp()->getGraphObject().empty()) && 
+            (predicate->getLeftExp()->getGraphObject()).compare("VERTEX") == 0) || 
+                ((!predicate->getRightExp()->getGraphObject().empty()) && 
+                     (predicate->getRightExp()->getGraphObject()).compare("VERTEX") == 0) ) {
+        filterFromGraph(predicate, subVertex, subEdge, inputVertexTable, vlabel, limit_node, graphView, "VERTEX", params);
+        return;
+    }
+    else if (((!predicate->getLeftExp()->getGraphObject().empty()) && 
+            (predicate->getLeftExp()->getGraphObject()).compare("EDGE") == 0) || 
+                ((!predicate->getRightExp()->getGraphObject().empty()) && 
+                     (predicate->getRightExp()->getGraphObject()).compare("EDGE") == 0)){
+        filterFromGraph(predicate, subVertex, subEdge, inputEdgeTable, elabel, limit_node, graphView, "EDGE", params);
+        return ;
     }
 
-    m_tmpOutputTable = TableFactory::getTempTable(m_abstractNode->databaseId(), tempTableName, schema, column_names, limits);
-    m_abstractNode->setOutputTable(m_tmpOutputTable);
+    if (predicate->getLeftExp()->getGraphObject().empty() && predicate->getRightExp()->getGraphObject().empty()) {
+        checkTupleForPredicate(predicate->getLeftExp(), subVertex, subEdge, inputVertexTable, vlabel, inputEdgeTable, elabel, limit_node, graphView, params);
+        checkTupleForPredicate(predicate->getRightExp(), subVertex, subEdge, inputVertexTable, vlabel, inputEdgeTable, elabel, limit_node, graphView, params);
+    }
+
+    // ExpressionType etype = predicate->getExpressionType();
+    // switch (etype) {
+    //     case:
+
+    //     default:
+    // }
+    
+    return ;
 }
- */
+
+void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::vector<Vertex*> subVertex, std::vector<Edge*> subEdge, Table* inputTable, std::string label, LimitPlanNode* limit_node, GraphView* graphView, std::string obj, const NValueArray &params) {
+
+    TableTuple tuple(inputTable->schema());
+    TableIterator iterator = inputTable->iteratorDeletingAsWeGo();
+    // AbstractExpression *predicate = node->getPredicate();
+   
+    int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    LogManager::GLog("GraphVEScanExecutor", "p_execute:189", offset, "offset");
+    if (limit_node) {
+        std::tie(limit, offset) = limit_node->getLimitAndOffset(params);
+    }
+    // Initialize the postfilter
+    CountingPostfilter postfilter(m_tmpOutputTable, predicate, limit, offset);
+
+    ProgressMonitorProxy pmp(m_engine->getExecutorContext(), this);
+    TableTuple temp_tuple;
+    vassert(m_tmpOutputTable);
+    if (m_aggExec != NULL){
+        LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "1");
+        const TupleSchema * inputSchema = inputTable->schema();
+        
+        temp_tuple = m_aggExec->p_execute_init(params, &pmp, inputSchema, m_tmpOutputTable, &postfilter);
+
+    } else {
+        LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "2");
+        temp_tuple = m_tmpOutputTable->tempTuple();
+    }
+    
+    int id;
+    while (postfilter.isUnderLimit() && iterator.next(tuple))
+    {
+#if   defined(VOLT_TRACE_ENABLED)
+        int tuple_ctr = 0;
+#endif
+        VOLT_TRACE("INPUT TUPLE: %s, %d/%d\n",
+                   tuple.debug(inputTable->name()).c_str(), tuple_ctr,
+                   (int)inputTable->activeTupleCount());
+        pmp.countdownProgress();
+        // LogManager::GLog("GraphVEScanExecutor", "p_execute", 230, tuple.debug(inputVertexTable->name()).c_str());
+        cout << "GraphVEScanExecutor:233:" << tuple.debug(inputTable->name()).c_str() << endl;
+
+        if (postfilter.eval(&tuple, NULL))
+        {
+            VOLT_TRACE("inline projection...");
+            //get the vertex id
+            id = ValuePeeker::peekInteger(tuple.getNValue(0));
+            if (obj.compare("VERTEX") == 0) {
+                Vertex * v = graphView->getVertex(label + "." + to_string(id));
+                subVertex.push_back(v);
+                // add all its inEdge and outEdge list to subEdge
+                for (int i = 0; i < v->fanOut(); i++) {
+                    subEdge.push_back(v->getOutEdge(i));
+                }
+                for (int j = 0; j < v->fanIn(); j++) {
+                    subEdge.push_back(v->getInEdge(j));
+                }
+            }
+            else if (obj.compare("EDGE") == 0) {
+                Edge * e = graphView->getEdge(label + "." + to_string(id));
+                subEdge.push_back(e);
+                // add its startVertex and endVertex to subVertex
+                subVertex.push_back(e->getStartVertex());
+                subVertex.push_back(e->getEndVertex());
+            }
+            pmp.countdownProgress();
+        }
+    }
+}
+
 
 void GraphVEScanExecutor::outputTuple(TableTuple& tuple)
 {

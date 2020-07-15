@@ -187,25 +187,18 @@ public class ExpressionColumn extends Expression {
             if (range.isPaths) {
                 objectName = "PATHS";
             }
-            else if (range.isVertexes) {
-                objectName = "VERTEXES";
-                // LX FEAT2
-                if (this.schema != null) {
-                    this.schema = null;
-                    labelName  = tableName;
-                    tableName = null;
-                    columnName  = labelName + "." + columnName;
+            // LX FEAT4
+            else {
+                if (range.isVertexes && range.isEdges) { // from clause has v and e
+                    objectName = "VERTEX_EDGE";
                 }
-                else if (tableName != null) {
-                    tableName = null;
-                    labelName = "";
-                    columnName = "." + columnName;
+                else if (range.isVertexes) {
+                    objectName = "VERTEXES";
+                }
+                else if (range.isEdges) {
+                    objectName = "EDGES";
                 }
 
-            }
-            else if (range.isEdges) {
-                objectName = "EDGES";
-                // LX FEAT3
                 if (this.schema != null) {
                     this.schema = null;
                     labelName  = tableName;
@@ -217,7 +210,7 @@ public class ExpressionColumn extends Expression {
                     labelName = "";
                     columnName = "." + columnName;
                 }
-            }
+            }          
         }
     }
 
@@ -348,7 +341,6 @@ System.out.println("ExpressionColumn:171:set objectName");
                 return;
 
             case OpTypes.MULTICOLUMN :
-                System.out.println("ExpressionColumn:301");
             case OpTypes.DYNAMIC_PARAM :
             case OpTypes.ASTERISK :
             case OpTypes.SIMPLE_COLUMN :
@@ -424,7 +416,6 @@ System.out.println("ExpressionColumn:171:set objectName");
     @Override
     public HsqlList resolveColumnReferences(RangeVariable[] rangeVarArray,
             int rangeCount, HsqlList unresolvedSet, boolean acceptsSequences) {
-System.out.println("ExpressionColumn:357:" + opType);
         switch (opType) {
 
             case OpTypes.SEQUENCE :
@@ -1531,17 +1522,27 @@ System.out.println("ExpressionColumn:357:" + opType);
         if (rangeVariable != null && rangeVariable.isGraph) {
             //if (objectName == null)
                 //System.out.println("ExpressionColumn ln 1332: "+columnName);
-            if (columnName.toUpperCase() == "STARTVERTEXID")
+            if ((objectName==null && rangeVariable.isVertexes && rangeVariable.isEdges) || "VERTEX_EDGE".equals(objectName)) {
+                exp.attributes.put("propertytype", "vertex_edge");
+            }
+            else if (columnName.toUpperCase() == "STARTVERTEXID") {
                 exp.attributes.put("propertytype", "startvertex");
-            else if (columnName.toUpperCase() == "ENDVERTEXID")
+            }
+            else if (columnName.toUpperCase() == "ENDVERTEXID") {
                 exp.attributes.put("propertytype", "endvertex");
-            else if ((objectName == null && rangeVariable.isVertexes) || "VERTEXES".equals(objectName))
+            }
+            else if ((objectName == null && rangeVariable.isVertexes) || "VERTEXES".equals(objectName)) {
                 exp.attributes.put("propertytype", "vertex");
-            else if ((objectName == null && rangeVariable.isEdges) || "EDGES".equals(objectName))
+            }
+            else if ((objectName == null && rangeVariable.isEdges) || "EDGES".equals(objectName)) {
                 exp.attributes.put("propertytype", "edge");
-            else if ((objectName == null && rangeVariable.isPaths) || "PATHS".equals(objectName))
+            }
+            else if ((objectName == null && rangeVariable.isPaths) || "PATHS".equals(objectName)) {
                 exp.attributes.put("propertytype", "path");
-            else exp.attributes.put("propertytype", "column");
+            }
+            else {
+                exp.attributes.put("propertytype", "column");
+            }
         }
         else exp.attributes.put("propertytype", "column");
         

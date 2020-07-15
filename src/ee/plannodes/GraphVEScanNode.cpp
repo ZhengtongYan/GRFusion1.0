@@ -41,16 +41,27 @@ std::string GraphVEScanPlanNode::getChosenVertexLabel() const
 	return m_chosenVertexLabel;
 }
 
+std::string GraphVEScanPlanNode::getChosenEdgeLabel() const
+{
+	return m_chosenEdgeLabel;
+}
+
 void GraphVEScanPlanNode::loadFromJSONObject(PlannerDomValue obj)
 {
 	std::cout << "GraphVEScan:46" << endl;
 	m_target_graph_name = obj.valueForKey("TARGET_GRAPH_NAME").asStr();
 
-	m_hasVertexLabel = obj.hasNonNullKey("CHOSEN_VERTEX_LABEL"); 
-	if (m_hasVertexLabel)
+	if (obj.hasNonNullKey("CHOSEN_VERTEX_LABEL"))
 		m_chosenVertexLabel = obj.valueForKey("CHOSEN_VERTEX_LABEL").asStr();
 	else {
 		// m_chosenVertexLabel needs to include all vertex labels in this graph view
+		// TODO: fix later
+	}
+
+	if (obj.hasNonNullKey("CHOSEN_EDGE_LABEL"))
+		m_chosenEdgeLabel = obj.valueForKey("CHOSEN_EDGE_LABEL").asStr();
+	else {
+		// m_chosenVertexLabel needs to include all edge labels in this graph view
 		// TODO: fix later
 	}
 

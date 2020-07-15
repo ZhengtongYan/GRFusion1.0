@@ -21,6 +21,7 @@ public:
 
 	GraphView* getTargetGraphView() const;
 	std::string getChosenVertexLabel() const; 
+	std::string getChosenEdgeLabel() const; 
 	void setTargetGraphViewDelegate(GraphViewCatalogDelegate* gcd) { m_gcd = gcd; } // DEPRECATED?
 
 	std::string getTargetGraphViewName() const { return m_target_graph_name; } // DEPRECATED?
@@ -33,8 +34,8 @@ public:
 protected:
     void loadFromJSONObject(PlannerDomValue obj);
 
-    bool m_hasVertexLabel;
     std::string m_chosenVertexLabel; 
+    std::string m_chosenEdgeLabel; 
     std::string m_target_graph_name;
 	GraphViewCatalogDelegate* m_gcd;
 

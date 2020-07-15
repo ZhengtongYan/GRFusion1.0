@@ -132,7 +132,7 @@ GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Data
 			columnIdsInEdgeTable[colIndex] = catalog_column->matviewsource()->index();
 
 			params << ", EdgeTable Column Index = " << catalog_column->matviewsource()->index();
-			LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 139, params.str());
+			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 139, params.str());
 			colIndex++;
 		}
 	}

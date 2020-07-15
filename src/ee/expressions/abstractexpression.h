@@ -136,9 +136,27 @@ class AbstractExpression {
         return m_right;
     }
 
+    // LX FEAT4
+    AbstractExpression *getLeftExp() {
+        return m_left;
+    }
+    AbstractExpression *getRightExp() {
+        return m_right;
+    }
+
     virtual const std::vector<AbstractExpression*> getArgs() const {
        // Only FunctionExpression has children (as function arguments).
        return empty_expression;
+    }
+
+    // LX FEAT4
+    std::string getGraphObject() {
+        return m_graphObject;
+    }
+
+    // LX FEAT4
+    void setGraphObject(std::string gobj)  {
+        m_graphObject = gobj;
     }
 
   protected:
@@ -160,6 +178,7 @@ class AbstractExpression {
     ValueType m_valueType;
     int m_valueSize;
     bool m_inBytes;
+    std::string m_graphObject; // LX FEAT4
 };
 
 }

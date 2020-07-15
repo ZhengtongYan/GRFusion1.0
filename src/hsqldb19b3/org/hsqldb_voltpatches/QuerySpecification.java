@@ -79,6 +79,7 @@ public class QuerySpecification extends QueryExpression {
     public String         newGraphVertex;// LX FEAT4 
     public String         newGraphEdge;// LX FEAT4 
     public String         chosenVertexLabel; // LX FEAT4
+    public String         chosenEdgeLabel; // LX FEAT4
     public String         hint; // Added by LX
     public boolean        isDDL; // LX FEAT3
     private HashSet       groupColumnNames;

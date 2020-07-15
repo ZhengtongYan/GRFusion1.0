@@ -525,6 +525,18 @@ AbstractExpression* ExpressionUtil::expressionFactory(
    }
    ret->setValueType(vt);
    ret->setValueSize(vs);
+
+   // LX FEAT4
+   // if (lc->getGraphObject().empty() && (!rc->getGraphObject().empty()))
+   //    ret->setGraphObject(rc->getGraphObject());
+   // else if ((!lc->getGraphObject().empty()) && (rc->getGraphObject().empty()))
+   //    ret->setGraphObject(lc->getGraphObject());
+   // else if ((!lc->getGraphObject().empty()) && (!rc->getGraphObject().empty())) {
+   //    if (lc->getGraphObject().compare(rc->getGraphObject()) != 0)
+   //        ret->setGraphObject("DIFF");    
+   //    else
+   //        ret->setGraphObject("SAME_" + rc->getGraphObject());
+   // }
    // written thusly to ease testing/inspecting return content.
    VOLT_TRACE("Created expression %p", ret);
    return ret;

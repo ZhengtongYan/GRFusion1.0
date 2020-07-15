@@ -229,7 +229,6 @@ TupleSchema* AbstractPlanNode::generateDMLCountTupleSchema() {
 //  Serialization Functions
 // ----------------------------------------------------
 std::unique_ptr<AbstractPlanNode> AbstractPlanNode::fromJSONObject(PlannerDomValue obj) {
-    std::cout << "abstractplannode:232" << endl;
     string typeString = obj.valueForKey("PLAN_NODE_TYPE").asStr();
     std::unique_ptr<AbstractPlanNode> node(
         plannodeutil::getEmptyPlanNode(stringToPlanNode(typeString)));
@@ -244,12 +243,11 @@ std::unique_ptr<AbstractPlanNode> AbstractPlanNode::fromJSONObject(PlannerDomVal
             node->addInlinePlanNode(newNode.release());
         }
     }
-    std::cout << "1" << endl;
+
     loadIntArrayFromJSONObject("CHILDREN_IDS", obj, node->m_childIds);
-    std::cout << "11" << endl;
+
     // Output schema are optional -- when they can be determined by a child's copy.
     if (obj.hasKey("OUTPUT_SCHEMA")) {
-        std::cout << "111" << endl;
         PlannerDomValue outputSchemaArray = obj.valueForKey("OUTPUT_SCHEMA");
         for (int i = 0; i < outputSchemaArray.arrayLen(); i++) {
             PlannerDomValue outputColumnValue = outputSchemaArray.valueAtIndex(i);
@@ -258,21 +256,18 @@ std::unique_ptr<AbstractPlanNode> AbstractPlanNode::fromJSONObject(PlannerDomVal
         }
         node->m_validOutputColumnCount = static_cast<int>(node->m_outputSchema.size());
     } else if (node->getInlinePlanNode(PlanNodeType::Projection)) {
-        std::cout << "2" << endl;
         // Anticipate and mark the two different scenarios of missing output schema.
         // The actual output schema can be searched for on demand once the whole plan tree is loaded.
         // If there's an inline projection node,
         // one of its chief purposes is defining the parent's output schema.
         node->m_validOutputColumnCount = SCHEMA_UNDEFINED_SO_GET_FROM_INLINE_PROJECTION;
     } else {
-        std::cout << "3" << endl;
         // Otherwise, the node is relying on a child's output schema, possibly several levels down,
         // OR it is just an inline node (e.g. a LIMIT) or a DML node,
         // whose output schema is known from its context or is otherwise not of any interest.
         node->m_validOutputColumnCount = SCHEMA_UNDEFINED_SO_GET_FROM_CHILD;
     }
     node->loadFromJSONObject(obj);
-    std::cout << "4" << endl;
     return node;
 }
 

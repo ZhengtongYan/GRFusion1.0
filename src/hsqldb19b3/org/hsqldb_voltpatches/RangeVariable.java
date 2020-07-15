@@ -80,6 +80,7 @@ final class RangeVariable {
     final String           newGraphVertex; // LX FEAT4
     final String           newGraphEdge; // LX FEAT4
     final String           chosenVertexLabel; // LX FEAT4
+    final String           chosenEdgeLabel; // LX FEAT4
     boolean                isVertexes;
     boolean                isEdges;
     boolean                isPaths;
@@ -152,6 +153,7 @@ final class RangeVariable {
         vertexTableAlias = null;// LX FEAT4
         edgeTableAlias   = null; // LX FEAT4
         chosenVertexLabel = null; // LX FEAT4
+        chosenEdgeLabel = null; // LX FEAT4
     }
 
     RangeVariable(Table table, SimpleName alias, OrderedHashSet columnList,
@@ -181,6 +183,7 @@ final class RangeVariable {
         newGraphVertex   = null; // LX FEAT4
         newGraphEdge     = null; // LX FEAT4
         chosenVertexLabel = null; // LX FEAT4
+        chosenEdgeLabel = null; // LX FEAT4
         // End LX
         compileContext.registerRangeVariable(this);
     }
@@ -251,11 +254,12 @@ final class RangeVariable {
           newGraphVertex   = null; // LX FEAT4
           newGraphEdge     = null; // LX FEAT4
           chosenVertexLabel = null; // LX FEAT4
+          chosenEdgeLabel = null; // LX FEAT4
           compileContext.registerRangeVariable(this);
     }
 
     // LX FEAT4
-    RangeVariable(GraphView graph, boolean hasV, boolean hasE, SimpleName valias, SimpleName ealias, String newGraphName, String newGraphVertex, String newGraphEdge, String chosenVertexLabel, CompileContext compileContext) {
+    RangeVariable(GraphView graph, boolean hasV, boolean hasE, SimpleName valias, SimpleName ealias, String newGraphName, String newGraphVertex, String newGraphEdge, String chosenVertexLabel, String chosenEdgeLabel, CompileContext compileContext) {
           isGraph          = true;
           isGraph2Graph    = true;
           this.newGraphName     = newGraphName; 
@@ -296,6 +300,7 @@ final class RangeVariable {
           }
           rangeIndex       = null;//rangeGraph.getPrimaryIndex();
           this.chosenVertexLabel = chosenVertexLabel;
+          this.chosenEdgeLabel = chosenEdgeLabel;
           compileContext.registerRangeVariable(this);
     }
 /*
@@ -339,6 +344,7 @@ final class RangeVariable {
         newGraphVertex   = null; // LX FEAT4
         newGraphEdge     = null; // LX FEAT4
         chosenVertexLabel = null; // LX FEAT4
+        chosenEdgeLabel = null; // LX FEAT4
         // End LX
     }
 
@@ -559,6 +565,20 @@ final class RangeVariable {
         } else {
             // Commented by LX
             // return rangeTable.findColumn(columnName);
+            // LX FEAT4
+            System.out.println("RangeVariable:569:" + columnName);
+                
+            if (isGraph2Graph) {
+                int res1 = rangeGraph.findVertexProp(columnName);
+                int res2 = rangeGraph.findEdgeProp(columnName);
+                if (isVertexes && isEdges) {
+                    return res1 == -1 ? res2 : res1;
+                }
+                else if (isVertexes)
+                    return res1;
+                else if (isEdges)
+                    return res2;
+            }
             // Added by LX
             if (isGraph && isVertexes)
                 return rangeGraph.findVertexProp(columnName);
@@ -577,7 +597,7 @@ final class RangeVariable {
     // Added by LX
     // TODO merge with findColumn(String tableName, String columnName)
     public int findColumn(String tableName, String objectName, String columnName) {
-// System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + columnName);
+System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + columnName);
         if (namedJoinColumnExpressions != null
                 && tableName == null
                 && namedJoinColumnExpressions.containsKey(columnName)) {
@@ -586,9 +606,22 @@ final class RangeVariable {
 
         if (variables != null) {
             return variables.getIndex(columnName);
-        } else if (columnAliases != null) {
+        } 
+        else if (columnAliases != null) {
             return columnAliases.getIndex(columnName);
-        } else {
+        } 
+        else if (isGraph2Graph) {
+            int res1 = rangeGraph.findVertexProp(columnName);
+            int res2 = rangeGraph.findEdgeProp(columnName);
+            if (isVertexes && isEdges) {
+                return res1 == -1 ? res2 : res1;
+            }
+            else if (isVertexes)
+                return res1;
+            else 
+                return res2;
+        }
+        else {
             if (objectName.equals(Tokens.getKeyword(Tokens.EDGES)))
                 return rangeGraph.findEdgeProp(columnName);
             else if (objectName.equals(Tokens.getKeyword(Tokens.VERTEXES)) ||
@@ -1786,6 +1819,8 @@ final class RangeVariable {
         scan.attributes.put("oldgraph", rangeGraph.getName().name.toUpperCase());
         if(chosenVertexLabel != null)
             scan.attributes.put("chosenvertexlabel", chosenVertexLabel);
+        if(chosenEdgeLabel != null)
+            scan.attributes.put("chosenedgelabel", chosenEdgeLabel);
         
         if (isVertexes) {
             scan.attributes.put("hasvertex", "true");

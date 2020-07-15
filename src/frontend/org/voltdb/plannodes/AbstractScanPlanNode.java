@@ -63,6 +63,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         EDGE_TABLE_ALIAS, // LX FEAT4
         CHOSEN_VERTEX_LABEL, // LX FEAT4
         EDGE_LABEL, //LX FEAT3
+        CHOSEN_EDGE_LABEL, // LX FEAT4
         VERTEX_LABEL; // LX FEAT2
         // End LX
     }
@@ -92,6 +93,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
     protected String m_vertexTableAlias = null; // LX FEAT4
     protected String m_edgeTableAlias = null; // LX FEAT4
     protected String m_chosenVertexLabel = null; // LX FEAT4
+    protected String m_chosenEdgeLabel = null; // LX FEAT4
     // End LX
 
     // Flag marking the sub-query plan
@@ -260,6 +262,12 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
         isGraph = true;
     }
 
+    // LX FEAT4
+    public void setChosenEdgeLabel(String name) {
+        m_chosenEdgeLabel = name;
+        isGraphtoGraph = true;
+        isGraph = true;
+    }
 
     /**
      * @param alias
@@ -290,6 +298,7 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
                 setVertexTableAlias(((StmtTargetGraphScan)tableScan).getVertexTableAlias());
                 setEdgeTableAlias(((StmtTargetGraphScan)tableScan).getEdgeTableAlias());
                 setChosenVertexLabel(((StmtTargetGraphScan)tableScan).getChosenVertexLabel());
+                setChosenEdgeLabel(((StmtTargetGraphScan)tableScan).getChosenEdgeLabel());
             }
         }
         // End LX
@@ -702,6 +711,8 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
             stringer.keySymbolValuePair(Members.EDGE_TABLE_ALIAS.name(), m_edgeTableAlias);
             if (m_chosenVertexLabel != null)
                 stringer.keySymbolValuePair(Members.CHOSEN_VERTEX_LABEL.name(), m_chosenVertexLabel);
+            if (m_chosenEdgeLabel != null)
+                stringer.keySymbolValuePair(Members.CHOSEN_EDGE_LABEL.name(), m_chosenEdgeLabel);
         }
         // End LX
         if (m_isSubQuery) {
@@ -742,6 +753,8 @@ public abstract class AbstractScanPlanNode extends AbstractPlanNode {
             m_edgeTableAlias = jobj.getString( Members.EDGE_TABLE_ALIAS.name() ); 
             if (jobj.has("CHOSEN_VERTEX_LABEL"))
                 m_chosenVertexLabel = jobj.getString( Members.CHOSEN_VERTEX_LABEL.name() );
+            if (jobj.has("CHOSEN_EDGE_LABEL"))
+                m_chosenEdgeLabel = jobj.getString( Members.CHOSEN_EDGE_LABEL.name() );
         }
         // End LX
         if (jobj.has("SUBQUERY_INDICATOR")) {

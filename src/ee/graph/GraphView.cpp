@@ -1176,8 +1176,11 @@ void GraphView::fillGraphFromRelationalTables()
 				{
 					cout << "graphView:1178:" << ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])) << endl;
 					id = curLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])));
+					cout << id << endl;
 					from = fromVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColIdxList[curLabel])));
+					cout << from << endl;
 					to = endVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColIdxList[curLabel])));
+					cout << to << endl;
 					edge = new Edge();
 					edge->setGraphView(this);
 					edge->setId(id);

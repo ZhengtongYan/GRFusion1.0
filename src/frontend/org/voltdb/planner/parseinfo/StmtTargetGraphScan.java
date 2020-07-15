@@ -42,6 +42,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
     private final String m_etablealias; // LX FEAT4
     private final boolean m_isgtog; // LX FEAT4
     private final String m_chosenVertexLabel; // LX FEAT4
+    private final String m_chosenEdgeLabel; // LX FEAT4
 
     private List<Index> m_indexes;
     private List<Column> m_columns;
@@ -72,6 +73,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
         m_etablealias = null;
         m_isgtog = false; // LX FEAT4
         m_chosenVertexLabel = null;// LX FEAT4
+        m_chosenEdgeLabel = null;// LX FEAT4
         //findPartitioningColumns();
     }
 
@@ -82,7 +84,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
     // LX FEAT4
     public StmtTargetGraphScan(GraphView oldgraph, String tableAlias, String newGraphName, 
                                 boolean hasvertex, boolean hasedge,
-                               String vtablealias, String etablealias, String chosenVertexLabel) {
+                               String vtablealias, String etablealias, String chosenVertexLabel, String chosenEdgeLabel) {
         super(tableAlias, 0); // what does this line do??
         assert (oldgraph != null);
         m_graph = oldgraph;
@@ -94,6 +96,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
         m_etablealias = etablealias;
         m_isgtog = true;
         m_chosenVertexLabel = chosenVertexLabel;
+        m_chosenEdgeLabel = chosenEdgeLabel;
         m_graphElement = null;
         m_hint = null;
         m_vLabel = null;
@@ -140,6 +143,11 @@ public class StmtTargetGraphScan extends StmtTableScan {
     // LX FEAT4
     public String getChosenVertexLabel() {
         return m_chosenVertexLabel;
+    }
+
+    // LX FEAT4
+    public String getChosenEdgeLabel() {
+        return m_chosenEdgeLabel;
     }
 
     public String getHint() {
@@ -249,6 +257,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
 
     public AbstractExpression resolveTVE(TupleValueExpression expr, String propertytype) {
         // add LX
+        System.out.println("StmtTargetGraphScan:260");
         AbstractExpression resolvedExpr = processTVE(expr, propertytype);
 
         List<TupleValueExpression> tves = ExpressionUtil.getTupleValueExpressions(resolvedExpr);
@@ -283,6 +292,10 @@ public class StmtTargetGraphScan extends StmtTableScan {
 
     // LX FEAT4
     public void addSubgraphToGraph() {
+        System.out.println("StmtTargetGraphScan:294: ADDED SUBGRAPH ONCE");
+        for (SubGraph s: m_graph.getSubgraphs()) {
+            System.out.println("StmtTargetGraphScan:297:" + s.getSubgraphname());
+        }
         SubGraph sg = m_graph.getSubgraphs().add(m_newGraphName);
         sg.setSubgraphname(m_newGraphName);
         return;

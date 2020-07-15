@@ -218,12 +218,15 @@ public abstract class AbstractParsedStmt {
             VoltXMLElement stmtTypeElement, String joinOrder) {
         // parse tables and parameters
         parsedStmt.parseTablesAndParams(stmtTypeElement);
+System.out.println("AbstractParsedStmt:221:" );
 
         // parse specifics
         parsedStmt.parse(stmtTypeElement);
+System.out.println("AbstractParsedStmt:225:" );
 
         // post parse action
         parsedStmt.postParse(sql, joinOrder);
+System.out.println("AbstractParsedStmt:229:" );
     }
 
     /**
@@ -240,9 +243,11 @@ public abstract class AbstractParsedStmt {
 
         // reset the statement counters
         NEXT_STMT_ID = 0;
+System.out.println("AbstractParsedStmt:243:");
         AbstractParsedStmt retval = getParsedStmt(parent, stmtTypeElement, paramValues, db);
-
+System.out.println("AbstractParsedStmt:245:" );
         parse(retval, sql, stmtTypeElement, joinOrder);
+System.out.println("AbstractParsedStmt:247:" );
         return retval;
     }
 
@@ -297,7 +302,7 @@ public abstract class AbstractParsedStmt {
         parseParameters(root);
 
         parseCommonTableExpressions(root);
-
+        // System.out.println("AbstractParsedStmt:300");
         for (VoltXMLElement node : root.children) {
             if (node.name.equalsIgnoreCase("tablescan")) {
                 parseTable(node);
@@ -306,10 +311,12 @@ public abstract class AbstractParsedStmt {
             }
             // LX FEAT4
             else if (node.name.equalsIgnoreCase("graphscans")) {
+                // System.out.println("AbstractParsedStmt:309");
                 parseG2GGraph(node);
             }
             // Add LX
-            else if (node.name.equalsIgnoreCase("vertexscan") || node.name.equalsIgnoreCase("edgescan")   || node.name.equalsIgnoreCase("pathscan")   || node.name.equalsIgnoreCase("graphscan")) {
+            else if (node.name.equalsIgnoreCase("vertexscan") || node.name.equalsIgnoreCase("edgescan")   || node.name.equalsIgnoreCase("pathscan")) {
+                // System.out.println("AbstractParsedStmt:319");
                 parseGraph(node);
             }
             // End LX
@@ -576,6 +583,7 @@ public abstract class AbstractParsedStmt {
         // TupleValueExpression tve = new TupleValueExpression(tableName, tableAlias, columnName, columnAlias, -1, differentiator);  comment LX
         // Add LX
         String propertytype = exprNode.attributes.get("propertytype");
+        System.out.println("AbstractParsedStmt:585:" + propertytype);
         int objectidx = (exprNode.attributes.get("propertytypeidx") != null) ? 
                             Integer.parseInt(exprNode.attributes.get("propertytypeidx")) : -1;
         
@@ -623,6 +631,7 @@ public abstract class AbstractParsedStmt {
             tableScan = (StmtTableScan)graphScan;
         }   
         else {
+            System.out.println("AbstractParsedStmt:633");
             resolvedExpr = tableScan.resolveTVE(expr);
         }
         // End LX
@@ -868,10 +877,10 @@ public abstract class AbstractParsedStmt {
     // End LX
 
     // LX FEAT4
-    protected StmtTableScan addGtoGgraphToStmtCache(GraphView oldgraph, String tableAlias, String newGraphName, boolean hasvertex, boolean hasedge, String vtablealias, String etablealias, String chosenVertexLabel) {
+    protected StmtTableScan addGtoGgraphToStmtCache(GraphView oldgraph, String tableAlias, String newGraphName, boolean hasvertex, boolean hasedge, String vtablealias, String etablealias, String chosenVertexLabel, String chosenEdgeLabel) {
         StmtTableScan tableScan = m_tableAliasMap.get(tableAlias);
         if (tableScan == null) {
-            tableScan = new StmtTargetGraphScan(oldgraph, tableAlias, newGraphName, hasvertex, hasedge, vtablealias, etablealias, chosenVertexLabel);
+            tableScan = new StmtTargetGraphScan(oldgraph, tableAlias, newGraphName, hasvertex, hasedge, vtablealias, etablealias, chosenVertexLabel, chosenEdgeLabel);
             ((StmtTargetGraphScan)tableScan).addSubgraphToGraph();
             m_tableAliasMap.put(tableAlias, tableScan);
         }
@@ -1497,9 +1506,12 @@ public abstract class AbstractParsedStmt {
     }
 
     private void parseG2GGraph(VoltXMLElement graphNode) {
+        int debugct = 0;
         for (VoltXMLElement childNode : graphNode.children) {
             if (!childNode.name.equalsIgnoreCase("graphscan")) 
                 continue;
+            System.out.println("AbstractParsedStmt:1504:" + debugct);
+            debugct++;
             String oldGraphName = childNode.attributes.get("oldgraph");
             String newGraphName = childNode.attributes.get("newgraph");
             String newVformat = childNode.attributes.get("newv");
@@ -1508,6 +1520,10 @@ public abstract class AbstractParsedStmt {
             String chosenVertexLabel = null;
             if (childNode.attributes.get("chosenvertexlabel") != null)
                 chosenVertexLabel = childNode.attributes.get("chosenvertexlabel");
+
+            String chosenEdgeLabel = null;
+            if (childNode.attributes.get("chosenedgelabel") != null)
+                chosenEdgeLabel = childNode.attributes.get("chosenedgelabel");
 
             String tableAlias = null;
             if (childNode.attributes.get("tablealias") == null) 
@@ -1529,7 +1545,7 @@ public abstract class AbstractParsedStmt {
             StmtTableScan graphScan = null;
             GraphView oldgraph;
             oldgraph = m_db.getGraphviews().getExact(oldGraphName);
-            graphScan = addGtoGgraphToStmtCache(oldgraph, tableAlias, newGraphName, hasV, hasE, vtalias, etalias, chosenVertexLabel); 
+            graphScan = addGtoGgraphToStmtCache(oldgraph, tableAlias, newGraphName, hasV, hasE, vtalias, etalias, chosenVertexLabel, chosenEdgeLabel); 
 
            AbstractExpression joinExpr = parseJoinCondition(childNode);
            AbstractExpression whereExpr = parseWhereCondition(childNode);
@@ -1763,8 +1779,9 @@ System.out.println("AbstractParsedStmt:1488:" + tableNode);
             }
             // Add LX
             // GVoltDB extension
-            if (node.name.equalsIgnoreCase("graphscan") ||
-                node.name.equalsIgnoreCase("pathscan") ||
+            // if (node.name.equalsIgnoreCase("graphscan") ||
+            // LX FEAT4
+            if (node.name.equalsIgnoreCase("pathscan") ||
                 node.name.equalsIgnoreCase("vertexscan") || 
                 node.name.equalsIgnoreCase("edgescan") 
                 ) {
