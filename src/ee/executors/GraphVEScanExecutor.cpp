@@ -120,7 +120,7 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
 
         std::vector<Vertex*> vertexlist;
         std::vector<Edge*> edgelist;
-        checkTupleForPredicate(predicate, vertexlist, edgelist, inputVertexTable, vertexLabel, inputEdgeTable, edgeLabel, limit_node, graphView, params);
+        checkTupleForPredicate(predicate, &vertexlist, &edgelist, inputVertexTable, vertexLabel, inputEdgeTable, edgeLabel, limit_node, graphView, params);
 
         graphView->addToSubgraphVertex(vertexlist);
         graphView->addToSubgraphEdge(edgelist);
@@ -138,19 +138,19 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
 /*
     Returns the selected vertices with its adjacency list and the selected edges
  */
-void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, std::vector<Vertex*> subVertex, std::vector<Edge*> subEdge, Table* inputVertexTable, std::string vlabel, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, GraphView* graphView, const NValueArray &params) {
+void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, std::vector<Vertex*>* subVertex, std::vector<Edge*>* subEdge, Table* inputVertexTable, std::string vlabel, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, GraphView* graphView, const NValueArray &params) {
     
     if (((!predicate->getLeftExp()->getGraphObject().empty()) && 
-            (predicate->getLeftExp()->getGraphObject()).compare("VERTEX") == 0) || 
+            (predicate->getLeftExp()->getGraphObject()).compare("VERTEXES") == 0) || 
                 ((!predicate->getRightExp()->getGraphObject().empty()) && 
-                     (predicate->getRightExp()->getGraphObject()).compare("VERTEX") == 0) ) {
+                     (predicate->getRightExp()->getGraphObject()).compare("VERTEXES") == 0) ) {
         filterFromGraph(predicate, subVertex, subEdge, inputVertexTable, vlabel, limit_node, graphView, "VERTEX", params);
         return;
     }
     else if (((!predicate->getLeftExp()->getGraphObject().empty()) && 
-            (predicate->getLeftExp()->getGraphObject()).compare("EDGE") == 0) || 
+            (predicate->getLeftExp()->getGraphObject()).compare("EDGES") == 0) || 
                 ((!predicate->getRightExp()->getGraphObject().empty()) && 
-                     (predicate->getRightExp()->getGraphObject()).compare("EDGE") == 0)){
+                     (predicate->getRightExp()->getGraphObject()).compare("EDGES") == 0)){
         filterFromGraph(predicate, subVertex, subEdge, inputEdgeTable, elabel, limit_node, graphView, "EDGE", params);
         return ;
     }
@@ -170,7 +170,7 @@ void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, 
     return ;
 }
 
-void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::vector<Vertex*> subVertex, std::vector<Edge*> subEdge, Table* inputTable, std::string label, LimitPlanNode* limit_node, GraphView* graphView, std::string obj, const NValueArray &params) {
+void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::vector<Vertex*>* subVertex, std::vector<Edge*>* subEdge, Table* inputTable, std::string label, LimitPlanNode* limit_node, GraphView* graphView, std::string obj, const NValueArray &params) {
 
     TableTuple tuple(inputTable->schema());
     TableIterator iterator = inputTable->iteratorDeletingAsWeGo();
@@ -219,21 +219,21 @@ void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::ve
             id = ValuePeeker::peekInteger(tuple.getNValue(0));
             if (obj.compare("VERTEX") == 0) {
                 Vertex * v = graphView->getVertex(label + "." + to_string(id));
-                subVertex.push_back(v);
+                subVertex->push_back(v);
                 // add all its inEdge and outEdge list to subEdge
                 for (int i = 0; i < v->fanOut(); i++) {
-                    subEdge.push_back(v->getOutEdge(i));
+                    subEdge->push_back(v->getOutEdge(i));
                 }
                 for (int j = 0; j < v->fanIn(); j++) {
-                    subEdge.push_back(v->getInEdge(j));
+                    subEdge->push_back(v->getInEdge(j));
                 }
             }
             else if (obj.compare("EDGE") == 0) {
                 Edge * e = graphView->getEdge(label + "." + to_string(id));
-                subEdge.push_back(e);
+                subEdge->push_back(e);
                 // add its startVertex and endVertex to subVertex
-                subVertex.push_back(e->getStartVertex());
-                subVertex.push_back(e->getEndVertex());
+                subVertex->push_back(e->getStartVertex());
+                subVertex->push_back(e->getEndVertex());
             }
             pmp.countdownProgress();
         }
