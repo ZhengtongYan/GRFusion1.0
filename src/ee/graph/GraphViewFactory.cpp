@@ -71,6 +71,9 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 	//construct the path temp table
 	vw->constructPathTempTable();
 
+	vw->constructGraphSchema();
+	vw->constructGraphTempTable();
+
 	//set the vertex column names
 	int vColumnCount = vertexColumnNames.size();
 	vw->m_vertexColumnNames.resize(vColumnCount);

@@ -18,6 +18,7 @@
 #include "graph/Vertex.h"
 #include "graph/Edge.h"
 #include "plannodes/limitnode.h"
+#include "plannodes/projectionnode.h"
 
 namespace voltdb {
 
@@ -52,8 +53,8 @@ public:
 
     private:
         void outputTuple(TableTuple& tuple);
-        void filterFromGraph(AbstractExpression* predicate, std::vector<Vertex*>* subVertex, std::vector<Edge*>* subEdge, Table* inputTable, std::string label, LimitPlanNode* limit_node, GraphView* graphView, std::string obj,const NValueArray &params);
-        void checkTupleForPredicate(AbstractExpression* predicate, std::vector<Vertex*>* subVertex, std::vector<Edge*>* subEdge, Table* inputVertexTable, std::string vlable, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, GraphView* graphView, const NValueArray &params);
+        void filterFromGraph(AbstractExpression* predicate, Table* inputTable, std::string label, LimitPlanNode* limit_node, ProjectionPlanNode* projectionNode, GraphView* graphView, std::string obj,const NValueArray &params);
+        void checkTupleForPredicate(AbstractExpression* predicate, Table* inputVertexTable, std::string vlable, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, ProjectionPlanNode* projectionNode, GraphView* graphView, const NValueArray &params);
         AggregateExecutorBase* m_aggExec;
         GraphView* graphView;
         std::string m_vLabel;

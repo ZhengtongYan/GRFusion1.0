@@ -24,13 +24,10 @@ public class GraphView implements SchemaObject {
     protected boolean isDirected;
     protected int type;
 	
-    // String VSubQuery;
     HashMappedList VSubQueryList;// map label to vquery index LX FEAT2
-    // String ESubQuery;
     HashMappedList ESubQueryList; // LX FEAT3
-    // HsqlName VTableName;
+
     HashMappedList VTableNameList; // map label idx to vtable name LX FEAT2
-    // HsqlName ETableName;
     HashMappedList ETableNameList; // LX FEAT3
 
     String statement;
@@ -44,6 +41,7 @@ public class GraphView implements SchemaObject {
     private Integer EDGE = 1;
     private Integer VERTEX = 2;
     private Integer PATH = 3;
+    private Integer GRAPH = 4;
 
     private ArrayList AllPropList; // array of properties
     private ArrayList<HsqlName> AllVTableList;// LX FEAT2
@@ -54,6 +52,7 @@ public class GraphView implements SchemaObject {
     private HashMappedList idxToVIdx0; // LX FEAT2
     private HashMappedList idxToEIdx0; // LX FEAT3
     private HashMappedList idxToPIdx0; // LX FEAT3
+    private HashMappedList idxToGIdx0; // LX FEAT4
 
     private HashMappedList idxToPropTypeList;// map global index to proptype (edge/vertex/path)LX FEAT2
 
@@ -68,6 +67,10 @@ public class GraphView implements SchemaObject {
     
     private HashMappedList PathPropList; // maps path: name   - id 
     private int pathPropCount;
+
+    // LX FEAT4
+    private HashMappedList GraphPropList;
+    private int graphPropCount;
     
     private final long DefPrecision = 10;
 
@@ -108,6 +111,7 @@ public class GraphView implements SchemaObject {
         idxToVIdx0           = new HashMappedList(); // LX FEAT2
         idxToEIdx0           = new HashMappedList(); // LX FEAT3
         idxToPIdx0           = new HashMappedList(); // LX FEAT3
+        idxToGIdx0           = new HashMappedList(); // LX FEAT4
 
     	idxToPropTypeList    = new HashMappedList();
 
@@ -120,6 +124,8 @@ public class GraphView implements SchemaObject {
     	edgePropCount = 0;
     	PathPropList    = new HashMappedList();
     	pathPropCount = 0;
+        GraphPropList   = new HashMappedList(); // LX FEAT4
+        graphPropCount =  0; // LX FEAT4
     	
     }
     
@@ -140,6 +146,23 @@ public class GraphView implements SchemaObject {
     	addVertexPropNoCheck(fanIn, label);
     	
     }
+
+    // LX FEAT4 
+    // add default columns for select graph
+    public void addDefGraphProps(HsqlName schema, boolean isDelimitedIdentifier) {
+        HsqlName Name = database.nameManager.newColumnHsqlName(schema, "EDGEID", isDelimitedIdentifier);
+        ColumnSchema edgeId = new ColumnSchema(Name, new CharacterType(Types.SQL_VARCHAR, 1024), false, false, null);
+        addGraphPropNoCheck(edgeId);  
+        
+        Name = database.nameManager.newColumnHsqlName(schema, "FROMVID", isDelimitedIdentifier);
+        ColumnSchema fromVId = new ColumnSchema(Name, new CharacterType(Types.SQL_VARCHAR, 1024), false, false, null);
+        addGraphPropNoCheck(fromVId);
+
+        Name = database.nameManager.newColumnHsqlName(schema,  "TOVID", isDelimitedIdentifier);
+        ColumnSchema toVId = new ColumnSchema(Name, new CharacterType(Types.SQL_VARCHAR, 1024), false, false, null);
+        addGraphPropNoCheck(toVId);
+    }
+
     
     /*
 	 * Adds default Path properties
@@ -265,19 +288,12 @@ public class GraphView implements SchemaObject {
     VoltXMLElement voltGetGraphXML(Session session)
             throws org.hsqldb_voltpatches.HSQLInterface.HSQLParseException
     {
-        System.out.println("GraphView:268");
         VoltXMLElement graphxml = new VoltXMLElement("graph");
         Map<String, String> autoGenNameMap = new HashMap<String, String>();
 
         // add graph metadata
         String graphName = getName().name;
         graphxml.attributes.put("name", graphName);
-        
-        // graphxml.attributes.put("Vtable", VTableName.name);
-        // graphxml.attributes.put("Etable", ETableName.name);
-        
-        // graphxml.attributes.put("Vquery", VSubQuery);
-        // graphxml.attributes.put("Equery", ESubQuery);
 
         graphxml.attributes.put("isdirected", String.valueOf(isDirected));        
         graphxml.attributes.put("DDL", statement);
@@ -308,7 +324,7 @@ public class GraphView implements SchemaObject {
             }
             graphxml.children.add(vertex);
         }
-System.out.println("GraphView:311");
+
         // LX FEAT3       
         for (int i = 0; i < ELabelList.size(); i++){
             VoltXMLElement edge = new VoltXMLElement("edge");
@@ -319,7 +335,7 @@ System.out.println("GraphView:311");
             edge.attributes.put("Equery", AllESubQueryList.get((int)ESubQueryList.get(curLabel)));
             edge.attributes.put("StartVLabel", (String)EStartVertexLabelList.get(curLabel));
             edge.attributes.put("EndVLabel", (String)EEndVertexLabelList.get(curLabel));
- System.out.println("GraphView:321");           
+       
             for (int j = 0; j < getAllPropCount(); j++){
                 if (idxToPropTypeList.get(j) == EDGE ){
                     if ((int)idxToELabelIdxList.get(idxToELabelIdxList.getIndex(j)) == ELabelList.indexOf(curLabel)){
@@ -338,7 +354,7 @@ System.out.println("GraphView:311");
             }
             graphxml.children.add(edge);
         }
-  System.out.println("GraphView:338");
+  
         VoltXMLElement path = new VoltXMLElement("path");
         for (int i = 0; i < getAllPropCount(); i++) {
         	if (idxToPropTypeList.get(idxToPropTypeList.getIndex(i)) == PATH) {
@@ -354,8 +370,26 @@ System.out.println("GraphView:311");
         		assert(propChild != null);
         	}
         }
-System.out.println("GraphView:354");
+
         graphxml.children.add(path);
+
+        VoltXMLElement graph = new VoltXMLElement("selectgraph");
+        for (int i = 0; i < getAllPropCount(); i++) {
+            if (idxToPropTypeList.get(idxToPropTypeList.getIndex(i)) == GRAPH) {
+                ColumnSchema property = getPathProp(i);
+                VoltXMLElement propChild = property.voltGetColumnXML(session);
+                
+                propChild.attributes.put("index", Integer.toString(i));
+                // Index Path props from 0 ... 
+                // propChild.attributes.put("index0", Integer.toString(PathPropList.getIndex(property.getNameString())));
+                propChild.attributes.put("index0", Integer.toString((int)idxToGIdx0.get(idxToGIdx0.getIndex(i)))); // LX FEAT3
+                
+                graph.children.add(propChild);
+                assert(propChild != null);
+            }
+        }
+
+        graphxml.children.add(graph);
         
         return graphxml;
     }
@@ -468,9 +502,12 @@ System.out.println("GraphView:354");
     		// return EdgePropList.getIndex(getEdgeProp(i).getNameString());
             return (int)idxToEIdx0.get(idxToEIdx0.getIndex(i)); // LX FEAT3
     	}
-    	else
+    	else  if (idxToPropTypeList.get(i) == PATH) {
             return (int)idxToPIdx0.get(idxToPIdx0.getIndex(i));
     		// return PathPropList.getIndex(getPathProp(i).getNameString());
+        }
+        else
+            return (int) idxToGIdx0.get(idxToGIdx0.getIndex(i));
     }
     
 	public ColumnSchema getVertexProp(int i) {
@@ -532,6 +569,8 @@ System.out.println("GraphView:354");
         vertexPropCount++;
     }
 
+
+
     // EDGES
 	public ColumnSchema getEdgeProp(int i) {
 		return (ColumnSchema) AllPropList.get(i);//EdgePropList.get(i);
@@ -541,19 +580,11 @@ System.out.println("GraphView:354");
 	public ColumnSchema getPathProp(int i) {
 		return (ColumnSchema) AllPropList.get(i);//PathPropList.get(i);
 	}
-	
-    // All comment by LX FEAT2
-	// public ColumnSchema getAllProp(int i) {
-		//System.out.println(i);
-		// return (ColumnSchema) AllPropList.get(i);//PathPropList.get(i);
-	// }
-	
-    /**
-     *  Returns the count of all visible vertex properties.
-     */
-    //public int getEdgePropCount() {
-    //    return edgePropCount;
-    //}
+    
+    // LX FEAT4
+    public ColumnSchema getGraphProp(int i) {
+        return (ColumnSchema) AllPropList.get(i);
+    }
     
     void renameEdgeProp(ColumnSchema property, HsqlName newName) {
 
@@ -619,16 +650,6 @@ System.out.println("GraphView:354");
         return i;
     }
     
-    /**
-     *  Returns the count of all visible vertex properties.
-     */
-    //public int getPathPropCount() {
-    //    return pathPropCount;
-    //}
-    
-    /**
-     *  Returns the index of given column name or -1 if not found.
-     */
     public int findPathProp(String name) {
         int index = (Integer)PathPropList.get(name);
         return index;
@@ -636,11 +657,6 @@ System.out.println("GraphView:354");
     
     public void addPathPropNoCheck(ColumnSchema property) {
         // LX FEAT2
-        // EdgePropList.add(property);
-        // idxToPropTypeList.add(EDGE);
-        // idxToVLabelIdxList.add(""); // empty string because path doesn't have labels
-        // idxToVIdx0.add(pathPropCount);
-        // pathPropCount++;
         AllPropList.add(property);
         int idx = AllPropList.indexOf(property);
     	PathPropList.add(property.getName().name, idx);
@@ -656,12 +672,46 @@ System.out.println("GraphView:354");
         // idxToVLabelIdxList.add(idx, ""); // path doesn't have a label
         pathPropCount++;
     }
+
+        // LX FEAT4
+    public void addGraphPropNoCheck(ColumnSchema property) {
+        AllPropList.add(property);
+        int idx = AllPropList.indexOf(property);
+        GraphPropList.add(property.getName().name, idx);
+        
+        int idx0 = 0;
+        for (int i = 0 ; i < getAllPropCount(); i++){
+            if (idxToPropTypeList.get(i) == GRAPH)
+                // if ((int)idxToVLabelIdxList.get(idxToVLabelIdxList.getIndex(i)) == vlabidx)
+                    idx0++;
+        }
+        idxToGIdx0.add(idx, idx0);
+        idxToPropTypeList.add(idx, GRAPH);
+        graphPropCount++;
+    }
+
+    public int getGraphPropIndex(String name) {
+
+        int i = findGraphProp(name);
+
+        if (i == -1) {
+            throw Error.error(ErrorCode.X_42501, name);
+        }
+
+        return i;
+    }
+    
+    public int findGraphProp(String name) {
+        int index = (Integer)GraphPropList.get(name);
+        return index;
+    }
+
     
     /**
      *  Returns the count of all visible properties.
      */
     public int getAllPropCount() {
-        return pathPropCount+edgePropCount+vertexPropCount;
+        return pathPropCount+edgePropCount+vertexPropCount+graphPropCount;
     }
     
     public boolean isVertex(int id) {
@@ -680,5 +730,11 @@ System.out.println("GraphView:354");
     	if (idxToPropTypeList.get(id) == PATH)
     		return true;
     	return false;
+    }
+
+    public boolean isGraph(int id) {
+        if (idxToPropTypeList.get(id) == GRAPH)
+            return true;
+        return false;
     }
 }

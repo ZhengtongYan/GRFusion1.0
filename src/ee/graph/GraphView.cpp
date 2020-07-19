@@ -138,6 +138,12 @@ Table* GraphView::getPathTable()
 	return this->m_pathTable;
 }
 
+// LX FEAT4
+Table* GraphView::getGraphTable()
+{
+	return this->m_graphTable;
+}
+
 int GraphView::numOfVertexes()
 {
 	return this->m_vertexes.size();
@@ -158,6 +164,12 @@ TupleSchema* GraphView::getPathSchema()
 	return m_pathSchema;
 }
 
+// LX FEAT4
+TupleSchema* GraphView::getGraphSchema()
+{
+	return m_graphSchema;
+}
+
 void GraphView::setVertexSchema(TupleSchema* s)
 {
 	m_vertexSchema = s;
@@ -171,6 +183,12 @@ void GraphView::setEdgeSchema(TupleSchema* s)
 void GraphView::setPathSchema(TupleSchema* s)
 {
 	m_pathSchema = s;
+}
+
+// LX FEAT4
+void GraphView::setGraphSchema(TupleSchema* s)
+{
+	m_graphSchema = s;
 }
 	
 int GraphView::numOfEdges()
@@ -268,6 +286,32 @@ void GraphView::constructPathSchema()
 void GraphView::constructPathTempTable()
 {
 	m_pathTable = TableFactory::buildTempTable(m_pathTableName, m_pathSchema, m_pathColumnNames, NULL);
+}
+
+// LX FEAT4
+void GraphView::constructGraphSchema()
+{
+	m_graphColumnNames.clear();
+	m_graphColumnNames.push_back("EDGEID");
+	m_graphColumnNames.push_back("FROMVID");
+	m_graphColumnNames.push_back("TOVID");
+	int numOfGraphColumns = m_graphColumnNames.size();
+
+	bool needsDRTimestamp = false; //TODO: we might revisit this
+	TupleSchemaBuilder schemaBuilder(numOfGraphColumns,
+									 needsDRTimestamp ? 1 : 0); // number of hidden columns
+
+	schemaBuilder.setColumnAtIndex(0, ValueType::tVARCHAR, 1024, true, false); 
+	schemaBuilder.setColumnAtIndex(1, ValueType::tVARCHAR, 1024, true, false); 
+	schemaBuilder.setColumnAtIndex(2, ValueType::tVARCHAR, 1024, true, false); 
+
+	m_graphSchema = schemaBuilder.build();
+}
+
+// LX FEAT4
+void GraphView::constructGraphTempTable()
+{
+	m_graphTable = TableFactory::buildTempTable(m_graphTableName, m_graphSchema, m_graphColumnNames, NULL);
 }
 
 PathIterator* GraphView::iteratorDeletingAsWeGo(GraphOperationType opType) // LX
@@ -1124,7 +1168,6 @@ void GraphView::fillGraphFromRelationalTables()
 				if (tuple.isActive())
 				{
 					// id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColumnIndex));
-					cout << "graphView:1109:" << ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])) << endl;
 					id = curLabel + "." + to_string(ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])));
 					vertex = new Vertex();
 					vertex->setGraphView(this);
@@ -1174,13 +1217,9 @@ void GraphView::fillGraphFromRelationalTables()
 			{
 				if (edgeTuple.isActive())
 				{
-					cout << "graphView:1178:" << ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])) << endl;
 					id = curLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])));
-					cout << id << endl;
 					from = fromVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColIdxList[curLabel])));
-					cout << from << endl;
 					to = endVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColIdxList[curLabel])));
-					cout << to << endl;
 					edge = new Edge();
 					edge->setGraphView(this);
 					edge->setId(id);

@@ -526,7 +526,7 @@ System.out.println("tve:448:" + m_columnIndex);
     public void resolveForGraph(GraphView graph, String type) {
         assert(graph != null);
         Column column;
-System.out.println("TupleValueExpression:501" + m_columnName + ", " + type);
+        System.out.println("TupleValueExpression:501:" + m_columnName + ", " + type);
         if (type == "path") {
             column = graph.getPathprops().getExact(m_columnName);
             if (m_graphObject == null) 
@@ -536,6 +536,9 @@ System.out.println("TupleValueExpression:501" + m_columnName + ", " + type);
             column = graph.getPathprops().getExact(m_columnName);
             if (m_graphObject == null) 
                 m_graphObject = "VERTEXES";
+        }
+        else if (type == "EDGEID" || type == "FROMVID" || type == "TOVID") {
+            column = graph.getGraphprops().getExact(m_columnName);
         }
         else {
             // LX FEAT 2/3/4

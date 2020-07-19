@@ -881,7 +881,7 @@ System.out.println("AbstractParsedStmt:247:" );
         StmtTableScan tableScan = m_tableAliasMap.get(tableAlias);
         if (tableScan == null) {
             tableScan = new StmtTargetGraphScan(oldgraph, tableAlias, newGraphName, hasvertex, hasedge, vtablealias, etablealias, chosenVertexLabel, chosenEdgeLabel);
-            ((StmtTargetGraphScan)tableScan).addSubgraphToGraph();
+            // ((StmtTargetGraphScan)tableScan).addSubgraphToGraph();
             m_tableAliasMap.put(tableAlias, tableScan);
         }
         return tableScan;

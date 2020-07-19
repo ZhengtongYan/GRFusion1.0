@@ -567,7 +567,7 @@ public class SQLCommand {
         String queryStatsArgs = SQLParser.parseQueryStatsStatement(line);
         if (queryStatsArgs != null) {
             m_startTime = System.nanoTime();    // needs to reset timer here
-            printResponse(m_client.callProcedure("@QueryStats", queryStatsArgs), false);
+            printResponse(m_client.callProcedure("@QueryStats", queryStatsArgs), false, false);
             return true;
         }
 
@@ -1070,7 +1070,7 @@ public class SQLCommand {
 
                     boolean suppressTableOutputForDML = ! procName.equals("@SwapTables");
 
-                    printResponse(callProcedureHelper(execCallResults.procedure, objectParams), suppressTableOutputForDML);
+                    printResponse(callProcedureHelper(execCallResults.procedure, objectParams), suppressTableOutputForDML, false);
                 }
                 return;
             }
@@ -1079,18 +1079,18 @@ public class SQLCommand {
             if (explainStatement != null) {
                 // We've got a statement that starts with "explain", send the statement to
                 // @Explain (after parseExplainCall() strips "explain").
-                printResponse(m_client.callProcedure("@Explain", explainStatement), false);
+                printResponse(m_client.callProcedure("@Explain", explainStatement), false, false);
                 return;
             }
 
             // explainjson => @ExplainJSON
             String explainStatementInJSON = SQLParser.parseExplainJSONCall(statement);
             if (explainStatementInJSON != null) {
-                printResponse(m_client.callProcedure("@ExplainJSON", explainStatementInJSON), false);
+                printResponse(m_client.callProcedure("@ExplainJSON", explainStatementInJSON), false, false);
                 return;
             } else if (SQLParser.parseExplainCatalogCall(statement)) {
                 // explaincatalog => @ExplainCatalog
-                printResponse(m_client.callProcedure("@ExplainCatalog"), false);
+                printResponse(m_client.callProcedure("@ExplainCatalog"), false, false);
                 return;
             }
 
@@ -1098,7 +1098,7 @@ public class SQLCommand {
             if (explainProcName != null) {
                 // We've got a statement that starts with "explainproc", send the statement to
                 // @ExplainProc (now that parseExplainProcCall() has stripped out "explainproc").
-                printResponse(m_client.callProcedure("@ExplainProc", explainProcName), false);
+                printResponse(m_client.callProcedure("@ExplainProc", explainProcName), false, false);
                 return;
             }
 
@@ -1106,7 +1106,7 @@ public class SQLCommand {
             if (explainViewName != null) {
                 // We've got a statement that starts with "explainview", send the statement to
                 // @ExplainView (now that parseExplainViewCall() has stripped out "explainview").
-                printResponse(m_client.callProcedure("@ExplainView", explainViewName), false);
+                printResponse(m_client.callProcedure("@ExplainView", explainViewName), false, false);
                 return;
             }
 
@@ -1137,10 +1137,10 @@ public class SQLCommand {
             }
             // All other commands get forwarded to @AdHoc
             // LX FEAT4
-            if (isGtoGstmt(statement))
-                printResponse(callProcedureHelper("@AdHoc", statement), true, true);
-            else
-                printResponse(callProcedureHelper("@AdHoc", statement), true);
+            // if (isGtoGstmt(statement))
+            //     printResponse(callProcedureHelper("@AdHoc", statement), true, true);
+            // else
+            printResponse(callProcedureHelper("@AdHoc", statement), true, isGtoGstmt(statement));
         } catch (Exception exc) {
             stopOrContinue(exc);
         }
@@ -1185,7 +1185,7 @@ public class SQLCommand {
                 table.getRowCount() == 1 && table.getColumnCount() == 1 && table.getColumnType(0) == VoltType.BIGINT;
     }
 
-    private static void printResponse(ClientResponse response, boolean suppressTableOutputForDML) throws Exception {
+    private static void printResponse(ClientResponse response, boolean suppressTableOutputForDML, boolean returnGraph) throws Exception {
         if (response.getStatus() != ClientResponse.SUCCESS) {
             throw new Exception("Execution Error: " + response.getStatusString());
         }
@@ -1201,19 +1201,23 @@ public class SQLCommand {
                 //System.out.println("printable");
             }
             if (m_outputShowMetadata) {
-                System.out.printf("(Returned %d rows in %.2fs)\n", rowCount, elapsedTime / 1000000000.0);
+                if (returnGraph)
+                    System.out.printf("(Returned a graph with %d edges in %.2fs)\n", rowCount, elapsedTime / 1000000000.0);
+                else
+                    System.out.printf("(Returned %d rows in %.2fs)\n", rowCount, elapsedTime / 1000000000.0);
             }
         }
     }
 
-    private static void printResponse(ClientResponse response, boolean suppressTableOutputForDML, boolean suppressOutputForGtoG) throws Exception {
-        if (response.getStatus() != ClientResponse.SUCCESS) {
-            throw new Exception("Execution Error: " + response.getStatusString());
-        }
-        long elapsedTime = System.nanoTime() - m_startTime;
-        System.out.printf("(Returned a subgraph in %.2fs)\n", elapsedTime / 1000000000.0);
+    // LX FEAT2
+    // private static void printResponse(ClientResponse response, boolean suppressTableOutputForDML, boolean suppressOutputForGtoG) throws Exception {
+    //     if (response.getStatus() != ClientResponse.SUCCESS) {
+    //         throw new Exception("Execution Error: " + response.getStatusString());
+    //     }
+    //     long elapsedTime = System.nanoTime() - m_startTime;
+    //     System.out.printf("(Returned a subgraph in %.2fs)\n", elapsedTime / 1000000000.0);
         
-    }
+    // }
 
     private static void printDdlResponse(ClientResponse response) throws Exception {
         if (response.getStatus() != ClientResponse.SUCCESS) {

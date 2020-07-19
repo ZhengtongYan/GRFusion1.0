@@ -160,7 +160,7 @@ final class SqlPlanner {
                 System.out.println("SqlPlanner:160");
             }
             m_parsedToken = planner.parameterize();
-System.out.println("SqlPlanner:163:" + m_parsedToken);
+
             // check the parameters count
             // check user input question marks with input parameters
             int inputParamsLength = m_userParams == null ? 0 : m_userParams.length;

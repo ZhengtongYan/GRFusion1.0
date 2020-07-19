@@ -416,6 +416,7 @@ System.out.println("ExpressionColumn:171:set objectName");
     @Override
     public HsqlList resolveColumnReferences(RangeVariable[] rangeVarArray,
             int rangeCount, HsqlList unresolvedSet, boolean acceptsSequences) {
+        System.out.println("ExpressionColumn:419:" + objectName);
         switch (opType) {
 
             case OpTypes.SEQUENCE :
@@ -512,6 +513,7 @@ System.out.println("ExpressionColumn:171:set objectName");
                         }
                     }  
                     else {
+                        System.out.println("ExpressionColumn:516");
                         ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
                         if (resolution != null) {
                             if (resolution instanceof ExpressionColumnReferenceResolution) {
@@ -531,10 +533,12 @@ System.out.println("ExpressionColumn:171:set objectName");
                     }                
                 }
                 if (foundSize == 1) {
+                    System.out.println("ExpressionColumn:536");
                     lastRes.finallyResolve();
                     return unresolvedSet;
                 }
                 if (foundSize > 1) {
+                    System.out.println("ExpressionColumn:541");
                     StringBuffer sb = new StringBuffer();
                     sb.append(String.format("Column \"%s\" is ambiguous.  It's in tables: ", columnName));
                     String sep = "";

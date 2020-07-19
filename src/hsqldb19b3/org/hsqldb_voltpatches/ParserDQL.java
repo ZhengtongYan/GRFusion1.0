@@ -1015,6 +1015,13 @@ public class ParserDQL extends ParserBase {
             select.newGraphName = token.tokenString;
             read();
             System.out.println("ParserDQL:994:" + select.newGraphVertex + ", " + select.newGraphEdge + ", " + select.newGraphName);
+            Expression e;
+            e = new ExpressionColumn(null, null, "EDGEID");
+            select.addSelectColumnExpression(e);
+            e = new ExpressionColumn(null, null, "FROMVID");
+            select.addSelectColumnExpression(e);
+            e = new ExpressionColumn(null, null, "TOVID");
+            select.addSelectColumnExpression(e);
         }
 
         // while (true) {

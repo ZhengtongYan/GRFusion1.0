@@ -538,12 +538,15 @@ public class ParserDDL extends ParserRoutine {
             System.out.println("Error");
             throw new RuntimeException("more than one edge types without specifying label. Error");
         } 
+        
+        // LX FEAT4 add graph prop for select graph
+        graph.addDefGraphProps(schema, isDelimitedIdentifier());
         // Add Def Path Properties
         graph.addDefPathProps(schema, isDelimitedIdentifier());
 
         String   sql  = getLastPart();
         Object[] args = new Object[] { graph };
-System.out.println("ParserDDL:548");
+
         return new StatementSchema(sql, StatementTypes.CREATE_GRAPHVIEW, args, null, null);
         
     }

@@ -89,13 +89,17 @@ public:
 	
 	// Table* getEdgeTable();
 	Table* getPathTable();
+	Table* getGraphTable(); // LX FEAT4
 	TupleSchema* getVertexSchema();
 	TupleSchema* getEdgeSchema();
 	TupleSchema* getPathSchema();
+	TupleSchema* getGraphSchema(); // LX FEAT4
 	string getPathsTableName() {return m_pathTableName; }
+	string getGraphTableName() {return m_graphTableName; }// LX FEAT4
 	void setVertexSchema(TupleSchema* s);
 	void setEdgeSchema(TupleSchema* s);
 	void setPathSchema(TupleSchema* s);
+	void setGraphSchema(TupleSchema* s); // LX FEAT4
 
 	int getVertexIdColumnIndex();
 	int getEdgeIdColumnIndex();
@@ -144,6 +148,8 @@ protected:
 	void fillGraphFromRelationalTables();
 	void constructPathSchema(); //constucts m_pathColumnNames and m_pathSchema
 	void constructPathTempTable();
+	void constructGraphSchema(); // LX FEAT4
+	void constructGraphTempTable(); // LX FEAT4
 
 	std::vector<std::vector<Vertex*>> m_subgraphVertexList; // LX FEAT4
 	std::vector<std::vector<Edge*>> m_subgraphEdgeList; // LX FEAT4
@@ -167,13 +173,18 @@ protected:
 	TempTable* m_pathTable;
 	TableIterator* m_pathTableIterator;
 	PathIterator* m_pathIterator;
+	TempTable* m_graphTable;
+	TableIterator* m_graphTableIterator;
+	PathIterator* m_graphIterator;
 	TupleSchema* m_vertexSchema; //will contain fanIn and fanOut as additional attributes
 	TupleSchema* m_edgeSchema; //will contain startVertexId and endVertexId as additional attributes
 	TupleSchema* m_pathSchema; //will contain startVertexId, endVertexId, and cost for now
+	TupleSchema* m_graphSchema; // LX FEAT4
 	// schema as array of string names
 	std::vector<string> m_vertexColumnNames;
 	std::vector<string> m_edgeColumnNames;
 	std::vector<string> m_pathColumnNames;
+	std::vector<string> m_graphColumnNames; // LX FEAT4
 	std::vector<int> m_columnIDsInVertexTable;
 	std::vector<int> m_columnIDsInEdgeTable;
 	int m_vertexIdColumnIndex;
@@ -189,6 +200,7 @@ protected:
 
 	int m_vPropColumnIndex, m_ePropColumnIndex;
 	string m_pathTableName = "PATHS_TEMP_TABLE";
+	string m_graphTableName = "SELECT_GRAPH_TEMP_TABLE"; // LX FEAT4
 	GraphOperationType currentPathOperationType;
 	//TODO: this should be removed
 	int dummyPathExapansionState = 0;

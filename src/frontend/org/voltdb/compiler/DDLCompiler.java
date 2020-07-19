@@ -1785,6 +1785,19 @@ public class DDLCompiler {
                 }
                 // TODO Add graph indexes
             }
+
+            // LX FEAT4
+            if (subNode.name.equals("selectgraph")) {
+                int colIndex = 0;
+                for (VoltXMLElement columnNode : subNode.children) {
+                    if (columnNode.name.equals("column")) {
+                        addPropertyToCatalog(graph, columnNode, columnTypes,
+                                columnMap, m_compiler, "graph");
+                        colIndex++;
+                    }
+                }
+                // TODO Add graph indexes
+            }
         }
         
         // Set materializer for properties
@@ -1909,8 +1922,11 @@ public class DDLCompiler {
         else if (proptype == "path") {
             column = graph.getPathprops().add(name);
         }
-        else { // "edge"
+        else if (proptype == "edge") { // "edge"
             column = graph.getEdgeprops().add(name);
+        }
+        else {
+            column = graph.getGraphprops().add(name);
         }
         // System.out.println("ddlCompiler:1916");
         // need to set other column data here (default, nullable, etc)
@@ -2054,8 +2070,11 @@ public class DDLCompiler {
         else if (proptype == "path") {
             column = graph.getPathprops().add(name);
         }
-        else { // "edge"
+        else if (proptype == "edge"){ // "edge"
             column = graph.getEdgeprops().add(name);
+        }
+        else {
+            column = graph.getGraphprops().add(name);
         }
         
         // need to set other column data here (default, nullable, etc)

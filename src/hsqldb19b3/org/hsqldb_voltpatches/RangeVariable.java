@@ -613,6 +613,10 @@ System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + c
         else if (isGraph2Graph) {
             int res1 = rangeGraph.findVertexProp(columnName);
             int res2 = rangeGraph.findEdgeProp(columnName);
+            // this is a col for returning graph
+            if (res1 == -1 && res2 == -1)
+                return rangeGraph.findGraphProp(columnName);
+            // this col is in where clause
             if (isVertexes && isEdges) {
                 return res1 == -1 ? res2 : res1;
             }
@@ -819,8 +823,9 @@ System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + c
                 
             else if (isPaths && graph.isPath(i))
                 column = graph.getPathProp(i);
-            else
-                continue;
+            else if (isGraph2Graph && graph.isGraph(i))
+                // LX FEAT4
+                column = graph.getGraphProp(i);
             
             // LX FEAT2
             if (column != null) {

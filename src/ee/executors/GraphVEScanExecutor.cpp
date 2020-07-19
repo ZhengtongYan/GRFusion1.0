@@ -28,6 +28,7 @@
 #include "executors/insertexecutor.h"
 #include "plannodes/insertnode.h"
 
+#include <set> 
 
 namespace voltdb {
 
@@ -42,23 +43,18 @@ bool GraphVEScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorV
 	// vassert((! isSubquery) || (node->getChildren().size() == 1));
     // vassert(!node->isSubquery() || (node->getChildren().size() == 1));
 	graphView = node->getTargetGraphView();
-    m_vLabel = "BALL"; // hard-coded for now
 
-	std::cout << graphView->name() << ", " << m_vLabel << endl;
     // m_aggExec = voltdb::getInlineAggregateExecutor(node);
     // m_insertExec = voltdb::getInlineInsertExecutor(node);
 
 	if (node->getPredicate() != NULL || node->getInlinePlanNodes().size() > 0) {
 		// Create output table based on output schema from the plan
-        std::cout << graphView->getVertexTableFromLabel(m_vLabel)->name() << endl;
 		const std::string& temp_name = isSubquery ?
 				node->getChildren()[0]->getOutputTable()->name():
-                graphView->getVertexTableFromLabel(m_vLabel)->name(); // LX FEAT2
-				// graphView->getVertexTable()->name();
+                graphView->getGraphTableName();
 		// setTempOutputTable(limits, temp_name);
         setTempOutputTable(executorVector, temp_name);
-		// LogManager::GLog("GraphVEScanExecutor", "p_init", 70,
-		// 		"after calling setTempOutputTable with temp table = " + temp_name);
+		LogManager::GLog("GraphVEScanExecutor", "p_init", 70, "after calling setTempOutputTable with temp table = " + temp_name);
 	}
 	//
 	// Otherwise create a new temp table that mirrors the
@@ -67,12 +63,11 @@ bool GraphVEScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorV
 	//
 	else {
 		Table* temp_t = isSubquery ?
-				 node->getChildren()[0]->getOutputTable() :
-                 graphView->getVertexTableFromLabel(m_vLabel); // LX FEAT2
+				node->getChildren()[0]->getOutputTable() :
+                 graphView->getGraphTable();
 				 // graphView->getVertexTable();
 		node->setOutputTable(temp_t);
-		LogManager::GLog("GraphVEScanExecutor", "p_init", 83,
-						"after calling setOutputTable with temp table name = " + temp_t->name());
+		LogManager::GLog("GraphVEScanExecutor", "p_init", 83, "after calling setOutputTable with temp table name = " + temp_t->name());
 	}
 
 	//node->setOutputTable(node->getTargetGraphView()->getVertexTable());
@@ -118,12 +113,12 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
             VOLT_TRACE("SCAN PREDICATE :\n%s\n", predicate->debug(true).c_str());
         }
 
-        std::vector<Vertex*> vertexlist;
-        std::vector<Edge*> edgelist;
-        checkTupleForPredicate(predicate, &vertexlist, &edgelist, inputVertexTable, vertexLabel, inputEdgeTable, edgeLabel, limit_node, graphView, params);
+        // std::vector<Vertex*> vertexlist;
+        // std::vector<Edge*> edgelist;
+        checkTupleForPredicate(predicate, inputVertexTable, vertexLabel, inputEdgeTable, edgeLabel, limit_node, projectionNode, graphView, params);
 
-        graphView->addToSubgraphVertex(vertexlist);
-        graphView->addToSubgraphEdge(edgelist);
+        // graphView->addToSubgraphVertex(vertexlist);
+        // graphView->addToSubgraphEdge(edgelist);
         if (m_aggExec != NULL) {
             m_aggExec->p_execute_finish();
         }
@@ -138,26 +133,26 @@ bool GraphVEScanExecutor::p_execute(const NValueArray &params) {
 /*
     Returns the selected vertices with its adjacency list and the selected edges
  */
-void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, std::vector<Vertex*>* subVertex, std::vector<Edge*>* subEdge, Table* inputVertexTable, std::string vlabel, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, GraphView* graphView, const NValueArray &params) {
+void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, Table* inputVertexTable, std::string vlabel, Table* inputEdgeTable, std::string elabel, LimitPlanNode* limit_node, ProjectionPlanNode* projectionNode, GraphView* graphView, const NValueArray &params) {
     
     if (((!predicate->getLeftExp()->getGraphObject().empty()) && 
             (predicate->getLeftExp()->getGraphObject()).compare("VERTEXES") == 0) || 
                 ((!predicate->getRightExp()->getGraphObject().empty()) && 
                      (predicate->getRightExp()->getGraphObject()).compare("VERTEXES") == 0) ) {
-        filterFromGraph(predicate, subVertex, subEdge, inputVertexTable, vlabel, limit_node, graphView, "VERTEX", params);
+        filterFromGraph(predicate, inputVertexTable, vlabel, limit_node, projectionNode, graphView, "VERTEX", params);
         return;
     }
     else if (((!predicate->getLeftExp()->getGraphObject().empty()) && 
             (predicate->getLeftExp()->getGraphObject()).compare("EDGES") == 0) || 
                 ((!predicate->getRightExp()->getGraphObject().empty()) && 
                      (predicate->getRightExp()->getGraphObject()).compare("EDGES") == 0)){
-        filterFromGraph(predicate, subVertex, subEdge, inputEdgeTable, elabel, limit_node, graphView, "EDGE", params);
+        filterFromGraph(predicate, inputEdgeTable, elabel, limit_node, projectionNode, graphView, "EDGE", params);
         return ;
     }
 
     if (predicate->getLeftExp()->getGraphObject().empty() && predicate->getRightExp()->getGraphObject().empty()) {
-        checkTupleForPredicate(predicate->getLeftExp(), subVertex, subEdge, inputVertexTable, vlabel, inputEdgeTable, elabel, limit_node, graphView, params);
-        checkTupleForPredicate(predicate->getRightExp(), subVertex, subEdge, inputVertexTable, vlabel, inputEdgeTable, elabel, limit_node, graphView, params);
+        checkTupleForPredicate(predicate->getLeftExp(), inputVertexTable, vlabel, inputEdgeTable, elabel, limit_node, projectionNode, graphView, params);
+        checkTupleForPredicate(predicate->getRightExp(), inputVertexTable, vlabel, inputEdgeTable, elabel, limit_node, projectionNode, graphView, params);
     }
 
     // ExpressionType etype = predicate->getExpressionType();
@@ -170,11 +165,16 @@ void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, 
     return ;
 }
 
-void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::vector<Vertex*>* subVertex, std::vector<Edge*>* subEdge, Table* inputTable, std::string label, LimitPlanNode* limit_node, GraphView* graphView, std::string obj, const NValueArray &params) {
+void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, Table* inputTable, std::string label, LimitPlanNode* limit_node, ProjectionPlanNode* projectionNode, GraphView* graphView, std::string obj, const NValueArray &params) {
 
     TableTuple tuple(inputTable->schema());
     TableIterator iterator = inputTable->iteratorDeletingAsWeGo();
     // AbstractExpression *predicate = node->getPredicate();
+    int num_of_columns = -1;
+    if (projectionNode != NULL) {
+        num_of_columns = static_cast<int> (projectionNode->getOutputColumnExpressions().size());
+    }
+    cout << "GraphVEScanExecutor:177:" << num_of_columns << endl;
    
     int limit = CountingPostfilter::NO_LIMIT;
     int offset = CountingPostfilter::NO_OFFSET;
@@ -191,6 +191,9 @@ void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::ve
     if (m_aggExec != NULL){
         LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "1");
         const TupleSchema * inputSchema = inputTable->schema();
+        if (projectionNode != NULL) {
+            inputSchema = projectionNode->getOutputTable()->schema();
+        }
         
         temp_tuple = m_aggExec->p_execute_init(params, &pmp, inputSchema, m_tmpOutputTable, &postfilter);
 
@@ -200,6 +203,8 @@ void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::ve
     }
     
     int id;
+    std::set<std::string> edgelist;
+
     while (postfilter.isUnderLimit() && iterator.next(tuple))
     {
 #if   defined(VOLT_TRACE_ENABLED)
@@ -219,25 +224,41 @@ void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, std::ve
             id = ValuePeeker::peekInteger(tuple.getNValue(0));
             if (obj.compare("VERTEX") == 0) {
                 Vertex * v = graphView->getVertex(label + "." + to_string(id));
-                subVertex->push_back(v);
+                // vertexlist.insert(label + "." + to_string(id));
+                // subVertex->push_back(v);
                 // add all its inEdge and outEdge list to subEdge
                 for (int i = 0; i < v->fanOut(); i++) {
-                    subEdge->push_back(v->getOutEdge(i));
+                    // subEdge->push_back(v->getOutEdge(i));
+                    edgelist.insert(v->getOutEdge(i)->getId());
                 }
                 for (int j = 0; j < v->fanIn(); j++) {
-                    subEdge->push_back(v->getInEdge(j));
+                    // subEdge->push_back(v->getInEdge(j));
+                    edgelist.insert(v->getInEdge(j)->getId());
                 }
+
             }
             else if (obj.compare("EDGE") == 0) {
                 Edge * e = graphView->getEdge(label + "." + to_string(id));
-                subEdge->push_back(e);
+                edgelist.insert(e->getId());
+                // subEdge->push_back(e);
                 // add its startVertex and endVertex to subVertex
-                subVertex->push_back(e->getStartVertex());
-                subVertex->push_back(e->getEndVertex());
+                // subVertex->push_back(e->getStartVertex());
+                // subVertex->push_back(e->getEndVertex());
+                
             }
+            
             pmp.countdownProgress();
         }
     }
+    Edge * e;
+    for (std::set<std::string>::iterator it = edgelist.begin(); it!=edgelist.end(); ++it) {
+        e = graphView->getEdge(*it);
+        temp_tuple.setNValue(0, ValueFactory::getStringValue(e->getId()));
+        temp_tuple.setNValue(1, ValueFactory::getStringValue(e->getStartVertex()->getId()));
+        temp_tuple.setNValue(2, ValueFactory::getStringValue(e->getEndVertex()->getId()));
+        outputTuple(temp_tuple);
+    }
+
 }
 
 
