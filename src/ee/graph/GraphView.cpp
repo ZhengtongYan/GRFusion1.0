@@ -43,6 +43,10 @@ Table* GraphView::getVertexTableById(string id)
 	return this->m_idToVTableMap[id];
 }
 
+void GraphView::setVertexTableMap(std::string id, Table* table) {
+	this->m_idToVTableMap[id] = table;
+}
+
 // LX FEAT3
 Table* GraphView::getEdgeTableById(string id)
 {
@@ -108,6 +112,39 @@ void GraphView::addEdge(string id, Edge* edge) // LX FEAT2
 // 	return this->m_vertexTables[0]; // LX FEAT2 keep for debugging purpose
 // }
 
+std::vector<Table*> GraphView::getVertexTables() {
+	return this->m_vertexTables;
+}
+
+std::vector<Table*> GraphView::getEdgeTables() {
+	return this->m_edgeTables;
+}
+
+std::vector<std::string> GraphView::getVertexLabels() {
+	return this->m_vertexLabels;
+}
+
+std::vector<std::string> GraphView::getEdgeLabels() {
+	return this->m_edgeLabels;
+}
+
+Table* GraphView::getVertexTableByIndex(int idx) {
+	return this->m_vertexTables[idx];
+}
+
+Table* GraphView::getEdgeTableByIndex(int idx) {
+	return this->m_edgeTables[idx];
+}
+
+std::string GraphView::getVertexLabelByIndex(int idx) {
+	return this->m_vertexLabels[idx];
+}
+
+std::string GraphView::getEdgeLabelByIndex(int idx) {
+	return this->m_edgeLabels[idx];
+}
+
+
 // LX FEAT2
 Table* GraphView::getVertexTableFromLabel(string vlabel)
 {
@@ -132,6 +169,10 @@ Table* GraphView::getEdgeTableFromLabel(string elabel)
 // {
 // 	return this->m_edgeTable;
 // }
+
+int GraphView::getVertexIdColIdxList(std::string label) {
+	return this->m_vertexIdColIdxList[label];
+}
 
 Table* GraphView::getPathTable()
 {
@@ -1106,6 +1147,15 @@ void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
 	stringstream paramsToPrint;
 	paramsToPrint << "SubGraphLoop: from = " << startVertexId << ", length = " << length << ", numOfRowsAdded = " << m_pathTable->activeTupleCount();
 	LogManager::GLog("GraphView", "BFS", 302, paramsToPrint.str());
+}
+
+// LX FEAT6
+void GraphView::processTupleInsertInGraphView(TableTuple& target, std::string tableName) {
+	
+	VoltDBEngine* engine = ExecutorContext::getEngine();
+	engine->updateGraphViewDelegate(this->name());
+	// cout << "" << endl;
+	return;
 }
 
 void GraphView::fillGraphFromRelationalTables()

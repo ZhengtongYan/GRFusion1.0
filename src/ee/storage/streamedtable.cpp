@@ -75,6 +75,11 @@ void StreamedTable::addMaterializedView(MaterializedViewTriggerForStreamInsert* 
     m_views.push_back(view);
 }
 
+// // LX FEAT6
+// void StreamedTable::addGraphView(GraphViewTriggerForStreamInsert* view) {
+//     m_gviews.push_back(view);
+// }
+
 void StreamedTable::dropMaterializedView(MaterializedViewTriggerForStreamInsert* targetView) {
     vassert( ! m_views.empty());
     MaterializedViewTriggerForStreamInsert* lastView = m_views.back();

@@ -219,7 +219,7 @@ public class StatementPartitioning implements Cloneable {
      */
     public void addPartitioningExpression(String fullColumnName, AbstractExpression constExpr,
             VoltType valueType) {
-        //* enable to debug */ System.out.println("DEBUG: addPartitioningExpression(" + fullColumnName + ", " + constExpr + ")");
+        /* enable to debug */ System.out.println("StatementPartitioning:222-DEBUG: addPartitioningExpression(" + fullColumnName + ", " + constExpr + ")");
         if (m_fullColumnName == null) {
             m_fullColumnName = fullColumnName;
         }

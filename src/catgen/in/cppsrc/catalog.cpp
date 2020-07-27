@@ -148,7 +148,7 @@ static void parse(const string &stmt,
 void Catalog::executeOne(const string &stmt) {
     string command, ref, coll, child;
     parse(stmt, command, ref, coll, child);
-
+cout << "catalog.cpp:151:" << stmt << endl;
     CatalogType *item = NULL;
     if (ref.compare("$PREV") == 0) {
         if (!m_lastUsedPath) {

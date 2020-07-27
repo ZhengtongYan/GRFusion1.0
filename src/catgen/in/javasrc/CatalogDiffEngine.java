@@ -528,6 +528,11 @@ public class CatalogDiffEngine {
             return null;
         }
         // End LX
+
+        // LX FEAT6
+        else if (suspect instanceof GraphViewInfo) {
+            return null;
+        }
         
         else if (suspect instanceof Table) {
             Table tbl = (Table)suspect;
@@ -1052,6 +1057,10 @@ public class CatalogDiffEngine {
                 assert isDRed != null;
                 if (!isDRed) return null;
             }
+        }
+        // LX FEAT5
+        if (suspect instanceof GraphView) {
+            return null;
         }
 
         if (suspect instanceof Task && (field.equals("enabled") || field.equals("onError"))) {

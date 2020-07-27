@@ -157,8 +157,8 @@ final class SqlPlanner {
                 planner.planSwapTables();
             } else {
                 planner.parse();
-                System.out.println("SqlPlanner:160");
             }
+            System.out.println("SqlPlanner:161");
             m_parsedToken = planner.parameterize();
 
             // check the parameters count

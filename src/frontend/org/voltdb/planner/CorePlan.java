@@ -100,6 +100,7 @@ public class CorePlan {
         }
 
         isReplicatedTableDML = plan.replicatedTableDML;
+        System.out.println("CorePlan:103..........." + (isReplicatedTableDML?1:0));
         this.catalogHash = catalogHash;
         parameterTypes = plan.parameterTypes();
         readOnly = plan.isReadOnly();

@@ -92,6 +92,7 @@ public class ProcedurePartitionData {
 
         // extract partition data for single partition procedure
         String partitionTableName = proc.getPartitiontable().getTypeName();
+        System.out.println("ProcedurePartitionData:95:..............partition");
         String columnName = proc.getPartitioncolumn().getTypeName();
         String partitionIndex = Integer.toString(proc.getPartitionparameter());
 

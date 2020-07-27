@@ -477,7 +477,7 @@ public class Inits {
             if (result != null) {
                 VoltDB.crashLocalVoltDB(result);
             }
-
+System.out.println("Inits:480");
             try {
                 m_rvdb.m_catalogContext = new CatalogContext(
                         catalog,

@@ -248,6 +248,8 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                     //get the vertex id
                     vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
                     cout << "VertexScanExecutor:250:" << vertexId << endl;
+                    Vertex *v = graphView->getVertex(vertexLabel + "." + to_string(vertexId));
+                    cout << "VertexScanExecutor:252" << v->toString() << endl;
                     fanOut = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanOut();
                     fanIn = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanIn();
                     cout << "VertexScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;

@@ -170,6 +170,7 @@ class __attribute__((visibility("default"))) VoltDBEngine {
         // Add LX
         catalog::GraphView* getCatalogGraphView(const std::string& name) const;
         GraphViewCatalogDelegate* getGraphViewDelegate(const std::string& name) const;
+        void updateGraphViewDelegate(std::string name); // LX FEAT6
         // End LX
         Table* getTableById(int32_t tableId) const;
         Table* getTableByName(std::string const& name) const;
@@ -297,6 +298,7 @@ class __attribute__((visibility("default"))) VoltDBEngine {
         bool loadCatalog(int64_t timestamp, std::string const& catalogPayload);
 
         bool updateCatalog(int64_t timestamp, bool isStreamUpdate, std::string const& catalogPayload);
+        bool updateCatalog1();
 
         bool processCatalogAdditions(int64_t timestamp, bool updateReplicated,
                 bool isStreamUpdate, std::map<std::string, ExportTupleStream*> & purgedStreams);
@@ -921,6 +923,11 @@ class __attribute__((visibility("default"))) VoltDBEngine {
         // static variable for sharing loadTable result (and exception) across VoltDBEngines
         static VoltEEExceptionType s_loadTableException;
         static int s_drHiddenColumnSize;
+
+        int64_t m_timestamp;
+        bool m_isStreamUpdate;
+        std::string m_catalogPayload;
+
 };
 
 inline bool startsWith(const string& s1, const string& s2) {

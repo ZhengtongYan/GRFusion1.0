@@ -66,6 +66,8 @@
 #include "indexes/tableindexfactory.h"
 #include "common/ValuePeeker.hpp"
 
+#include "graph/GraphView.h" // LX FEAT6
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace voltdb {
@@ -111,6 +113,7 @@ PersistentTable::PersistentTable(int partitionColumn,
     , m_tupleLimit(tupleLimit)
     , m_purgeExecutorVector()
     , m_views()
+    , m_graphViews()     // LX FEAT6
     , m_stats(this)
     , m_blocksNotPendingSnapshotLoad()
     , m_blocksPendingSnapshotLoad()
@@ -771,6 +774,7 @@ void PersistentTable::insertTupleIntoDeltaTable(TableTuple& source, bool fallibl
  * uninlined strings and creates and registers an UndoAction.
  */
 bool PersistentTable::insertTuple(TableTuple& source) {
+    cout << "persistenttable:774" << endl;
     insertPersistentTuple(source, true);
     return true;
 }
@@ -781,7 +785,7 @@ void PersistentTable::insertPersistentTuple(TableTuple& source, bool fallible, b
         str << "Table " << m_name << " exceeds table maximum row count " << m_tupleLimit;
         throw ConstraintFailureException(this, source, str.str());
     }
-
+    cout << "persistenttable:784" << endl;
     //
     // First get the next free tuple
     // This will either give us one from the free slot list, or
@@ -925,8 +929,15 @@ void PersistentTable::insertTupleCommon(TableTuple& source, TableTuple& target,
     }
 
     // handle any materialized views
+    cout << "persistenttable:928" << endl;
     BOOST_FOREACH (auto view, m_views) {
         view->processTupleInsert(target, fallible);
+    }
+
+    // LX FEAT6 handle graphviews that reference this table
+    BOOST_FOREACH (auto gview, m_graphViews) {
+        cout << "persistenttable:935:for graphviews" << endl;
+        gview->processTupleInsertInGraphView(target, this->name());
     }
 }
 
@@ -1572,6 +1583,11 @@ void PersistentTable::addMaterializedView(MaterializedViewTriggerForWrite* view)
     m_views.push_back(view);
 }
 
+// LX FEAT6
+void PersistentTable::addGraphView(GraphView* graphview) {
+    m_graphViews.push_back(graphview);
+}
+
 /*
  * drop a view. the table is no longer feeding it.
  * The destination table will go away when the view metadata is deleted (or later?) as its refcount goes to 0.
@@ -1755,6 +1771,7 @@ void PersistentTable::processLoadedTuple(TableTuple& tuple,
             str << "Table " << m_name << " exceeds table maximum row count " << m_tupleLimit;
             throw ConstraintFailureException(this, tuple, str.str(), (! uniqueViolationOutput) ? &m_surgeon : NULL);
         }
+        cout << "persistenttable:1759" << endl;
         insertTupleCommon(tuple, tuple, true, shouldDRStreamRows, !uniqueViolationOutput);
     } catch (ConstraintFailureException& e) {
         if ( ! uniqueViolationOutput) {

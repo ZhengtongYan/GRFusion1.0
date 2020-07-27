@@ -96,7 +96,7 @@ public class SQLParser extends SQLPatternFactory
     private static final Pattern PAT_PARTITION_ANY_PREAMBLE =
             SPF.statement(
                 SPF.token("partition"),
-                SPF.capture(SPF.tokenAlternatives("procedure", "table")),
+                SPF.capture(SPF.tokenAlternatives("procedure", "table", "graph")), // LX FEAT5 ADD GRAPH
                 SPF.anyClause()
             ).compile("PAT_PARTITION_ANY_PREAMBLE");
 
@@ -114,6 +114,20 @@ public class SQLParser extends SQLPatternFactory
             SPF.token("partition"), SPF.token("table"), SPF.capture(SPF.databaseObjectName()),
             SPF.token("on"), SPF.token("column"), SPF.capture(SPF.databaseObjectName())
         ).compile("PAT_PARTITION_TABLE");
+
+    // LX FEAT5
+    /**
+     * Pattern: PARTITION GRAPH graphname 
+     *
+     * NB supports only unquoted table and column names??
+     *
+     * Capture groups:
+     *  (1) graph name
+     */
+    private static final Pattern PAT_PARTITION_GRAPH =
+        SPF.statement(
+            SPF.token("partition"), SPF.token("graph"), SPF.capture(SPF.databaseObjectName())
+        ).compile("PAT_PARTITION_GRAPH");
 
     /**
      * Pattern: CREATE TABLE table_name [EXPORT TO target migrate_target_name [ON...]].
@@ -965,6 +979,17 @@ public class SQLParser extends SQLPatternFactory
     public static Matcher matchPartitionTable(String statement)
     {
         return PAT_PARTITION_TABLE.matcher(statement);
+    }
+
+    // LX FEAT5
+    /**
+     * Match statement against pattern for partition graph statement
+     * @param statement  statement to match against
+     * @return           pattern matcher object
+     */
+    public static Matcher matchPartitionGraph(String statement)
+    {
+        return PAT_PARTITION_GRAPH.matcher(statement);
     }
 
     /**

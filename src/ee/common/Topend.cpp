@@ -28,6 +28,7 @@ namespace voltdb {
         TableTuple tuple(template_table->schema());
         TableIterator iterator = template_table->iterator();
         while (iterator.next(tuple)) {
+            cout << "Topend:31" << endl;
             t->insertTuple(tuple);
         }
         return t;

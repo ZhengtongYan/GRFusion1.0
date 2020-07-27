@@ -572,7 +572,7 @@ static void migrateChangedTuples(catalog::Table const& catalogTable,
                     tupleToInsert.setNValue(i, defaults[i]);
                 }
             }
-
+cout << "TableCatalogDelegate:575" << endl;
             // insert into the new table
             newTable->insertPersistentTuple(tupleToInsert, false);
 

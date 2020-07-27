@@ -520,16 +520,26 @@ System.out.println("QueryPlanner:499");
 System.out.println("QueryPlanner:513");
         // Execute the generateOutputSchema and resolveColumnIndexes once for the best plan
         bestPlan.rootPlanGraph.generateOutputSchema(m_db);
+        System.out.println("QueryPlanner:513-0");
+
         // Make sure the schemas for base and recursive plans in common table scans
         // have identical schemas.
         harmonizeCommonTableSchemas(bestPlan);
+        System.out.println("QueryPlanner:513-1");
+
         bestPlan.rootPlanGraph.resolveColumnIndexes();
+        System.out.println("QueryPlanner:513-2");
+
         // Now that the plan is all together we
         // can compute the best selection microoptimizations.
         MicroOptimizationRunner.applyAll(bestPlan, parsedStmt,
                 MicroOptimizationRunner.Phases.AFTER_COMPLETE_PLAN_ASSEMBLY);
+        System.out.println("QueryPlanner:513-3");
+
         if (parsedStmt instanceof ParsedSelectStmt) {
             ((ParsedSelectStmt)parsedStmt).checkPlanColumnMatch(bestPlan.rootPlanGraph.getOutputSchema());
+            System.out.println("QueryPlanner:513-4");
+
         }
 System.out.println("QueryPlanner:527");
         // reset all the plan node ids for a given plan

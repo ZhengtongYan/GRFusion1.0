@@ -82,6 +82,16 @@ public:
 	Table* getVertexTableById(string id); // LX FEAT2
 	Table* getEdgeTableFromLabel(string elabel); // LX FEAT3
 	Table* getEdgeTableById(string id); // LX FEAT3
+	std::vector<Table*> getVertexTables();
+	std::vector<Table*> getEdgeTables();
+	std::vector<std::string> getVertexLabels();
+	std::vector<std::string> getEdgeLabels();
+	Table* getVertexTableByIndex(int idx); 
+	Table* getEdgeTableByIndex(int idx);
+	std::string getVertexLabelByIndex(int idx); 
+	std::string getEdgeLabelByIndex(int idx) ;
+	void setVertexTableMap(std::string id, Table* table) ;
+
 
 	void addToSubgraphList(string graphname); // LX FEAT4
 	void addToSubgraphVertex(std::vector<Vertex*> subgraphVertex); // LX FEAT4
@@ -143,6 +153,8 @@ public:
 	void SubGraphLoopFromStartVertex(string startVertexId, int length, int vSelectivity, int eSelectivity); // LX FEAT2
 	void SubGraphLoop(string startVertexId, int length); // LX FEAT2
 
+	void processTupleInsertInGraphView(TableTuple& target, std::string tableName); // LX FEAT6
+	int getVertexIdColIdxList(std::string label);
 
 protected:
 	void fillGraphFromRelationalTables();

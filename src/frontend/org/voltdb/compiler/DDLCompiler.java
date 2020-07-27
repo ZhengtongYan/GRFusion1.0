@@ -115,6 +115,7 @@ import org.voltdb.planner.ParsedColInfo; // Add LX
 import org.voltdb.types.ExpressionType; // Add LX
 import org.voltdb.catalog.VertexLabel; // Implement LX FEAT2
 import org.voltdb.catalog.EdgeLabel; // Implement LX FEAT3
+import org.voltdb.catalog.GraphViewInfo; // LX FEAT6
 
 /**
  * Compiles schema (SQL DDL) text files and stores the results in a given catalog.
@@ -356,6 +357,7 @@ public class DDLCompiler {
         protected static final String DR = "DR";
         protected static final String TASK = "TASK";
         protected static final String AGGREGATE = "AGGREGATE";
+        protected static final String GRAPH = "GRAPH"; // LX FEAT5
     }
 
     public void loadSchemaWithFiltering(Reader reader, final Database db, final DdlProceduresToLoad whichProcs, SQLParser.FileInfo fileInfo)
@@ -915,6 +917,32 @@ public class DDLCompiler {
                 }
             }
         }
+
+        // LX FEAT5
+        final CatalogMap<GraphView> graphViews = db.getGraphviews();
+        for (GraphView graphView : graphViews) {
+            String graphViewName = graphView.getTypeName();
+            // Here, we restore that the table is always replicated, and set it to be partitioned if
+            // the partition makes sense.
+            graphView.setIsreplicated(true);
+
+            if (m_tracker.m_partitionMap.containsKey(graphViewName.toLowerCase())) {
+                String colName = m_tracker.m_partitionMap.get(graphViewName.toLowerCase());
+                // A null column name indicates a replicated table. Ignore it here
+                // because it defaults to replicated in the catalog.
+                if (colName != null) {
+                    assert(graphViews.getIgnoreCase(graphViewName) != null);
+
+                    // if graph only has one edge label, cannot partition
+                    if (graphView.getEdgelabels().size() < 2) {
+                            msg += "the graph has one edgelabel, no need to partition." ;
+                            throw m_compiler.new VoltCompilerException(msg);
+                    }
+                    graphView.setIsreplicated(false);
+                    System.out.println("ddlCompiler:941:graph not replicated any more");
+                }
+            }
+        }
     }
 
     private void handleTTL(Database db) throws VoltCompilerException {
@@ -1061,6 +1089,19 @@ public class DDLCompiler {
                         m_tracker.addExportedTable(tableName, streamTarget, false);
                         break;
                     }
+                }
+            }
+        }
+
+        // LX FEAT5
+        for (VoltXMLElement e : m_schema.children) {
+            if (e.name.equals("graph")) {
+                String graphViewName = e.attributes.get("name");
+                String partitionG = e.attributes.get("partitiongraph");                
+                if (partitionG != null) {
+                    m_tracker.addPartition(graphViewName, partitionG);
+                } else {
+                    m_tracker.removePartition(graphViewName);
                 }
             }
         }
@@ -1730,6 +1771,10 @@ public class DDLCompiler {
                 String vtablename = subNode.attributes.get("Vtable");
                 assert(vtablename != null);
                 Table Vtable = db.getTables().get(vtablename);
+
+                GraphViewInfo gvi = Vtable.getGviews().add(name); // FEAT6
+                gvi.setGraphname(name); // FEAT6
+                gvi.setIsvertextable(true); // FEAT6
                 vLabel.setVtable(Vtable);
                 // System.out.println(label);
                 vtableMap.put(label, Vtable);
@@ -1760,6 +1805,9 @@ public class DDLCompiler {
                 assert(etablename != null);
 
                 Table Etable = db.getTables().get(etablename);
+                GraphViewInfo gvi = Etable.getGviews().add(name); // FEAT6
+                gvi.setGraphname(name); // FEAT6
+                gvi.setIsvertextable(false); // FEAT6
                 eLabel.setEtable(Etable);
                 // System.out.println(label);
                 etableMap.put(label, Etable);

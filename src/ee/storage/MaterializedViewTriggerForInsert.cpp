@@ -122,6 +122,7 @@ void MaterializedViewTriggerForInsert::setEnabled(bool enabled) {
                       m_existingTuple, m_updatedTuple, m_updatableIndexList, false);
             }
             else {
+                cout << "MaterializedViewTriggerForInsert:125" << endl;
                 m_dest->insertPersistentTuple(deltaTuple, false);
             }
         }
@@ -211,6 +212,7 @@ NValue MaterializedViewTriggerForInsert::getAggInputFromSrcTuple(
 void MaterializedViewTriggerForInsert::processTupleInsert(const TableTuple &newTuple, bool fallible) {
     // If the view is not enabled, ignore it.
     // Snapshots will only do inserts, so this check is not added to handleTupleDelete.
+    cout << "MaterializedViewTriggerForInsert:214" << endl;
     if (! m_enabled) {
         return;
     } else if (failsPredicate(newTuple)) {
@@ -321,6 +323,7 @@ void MaterializedViewTriggerForInsert::processTupleInsert(const TableTuple &newT
             vassert(m_dest->schema()->hiddenColumnCount() == 1);
             m_updatedTuple.setHiddenNValue(0, ValueFactory::getBigIntValue(1));
         }
+        cout << "MaterializedViewTriggerForInsert:326" << endl;
         m_dest->insertPersistentTuple(m_updatedTuple, fallible);
     }
 }
@@ -495,6 +498,7 @@ void MaterializedViewTriggerForInsert::initializeTupleHavingNoGroupBy(bool falli
         vassert(m_dest->schema()->hiddenColumnCount() == 1);
         m_updatedTuple.setHiddenNValue(0, ValueFactory::getBigIntValue(0));
     }
+    cout << "MaterializedViewTriggerForInsert:501" << endl;
     m_dest->insertPersistentTuple(m_updatedTuple, fallible);
 }
 

@@ -34,6 +34,7 @@ import org.voltdb.catalog.Database;
 import org.voltdb.catalog.ProcParameter;
 import org.voltdb.catalog.Procedure;
 import org.voltdb.catalog.Table;
+import org.voltdb.catalog.GraphView; // LX FEAT5
 import org.voltdb.types.ConstraintType;
 import org.voltdb.utils.CatalogUtil;
 
@@ -115,6 +116,7 @@ public class DefaultProcedureManager {
             }
 
             // get the partition column
+            System.out.println("DefaultProcedureManager:119:..............partition");
             final Column partitioncolumn = table.getPartitioncolumn();
             // this check is an accommodation for some tests that don't flesh out a catalog
             if (partitioncolumn == null) {
@@ -161,6 +163,7 @@ public class DefaultProcedureManager {
             // upsert partitions like a regular insert
             addShimProcedure(prefix + "upsert", table, null, true, partitionIndex, partitioncolumn, false);
         }
+
     }
 
     public static String sqlForDefaultProc(Procedure defaultProc) {
@@ -168,6 +171,7 @@ public class DefaultProcedureManager {
         String[] parts = name.split("\\.");
         String action = parts[1];
         Table table = defaultProc.getPartitiontable();
+        System.out.println("DefaultProcedureManager:173:..............partition");
         Column partitionColumn = defaultProc.getPartitioncolumn();
 
         final CatalogMap<Constraint> constraints = table.getConstraints();

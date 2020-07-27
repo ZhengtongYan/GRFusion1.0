@@ -68,6 +68,16 @@ void GraphViewCatalogDelegate::init(catalog::Database const &catalogDatabase,
 	m_graphView->incrementRefcount();
 }
 
+void GraphViewCatalogDelegate::processGraphViewChange(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable) 
+{
+	GraphView* existingGraph = m_graphView;
+    m_graphView = constructGraphViewFromCatalog(catalogDatabase, catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable);
+    vassert(m_graphView);
+    m_graphView->incrementRefcount();
+    existingGraph->decrementRefcount();
+    existingGraph->decrementRefcount();
+}
+
 // GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable)
 GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable) // LX FEAT2
 {

@@ -91,6 +91,7 @@ public class MpInitiator extends BaseInitiator<MpScheduler> implements Promotabl
                 "MP",
                 agent,
                 StartAction.CREATE /* never for rejoin */);
+        System.out.println("MpInitiator:94");
     }
 
     @Override
@@ -113,6 +114,7 @@ public class MpInitiator extends BaseInitiator<MpScheduler> implements Promotabl
 
         super.configureCommon(backend, catalogContext, serializedCatalog,
                 numberOfPartitions, startAction, null, null, cl, coreBindIds, false);
+        System.out.println("MpInitiator:116.........");
         // Hacky
         MpScheduler sched = m_scheduler;
         MpRoSitePool sitePool = new MpRoSitePool(m_initiatorMailbox.getHSId(),

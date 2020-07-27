@@ -56,6 +56,7 @@
 #include "catalog/graphview.h" // Added by LX
 #include "catalog/vertexlabel.h" // Implement LX FEAT2
 #include "catalog/edgelabel.h" // Implement LX FEAT3
+#include "catalog/graphviewinfo.h" // LX FEAT6
 #include "catalog/index.h"
 #include "catalog/materializedviewhandlerinfo.h"
 #include "catalog/materializedviewinfo.h"
@@ -121,6 +122,7 @@ ENABLE_BOOST_FOREACH_ON_CONST_MAP(MaterializedViewInfo);
 ENABLE_BOOST_FOREACH_ON_CONST_MAP(Table);
 ENABLE_BOOST_FOREACH_ON_CONST_MAP(Function);
 ENABLE_BOOST_FOREACH_ON_CONST_MAP(GraphView); // Added by LX
+ENABLE_BOOST_FOREACH_ON_CONST_MAP(GraphViewInfo); // LX FEAT6
 
 static const size_t PLAN_CACHE_SIZE = 1000;
 // table name prefix of DR conflict table
@@ -139,6 +141,7 @@ typedef std::pair<std::string, catalog::GraphView*> LabeledGraphView; // Added b
 typedef std::pair<std::string, catalog::VertexLabel*> LabeledVertexLabel; // Implement LX FEAT2
 typedef std::pair<std::string, catalog::EdgeLabel*> LabeledEdgeLabel; // Implement LX FEAT3
 typedef std::pair<std::string, catalog::MaterializedViewInfo*> LabeledView;
+typedef std::pair<std::string, catalog::GraphViewInfo*> LabeledGraphViewInfo; // LX FEAT6
 typedef std::pair<std::string, catalog::Function*> LabeledFunction;
 typedef std::pair<std::string, StreamedTable*> LabeledStream;
 typedef std::pair<std::string, ExportTupleStream*> LabeledStreamWrapper;
@@ -396,6 +399,57 @@ GraphViewCatalogDelegate* VoltDBEngine::getGraphViewDelegate(const std::string& 
     return findInMapOrNull(name, m_graphViewDelegatesByName);
 }
 
+void VoltDBEngine::updateGraphViewDelegate(std::string name) {
+    m_graphViewCatalogDelegates.clear();
+    m_graphViewDelegatesByName.clear();
+    updateCatalog1();
+    // processCatalogAdditions(m_timestamp, m_updateReplicated, m_isStreamUpdate, m_purgedStreams);
+}
+
+bool VoltDBEngine::updateCatalog1() {
+
+    for (LabeledGraphView labeledGraphView: m_database->graphViews()){
+        // get the catalog's table object
+        catalog::GraphView *catalogGraphView = labeledGraphView.second;
+        // get the delegate for the table... add the table if it's null
+        GraphViewCatalogDelegate* gcd = findInMapOrNull(catalogGraphView->path(), m_graphViewCatalogDelegates);
+        if (gcd) {
+            Table *vTable = NULL;
+            vector<Table*> vTables;
+            vector<std::string> vLabels;
+            for (LabeledVertexLabel vertexLabel : catalogGraphView->vertexLabels()) {
+                catalog::VertexLabel *vlabel = vertexLabel.second;
+                vTable = findInMapOrNull(vlabel->VTable()->path(), m_catalogDelegates)->getTable();
+                vTables.push_back(vTable);
+                vLabels.push_back(vlabel->name());
+            }
+            // LX FEAT3
+            Table *eTable = NULL;
+            vector<Table*> eTables;
+            vector<std::string> eLabels;
+            vector<std::string> startVLabels;
+            vector<std::string> endVLabels;
+            for (LabeledEdgeLabel edgeLabel : catalogGraphView->edgeLabels()) {
+                catalog::EdgeLabel *elabel = edgeLabel.second;
+                eTable = findInMapOrNull(elabel->ETable()->path(), m_catalogDelegates)->getTable();
+                eTables.push_back(eTable);
+                eLabels.push_back(elabel->name());
+                startVLabels.push_back(elabel->startVertex());
+                endVLabels.push_back(elabel->endVertex());
+                // cout << "VoltDBEngine:1723:add table"<< vTable->name() << endl;
+            }
+            string pathsTableName = "TEMPPATHS";
+            Table* pTable = NULL;
+            // gcd->init(*m_database, *catalogGraphView, vTable, eTable, pTable);
+            gcd->processGraphViewChange(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable); // LX FEAT2
+        }
+    }
+    
+
+    VOLT_DEBUG("Updated catalog...");
+    return true;
+}
+
 catalog::GraphView* VoltDBEngine::getCatalogGraphView(const std::string& name) const {
     // iterate over all of the tables in the new catalog
     BOOST_FOREACH (LabeledGraphView labeledTable, m_database->graphViews()) {
@@ -474,6 +528,10 @@ int VoltDBEngine::executePlanFragments(
 
     LogManager::GLog("VoltDBEngine", "executePlanFragment(s)!", 410, paramsLX.str());
     //End LX
+    // LX TODO: this is just a workaround for now.
+    // Still need to figure out how to add vertices or edges in the same was
+    // as insertions for table
+    updateCatalog1(); // LX FEAT6
     // count failures
     int failures = 0;
 
@@ -621,20 +679,21 @@ int VoltDBEngine::executePlanFragment(int64_t planfragmentId, int64_t inputDepen
         m_currExecutorVec = NULL;
         m_currentInputDepId = -1;
         m_executorContext->cleanupAllExecutors();
+        cout << "VoltDBEngine:624" << endl;
         return ENGINE_ERRORCODE_ERROR;
     }
-
+cout << "VoltDBEngine:626" << endl;
     // Most temp table state is cleaned up automatically, but for
     // subqueries, some results are cached to get better performance.
     // Clean this up now.
     m_executorContext->cleanupAllExecutors();
-
+cout << "VoltDBEngine:631" << endl;
     // If we get here, we've completed execution successfully, or
     // recovered after an error.  In any case, we should be able to
     // assert that temp tables are now cleared.
     DEBUG_ASSERT_OR_THROW_OR_CRASH(m_executorContext->allOutputTempTablesAreEmpty(),
                                    "Output temp tables not cleaned up after execution");
-
+cout << "VoltDBEngine:637" << endl;
     m_currExecutorVec = NULL;
     m_currentInputDepId = -1;
 
@@ -646,7 +705,7 @@ int VoltDBEngine::executePlanFragment(int64_t planfragmentId, int64_t inputDepen
         m_resultOutput.writeBytes(m_templateSingleLongTable, m_templateSingleLongTableSize);
         m_numResultDependencies++;
     }
-
+cout << "VoltDBEngine:655" << endl;
     //Write the number of result dependencies if necessary.
     m_resultOutput.writeIntAt(numResultDependenciesCountOffset, m_numResultDependencies);
 
@@ -1034,7 +1093,7 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
         // It is the thread-hopping VoltDBEngine's responsibility to re-establish the EC for each new thread it runs on.
         m_executorContext->bindToThread();
     }
-
+std::cout << "VoltDBEngine:1037" << endl;
     VOLT_DEBUG("Loading catalog...%d", m_partitionId);
     if (m_partitionId == 16383) {
         // Don't allocate tables on the MP thread because the last SP thread will do that
@@ -1042,15 +1101,15 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
     }
     vassert(m_catalog != NULL);
     VOLT_DEBUG("Loading catalog on partition %d ...", m_partitionId);
-
+std::cout << "VoltDBEngine:1045" << endl;
 
     m_catalog->execute(catalogPayload);
-
+std::cout << "VoltDBEngine:1048" << endl;
 
     if (updateCatalogDatabaseReference() == false) {
         return false;
     }
-
+std::cout << "VoltDBEngine:1053" << endl;
     // Set DR flag based on current catalog state
     catalog::Cluster* catalogCluster = m_catalog->clusters().get("cluster");
     m_executorContext->drStream()->m_enabled = catalogCluster->drProducerEnabled();
@@ -1060,9 +1119,9 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
         m_executorContext->drReplicatedStream()->setFlushInterval(catalogCluster->drFlushInterval());
     }
     s_exportFlushTimeout = catalogCluster->exportFlushInterval();
-
+std::cout << "VoltDBEngine:1063" << endl;
     VOLT_DEBUG("loading partitioned parts of catalog from partition %d", m_partitionId);
-
+std::cout << "VoltDBEngine:1065" << endl;
     //When loading catalog we do isStreamUpdate to true as we are starting fresh or rejoining/recovering.
     std::map<std::string, ExportTupleStream*> purgedStreams;
     if (processCatalogAdditions(timestamp, false, true, purgedStreams) == false) {
@@ -1726,13 +1785,7 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
                 vTable = findInMapOrNull(vlabel->VTable()->path(), m_catalogDelegates)->getTable();
                 vTables.push_back(vTable);
                 vLabels.push_back(vlabel->name());
-                // cout << "VoltDBEngine:1723:add table"<< vTable->name() << endl;
             }
-
-            // use the delegate to init the table and create indexes n' stuff
-            // Table* vTable = findInMapOrNull(catalogGraphView->VTable()->path(), m_catalogDelegates)->getTable();
-            // Table* eTable = findInMapOrNull(catalogGraphView->ETable()->path(), m_catalogDelegates)->getTable();
-
             // LX FEAT3
             Table *eTable = NULL;
             vector<Table*> eTables;
@@ -1749,11 +1802,7 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
                 // cout << "VoltDBEngine:1723:add table"<< vTable->name() << endl;
             }
             string pathsTableName = "TEMPPATHS";
-            // if (vTable == NULL || eTable == NULL)
-            // {
-            //     LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1125, "unable to get vTable or eTable or both");
-            //     continue;
-            // }
+
             LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1128, "before calling gcd.init");
             //TODO: pTable is not used as we assume one path table schema. The parameter may allow varying the path schema according to the view definition in the future
             Table* pTable = NULL;
@@ -1773,6 +1822,37 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             // the new tuple limit.
             //
             //persistentTable->setTupleLimit(catalogTable->tuplelimit());
+            Table *vTable = NULL;
+            vector<Table*> vTables;
+            vector<std::string> vLabels;
+            for (LabeledVertexLabel vertexLabel : catalogGraphView->vertexLabels()) {
+                catalog::VertexLabel *vlabel = vertexLabel.second;
+                vTable = findInMapOrNull(vlabel->VTable()->path(), m_catalogDelegates)->getTable();
+                vTables.push_back(vTable);
+                vLabels.push_back(vlabel->name());
+            }
+            // LX FEAT3
+            Table *eTable = NULL;
+            vector<Table*> eTables;
+            vector<std::string> eLabels;
+            vector<std::string> startVLabels;
+            vector<std::string> endVLabels;
+            for (LabeledEdgeLabel edgeLabel : catalogGraphView->edgeLabels()) {
+                catalog::EdgeLabel *elabel = edgeLabel.second;
+                eTable = findInMapOrNull(elabel->ETable()->path(), m_catalogDelegates)->getTable();
+                eTables.push_back(eTable);
+                eLabels.push_back(elabel->name());
+                startVLabels.push_back(elabel->startVertex());
+                endVLabels.push_back(elabel->endVertex());
+                // cout << "VoltDBEngine:1723:add table"<< vTable->name() << endl;
+            }
+            string pathsTableName = "TEMPPATHS";
+            Table* pTable = NULL;
+            // gcd->init(*m_database, *catalogGraphView, vTable, eTable, pTable);
+            gcd->processGraphViewChange(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable); // LX FEAT2
+            // m_graphViewCatalogDelegates[catalogGraphView->path()] = gcd;
+            // GraphView* graphView = gcd->getGraphView();
+            // m_graphViewDelegatesByName[graphView->name()] = gcd;
         }
     }
     // End LX
@@ -1831,6 +1911,10 @@ void VoltDBEngine::attachTupleStream(
  * delete or modify the corresponding execution engine objects.
  */
 bool VoltDBEngine::updateCatalog(int64_t timestamp, bool isStreamUpdate, std::string const& catalogPayload) {
+std::cout << "VoltDBEngine:1834:" << endl;
+m_timestamp = timestamp;
+m_isStreamUpdate = isStreamUpdate;
+m_catalogPayload = catalogPayload;
     // clean up execution plans when the tables underneath might change
     if (m_plans) {
         m_plans->clear();
@@ -1841,7 +1925,7 @@ bool VoltDBEngine::updateCatalog(int64_t timestamp, bool isStreamUpdate, std::st
     // apply the diff commands to the existing catalog
     // throws SerializeEEExceptions on error.
     m_catalog->execute(catalogPayload);
-
+std::cout << "VoltDBEngine:1880:" << endl;
     // Set DR flag based on current catalog state
     auto catalogCluster = m_catalog->clusters().get("cluster");
     m_executorContext->drStream()->m_enabled = catalogCluster->drProducerEnabled();
@@ -1853,18 +1937,19 @@ bool VoltDBEngine::updateCatalog(int64_t timestamp, bool isStreamUpdate, std::st
     }
     s_exportFlushTimeout = catalogCluster->exportFlushInterval();
     assert(s_exportFlushTimeout > 0);
-
+std::cout << "VoltDBEngine:1892:" << endl;
     if (updateCatalogDatabaseReference() == false) {
         VOLT_ERROR("Error re-caching catalog references.");
         return false;
     }
-
+std::cout << "VoltDBEngine:1897:" << endl;
     std::map<std::string, ExportTupleStream*> purgedStreams;
     processCatalogDeletes(timestamp, false, purgedStreams);
     if (SynchronizedThreadLock::countDownGlobalTxnStartCount(isLowestSite())) {
         processReplicatedCatalogDeletes(timestamp, purgedStreams);
         SynchronizedThreadLock::signalLowestSiteFinished();
     }
+std::cout << "VoltDBEngine:1868" << endl;
 
     if (processCatalogAdditions(timestamp, false, isStreamUpdate, purgedStreams) == false) {
         VOLT_ERROR("Error processing catalog additions.");
@@ -2373,6 +2458,7 @@ void VoltDBEngine::setExecutorVectorForFragmentId(int64_t fragId) {
 template <class MATVIEW>
 static bool updateMaterializedViewDestTable(std::vector<MATVIEW*> & views,
         PersistentTable* target, catalog::MaterializedViewInfo* targetMvInfo) {
+    cout << "VoltDBEngine:2408"<< endl;
     std::string targetName = target->name();
 
     // find the materialized view that uses the table or its precursor (by the same name).
@@ -2400,9 +2486,9 @@ static bool updateMaterializedViewDestTable(std::vector<MATVIEW*> & views,
 template<class TABLE> void VoltDBEngine::initMaterializedViews(catalog::Table* catalogTable,
         TABLE* storageTable, bool updateReplicated) {
     // Add LX
-    std::stringstream params;
-    params << "catalogTable = " << catalogTable->name();
-    LogManager::GLog("VoltDBEngine", "initMaterializedViews", 1383, params.str());
+    // std::stringstream params;
+    // params << "catalogTable = " << catalogTable->name();
+    // LogManager::GLog("VoltDBEngine", "initMaterializedViews", 1383, params.str());
     // End LX
     // walk views
     VOLT_DEBUG("Processing views for table %s", storageTable->name().c_str());
@@ -2413,6 +2499,7 @@ template<class TABLE> void VoltDBEngine::initMaterializedViews(catalog::Table* c
         auto destTable = static_cast<PersistentTable*>(m_tables[catalogIndex]);
         vassert(destTable);
         VOLT_DEBUG("Updating view on table %s", destTable->name().c_str());
+        cout << "VoltDBEngine:2420:views:" << destTable->name().c_str() << ", " << catalogTable->name() << endl;
         vassert(destTable == dynamic_cast<PersistentTable*>(m_tables[catalogIndex]));
         // Ensure that the materialized view controlling the existing
         // target table by the same name is using the latest version of
@@ -2433,6 +2520,7 @@ template<class TABLE> void VoltDBEngine::initMaterializedViews(catalog::Table* c
     // Now we only use the new view handler mechanism for joined table views.
     // Further code refactoring saved for future.
     if (mvHandlerInfo) {
+        cout << "VoltDBEngine:2438" << endl;
         auto destTable = static_cast<PersistentTable*>(m_tables[catalogTable->relativeIndex()]);
         if ( ! destTable->materializedViewHandler() || destTable->materializedViewHandler()->isDirty() ) {
             // The newly-added handler will at the same time trigger
@@ -2444,6 +2532,25 @@ template<class TABLE> void VoltDBEngine::initMaterializedViews(catalog::Table* c
                 handler->catchUpWithExistingData(false);
             }
         }
+    }
+
+    // LX FEAT6 walk through all the graphviews
+    BOOST_FOREACH (LabeledGraphViewInfo lgv, catalogTable->gviews()) {
+        auto catalogGraphviewInfo = lgv.second;
+        std::string destGraph = catalogGraphviewInfo->graphName();
+        // bool isVertexTable = catalogGraphviewInfo->isVertexTable();
+        cout << "VoltDBEngine:2459:" << destGraph << ", " << catalogTable->name() << "," << storageTable->name() << endl;
+
+        // get the graphview
+        GraphViewCatalogDelegate* gcd = getGraphViewDelegate(destGraph);
+        GraphView* gv = gcd->getGraphView();
+
+        // add this graphview to the corresponding table
+        // but we don't create a metadata object between the src table and the graphview like in the case of the table
+        // because we currently only support one direction change reflection
+        TableCatalogDelegate* srcTableDelegate = getTableDelegate(catalogTable->name());
+        auto srcTable = srcTableDelegate->getPersistentTable();
+        srcTable->addGraphView(gv);
     }
 }
 
@@ -2457,6 +2564,7 @@ template<class TABLE> void VoltDBEngine::initMaterializedViews(catalog::Table* c
  */
 void VoltDBEngine::initMaterializedViewsAndLimitDeletePlans(bool updateReplicated) {
     // walk tables
+    cout << "VoltDBEngine:2466:init_mat_views" << endl;
     BOOST_FOREACH (LabeledTable labeledTable, m_database->tables()) {
         auto catalogTable = labeledTable.second;
         // When updateReplicated flag is set, only replicated table work allowed, and vice versa.
@@ -2466,6 +2574,7 @@ void VoltDBEngine::initMaterializedViewsAndLimitDeletePlans(bool updateReplicate
         Table *table = m_tables[catalogTable->relativeIndex()];
         PersistentTable *persistentTable = dynamic_cast<PersistentTable*>(table);
         if (persistentTable != NULL) {
+            cout << "VoltDBEngine:2476:" << catalogTable->name() << ", " << persistentTable->name() << endl;
             initMaterializedViews(catalogTable, persistentTable, updateReplicated);
             if (catalogTable->tuplelimitDeleteStmt().size() > 0) {
                 auto stmt = catalogTable->tuplelimitDeleteStmt().begin()->second;

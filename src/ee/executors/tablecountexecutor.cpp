@@ -70,6 +70,7 @@ bool TableCountExecutor::p_execute(const NValueArray &params) {
 
     TableTuple& tmptup = output_table->tempTuple();
     tmptup.setNValue(0, ValueFactory::getBigIntValue(rowCounts));
+    cout << "TableCountExecutor:73" << endl;
     output_table->insertTuple(tmptup);
 
     VOLT_DEBUG("\n%s\n", output_table->debug().c_str());

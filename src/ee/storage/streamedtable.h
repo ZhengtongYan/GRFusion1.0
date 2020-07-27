@@ -97,6 +97,7 @@ public:
 
     /** Add/drop/list materialized views to this table */
     void addMaterializedView(MaterializedViewTriggerForStreamInsert* view);
+    // void addGraphView(GraphViewTriggerForStreamInsert* view); // LX FEAT6
     void dropMaterializedView(MaterializedViewTriggerForStreamInsert* targetView);
     std::vector<MaterializedViewTriggerForStreamInsert*>& views() { return m_views; }
     bool hasViews() { return (m_views.size() > 0); }
@@ -167,6 +168,7 @@ private:
 
     // list of materialized views that are sourced from this table
     std::vector<MaterializedViewTriggerForStreamInsert*> m_views;
+    // std::vector<GraphViewTriggerForStreamInsert*> m_gviews; // LX FEAT6
 
     // Used to prevent migrate transaction from generating >50MB DR binary log
     MigrateTxnSizeGuard m_migrateTxnSizeGuard;

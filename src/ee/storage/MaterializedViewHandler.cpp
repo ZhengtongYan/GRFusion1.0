@@ -246,7 +246,7 @@ namespace voltdb {
         TableIterator ti = viewContent->iterator();
         TableTuple tuple(viewContent->schema());
         while (ti.next(tuple)) {
-            //* enable to debug */ std::cout << "DEBUG: inserting catchup tuple into " << m_destTable->name() << std::endl;
+            /* enable to debug */ std::cout << "MaterializedViewHandler:249:DEBUG: inserting catchup tuple into " << m_destTable->name() << std::endl;
             m_destTable->insertPersistentTuple(tuple, fallible, true);
         }
 
@@ -384,6 +384,7 @@ namespace voltdb {
                                                             m_updatableIndexList, fallible);
             }
             else {
+                cout << "MaterializedViewHandler:387" << endl;
                 m_destTable->insertPersistentTuple(deltaTuple, fallible);
             }
         }

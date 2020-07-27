@@ -302,13 +302,14 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
                 AdHocPlannedStatement result = compileAdHocSQL(
                         context.m_ptool, sqlStatement, inferSP, userPartitionKey, explainMode, isLargeQuery,
                         isSwapTables, userParamSet);
-                // System.out.println("AdHocNTBase:304");
+                System.out.println("AdHocNTBase:304");
                 // The planning tool may have optimized for the single partition case
                 // and generated a partition parameter.
                 if (inferSP) {
                     partitionParamIndex = result.getPartitioningParameterIndex();
                     partitionParamType = result.getPartitioningParameterType();
                     partitionParamValue = result.getPartitioningParameterValue();
+                    System.out.println("AdHocNTBase:312:" + partitionParamIndex);
                 }
                 stmts.add(result);
             } catch (PlanningErrorException e) {
@@ -514,6 +515,7 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
         List<AdHocPlannedStatement> stmts = new ArrayList<>();
         AdHocPlannedStatement result = compileAdHocSQL(ptool, sql, false, partitionKey,
                 ExplainMode.NONE, false, false, userParams);
+        // System.out.println("AdHocNTBase:517");
         stmts.add(result);
 
         return new AdHocPlannedStmtBatch(userParams, stmts, -1, null, null, userParams);

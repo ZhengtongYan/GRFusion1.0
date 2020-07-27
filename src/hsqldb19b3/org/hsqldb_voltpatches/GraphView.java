@@ -329,7 +329,6 @@ public class GraphView implements SchemaObject {
         for (int i = 0; i < ELabelList.size(); i++){
             VoltXMLElement edge = new VoltXMLElement("edge");
             String curLabel = ELabelList.get(i);
-            System.out.println(curLabel);
             edge.attributes.put("elabel", curLabel);
             edge.attributes.put("Etable", AllETableList.get((int)ETableNameList.get(curLabel)).name);
             edge.attributes.put("Equery", AllESubQueryList.get((int)ESubQueryList.get(curLabel)));
@@ -340,14 +339,11 @@ public class GraphView implements SchemaObject {
                 if (idxToPropTypeList.get(j) == EDGE ){
                     if ((int)idxToELabelIdxList.get(idxToELabelIdxList.getIndex(j)) == ELabelList.indexOf(curLabel)){
                         ColumnSchema property = getEdgeProp(j);
-                         System.out.println("GraphView:326"); 
                         VoltXMLElement propChild = property.voltGetColumnXML(session);
                         propChild.attributes.put("index", Integer.toString(j));
                         // Index Vertex props from 0 ... 
-                         System.out.println("GraphView:331"); 
                         propChild.attributes.put("index0", Integer.toString((int)idxToEIdx0.get(idxToEIdx0.getIndex(j))));
                         edge.children.add(propChild);
-                         System.out.println("GraphView:334"); 
                         assert(propChild != null);
                     }
                 }

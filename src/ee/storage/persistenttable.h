@@ -70,6 +70,7 @@
 #include "common/UndoQuantumReleaseInterest.h"
 #include "common/ThreadLocalPool.h"
 #include "common/SynchronizedThreadLock.h"
+#include "graph/GraphView.h" // LX FEAT6
 #include <map>
 #include <set>
 
@@ -89,6 +90,7 @@ class MaterializedViewTriggerForInsert;
 class MaterializedViewTriggerForWrite;
 class MaterializedViewHandler;
 class TableIndex;
+class GraphView; // LX FEAT6
 
 /**
  * Interface used by contexts, scanners, iterators, and undo actions to access
@@ -387,6 +389,7 @@ public:
 
     /** Add/drop/list materialized views to this table */
     void addMaterializedView(MaterializedViewTriggerForWrite* view);
+    void addGraphView(GraphView* graphview); // LX FEAT6
 
     void dropMaterializedView(MaterializedViewTriggerForWrite* targetView);
 
@@ -799,6 +802,7 @@ private:
 
     // list of materialized views that are sourced from this table
     std::vector<MaterializedViewTriggerForWrite*> m_views;
+    std::vector<GraphView*> m_graphViews; // LX FEAT6
 
     // STATS
     PersistentTableStats m_stats;

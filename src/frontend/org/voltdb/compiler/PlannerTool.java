@@ -385,6 +385,7 @@ public class PlannerTool {
                 // OUTPUT THE RESULT
                 //////////////////////
                 final CorePlan core = new CorePlan(plan, m_catalogHash);
+                System.out.println("PlannerTool:388");
                 final AdHocPlannedStatement ahps = new AdHocPlannedStatement(plan, core);
 
                 // Do not put wrong parameter explain query into cache.
@@ -396,6 +397,7 @@ public class PlannerTool {
                     // to -1 and to null, respectively.
                     core.setPartitioningParamIndex(partitioning.getInferredParameterIndex());
                     core.setPartitioningParamValue(partitioning.getInferredPartitioningValue());
+                    System.out.println("PlannerTool:388:.............");
                     assert (parsedToken != null);
                     // Again, plans with inferred partitioning are the only ones supported in the cache.
                     m_cache.put(sql, parsedToken, ahps, planner.getExtractedLiterals(), planner.hasQuestionMark(),

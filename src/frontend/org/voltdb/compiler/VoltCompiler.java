@@ -224,6 +224,7 @@ public class VoltCompiler {
     // tables that change between the previous compile and this one
     // used for Live-DDL caching of plans
     private final Set<String> m_dirtyTables = new TreeSet<>();
+    private final Set<String> m_dirtyGraphs = new TreeSet<>(); // LX FEAT5
     // A collection of statements from the previous catalog
     // used for Live-DDL caching of plans
     private final Map<String, Statement> m_previousCatalogStmts = new HashMap<>();
@@ -1099,6 +1100,7 @@ public class VoltCompiler {
             }
 
             m_dirtyTables.clear();
+            m_dirtyGraphs.clear();// LX FEAT5
 
             for (final VoltCompilerReader schemaReader : schemaReaders) {
                 String origFilename = m_currentFilename;
@@ -1340,6 +1342,7 @@ public class VoltCompiler {
             if (tableref.getTuplelimit() != Integer.MAX_VALUE) {
                 throw new VoltCompilerException("Streams cannot have row limits configured");
             }
+            System.out.println("voltCompiler:1345:..............partition");
             Column pc = tableref.getPartitioncolumn();
             //Get views
             List<Table> tlist = CatalogUtil.getMaterializeViews(catdb, tableref);
@@ -1938,10 +1941,10 @@ public class VoltCompiler {
 
             // set procedure parameter types
             Class<?>[] paramTypes = ProcedureCompiler.setParameterTypes(this, procedure, shortName, procMethod);
-
+System.out.println("VoltCompiler:1943:............partition");
             ProcedurePartitionData partitionData = ProcedurePartitionData.extractPartitionData(procedure);
             ProcedureCompiler.addPartitioningInfo(this, procedure, db, paramTypes, partitionData);
-
+System.out.println("VoltCompiler:1946:............partition");
             // put the compiled code for this procedure into the jarFile
             // need to find the outermost ancestor class for the procedure in the event
             // that it's actually an inner (or inner inner...) class.
@@ -2139,6 +2142,15 @@ public class VoltCompiler {
         m_dirtyTables.add(tableName.toLowerCase());
     }
 
+    // LX FEAT5
+    /**
+     * Note that a graph changed in order to invalidate potential cached
+     * statements that reference the changed table.
+     */
+    public void markGraphAsDirty(String graphName) {
+        m_dirtyGraphs.add(graphName.toLowerCase());
+    }
+
     /**
      * Key prefix includes attributes that make a cached statement usable if they match
      *
@@ -2204,6 +2216,12 @@ public class VoltCompiler {
 
     private boolean isDirtyTable(String tableName) {
         return m_dirtyTables.contains(tableName.toLowerCase());
+    }
+
+    // LX FEAT5
+    // TODO: add invoke for this function (same place as isDirtyTable())
+    private boolean isDirtyGraph(String graphName) {
+        return m_dirtyGraphs.contains(graphName.toLowerCase());
     }
 
     @SuppressWarnings("unused")

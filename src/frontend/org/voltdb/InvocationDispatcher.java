@@ -1009,7 +1009,7 @@ public final class InvocationDispatcher {
             throw new Exception(String .format("Unable to find target table \"%s\" for LoadSinglepartitionTable.",
                                                tableName));
         }
-
+System.out.println("InvocationDispatcher:1012:..............partition");
         Column pCol = catTable.getPartitioncolumn();
         return pCol.getType();
     }
@@ -1512,6 +1512,7 @@ public final class InvocationDispatcher {
             return new int[] { hashedPartitionId };
         } else if (procedure.getPartitioncolumn2() != null) {
             // two-partition procedure
+            System.out.println("InvocationDispatcher:1515:..............partition");
             VoltType partitionParamType1 = VoltType.get((byte)procedure.getPartitioncolumn().getType());
             VoltType partitionParamType2 = VoltType.get((byte)procedure.getPartitioncolumn2().getType());
             Object invocationParameter1 = task.getParameterAtIndex(procedure.getPartitionparameter());

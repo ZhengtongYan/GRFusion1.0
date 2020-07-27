@@ -42,6 +42,7 @@ public class PartitionStatement extends StatementProcessor {
     protected boolean processStatement(DDLStatement ddlStatement, Database db, DdlProceduresToLoad whichProcs)
             throws VoltCompilerException {
         // Matches if it is the beginning of a partition statement
+        System.out.println("PartitionStatement:45");
         Matcher statementMatcher = SQLParser.matchPartitionStatementPreamble(ddlStatement.statement);
         if (! statementMatcher.matches()) {
             return false;
@@ -54,6 +55,10 @@ public class PartitionStatement extends StatementProcessor {
         }
         else if (PROCEDURE.equals(partitionee)) {
             return processPartitionProcedure(ddlStatement, whichProcs);
+        }
+        // LX FEAT5
+        else if (GRAPH.equals(partitionee)) {
+            return processPartitionGraph(ddlStatement.statement);
         }
         // can't get here as regex only matches for PROCEDURE or TABLE
         return false;
@@ -129,6 +134,36 @@ public class PartitionStatement extends StatementProcessor {
                            "instead. See the documentation of \"CREATE PROCEDURE\" for more information.",
                            ddlStatement.lineNo);
 
+        return true;
+    }
+
+    // LX FEAT5
+    private boolean processPartitionGraph(String statement) throws VoltCompilerException {
+        // matches if it is PARTITION GRAPH <table> 
+        Matcher statementMatcher = SQLParser.matchPartitionGraph(statement);
+
+        if ( ! statementMatcher.matches()) {
+            throw m_compiler.new VoltCompilerException(String.format(
+                    "Invalid PARTITION statement: \"%s\", " +
+                    "expected syntax: PARTITION GRAPH <graph> ",
+                    statement.substring(0,statement.length()-1))); // remove trailing semicolon
+        }
+        System.out.println("PartitionStatement:151");
+        // group(1) -> graph
+        String graphName = checkIdentifierStart(statementMatcher.group(1), statement);
+        // String columnName = checkIdentifierStart(statementMatcher.group(2), statement);
+        VoltXMLElement graphXML = m_schema.findChild("graph", graphName.toUpperCase());
+        if (graphXML != null) {
+            graphXML.attributes.put("partitiongraph", "EDGELABEL");
+            // Column validity check done by VoltCompiler in post-processing
+
+            // mark the table as dirty for the purposes of caching sql statements
+            m_compiler.markGraphAsDirty(graphName);
+        }
+        else {
+            throw m_compiler.new VoltCompilerException(String.format(
+                        "Invalid PARTITION statement: graph %s does not exist", graphName));
+        }
         return true;
     }
 

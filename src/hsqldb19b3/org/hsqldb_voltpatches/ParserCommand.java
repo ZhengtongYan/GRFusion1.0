@@ -116,7 +116,7 @@ System.out.println("ParserCommand:65");
         if (token.tokenType == Tokens.X_STARTPARSE) {
             read();
         }
-
+System.out.println("ParserCommand:119：" + token.tokenType);
         switch (token.tokenType) {
 
             // DQL
@@ -247,7 +247,7 @@ System.out.println("ParserCommand:65");
                 cs = compileSessionVariableDeclaration();
                 break;
 
-            default :
+            default :System.out.println("ParserCommand:251");
                 throw unexpectedToken();
         }
         System.out.println("ParserCommand:260");
@@ -443,10 +443,10 @@ System.out.println("ParserCommand:65");
     private Statement compileSet() {
 
         int position = super.getPosition();
-
+System.out.println("ParserCommand:446:" + position);
         session.setScripting(false);
         read();
-
+System.out.println("ParserCommand:449:" + token.tokenType);
         switch (token.tokenType) {
 
             case Tokens.SCHEMA : {
