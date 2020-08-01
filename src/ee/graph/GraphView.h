@@ -155,6 +155,7 @@ public:
 
 	void processTupleInsertInGraphView(TableTuple& target, std::string tableName); // LX FEAT6
 	int getVertexIdColIdxList(std::string label);
+	std::map<string, Vertex*> getVertexMap(); // LX FEAT7
 
 protected:
 	void fillGraphFromRelationalTables();

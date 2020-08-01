@@ -31,6 +31,11 @@ float GraphView::shortestPath(int source, int destination, int costColumnId)
 	return (float)source * destination;
 }
 
+std::map<string, Vertex*> GraphView::getVertexMap() 
+{
+	return this->m_vertexes;
+}
+
 // Vertex* GraphView::getVertex(int id)
 Vertex* GraphView::getVertex(string id) // LX FEAT2
 {

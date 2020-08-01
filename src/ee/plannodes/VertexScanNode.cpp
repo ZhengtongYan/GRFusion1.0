@@ -49,6 +49,18 @@ std::string VertexScanPlanNode::getVertexLabel() const
 	return m_vertexLabel;
 }
 
+// LX FEAT7
+bool VertexScanPlanNode::checkHasGraphHint() const
+{
+	return m_hasHint;
+}
+
+// LX FEAT7
+std::string VertexScanPlanNode::getGraphHint() const
+{
+	return m_hint;
+}
+
 void VertexScanPlanNode::loadFromJSONObject(PlannerDomValue obj)
 {
 	m_target_graph_name = obj.valueForKey("TARGET_GRAPH_NAME").asStr();
@@ -61,6 +73,14 @@ void VertexScanPlanNode::loadFromJSONObject(PlannerDomValue obj)
 	if (!m_isEmptyScan)
 	{
 		m_predicate.reset(loadExpressionFromJSONObject("PREDICATE", obj));
+	}
+
+	// LX FEAT7
+	m_hasHint = obj.hasNonNullKey("HINT");
+	// cout << "VertexScanPlanNode::80:" << m_hasHint << endl;
+	if (m_hasHint) {
+		m_hint = obj.valueForKey("HINT").asStr();
+		// cout << "VertexScanPlanNode:82:" << m_hint << endl;
 	}
 
 	m_isSubQuery = obj.hasNonNullKey("SUBQUERY_INDICATOR");

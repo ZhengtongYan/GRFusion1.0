@@ -28,6 +28,8 @@ public:
 
 	GraphView* getTargetGraphView() const;
 	std::string getVertexLabel() const; // LX FEAT2
+	bool checkHasGraphHint() const; // LX FEAT7
+	std::string getGraphHint() const; // LX FEAT7
 	void setTargetGraphViewDelegate(GraphViewCatalogDelegate* gcd) { m_gcd = gcd; } // DEPRECATED?
 
 	std::string getTargetGraphViewName() const { return m_target_graph_name; } // DEPRECATED?
@@ -42,6 +44,7 @@ protected:
 
 
     std::string m_vertexLabel; // LX FEAT2
+    std::string m_hint; // LX FEAT7
     std::string m_target_graph_name;
 	GraphViewCatalogDelegate* m_gcd;
 	//
@@ -52,6 +55,7 @@ protected:
 	bool m_isSubQuery;
 	// True if this scan has a predicate that always evaluates to FALSE
 	bool m_isEmptyScan;
+	bool m_hasHint; // LX FEAT7
 };
 
 }

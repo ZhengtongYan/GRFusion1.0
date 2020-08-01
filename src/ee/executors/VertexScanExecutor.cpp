@@ -96,6 +96,7 @@ bool VertexScanExecutor::p_init(AbstractPlanNode *abstractNode, const ExecutorVe
 }
 
 bool VertexScanExecutor::p_execute(const NValueArray &params) {
+
     VertexScanPlanNode* node = dynamic_cast<VertexScanPlanNode*>(m_abstractNode);
     vassert(node);
     LogManager::GLog("VertexScanExecutor", "p_execute", 96,
@@ -119,14 +120,24 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
     // LX FEAT2
     std::string vertexLabel = node->getVertexLabel();
     Table* input_table = graphView->getVertexTableFromLabel(vertexLabel);
-    cout << "VertexScanExecutor:122:" << vertexLabel << ", " << input_table->name() << endl;
+    // cout << "VertexScanExecutor:122:" << vertexLabel << ", " << input_table->name() << endl;
+
+    // LX FEAT7
+    bool hasHint = false;
+    std::map<string, bool> visited;
+    if (node->checkHasGraphHint()) {
+        // cout << "VertexScanExecutor:129:hint" << endl;
+        if ((node->getGraphHint()).compare("VERTEXCOVER") == 0) {
+            hasHint = true;
+            // cout << "VertexScanExecutor:132:hint" << endl;
+            vertexCover(graphView, &visited);
+        }
+    }
 
     vassert(input_table);
     int vertexId = -1, fanIn = -1, fanOut = -1;
 
-    //* for debug */std::cout << "SeqScanExecutor: node id " << node->getPlanNodeId() <<
-    //* for debug */    " input table " << (void*)input_table <<
-    //* for debug */    " has " << input_table->activeTupleCount() << " tuples " << std::endl;
+    
     VOLT_TRACE("Sequential Scanning vertexes in :\n %s",
                input_table->debug().c_str());
     VOLT_DEBUG("Sequential Scanning vertexes table : %s which has %d active, %d"
@@ -247,12 +258,19 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                     VOLT_TRACE("inline projection...");
                     //get the vertex id
                     vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
-                    cout << "VertexScanExecutor:250:" << vertexId << endl;
+                    // cout << "VertexScanExecutor:250:" << vertexId << endl;
                     Vertex *v = graphView->getVertex(vertexLabel + "." + to_string(vertexId));
-                    cout << "VertexScanExecutor:252" << v->toString() << endl;
+                    // cout << "VertexScanExecutor:252" << v->toString() << endl;
                     fanOut = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanOut();
                     fanIn = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanIn();
-                    cout << "VertexScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;
+                    // cout << "VertexScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;
+
+                    // LX FEAT7
+                    if (hasHint) {
+                        if (visited.count(v->getId()) == 0)
+                            continue;// this vertex doesn't qualify the vertex cover requirement
+                    }
+
                     for (int ctr = 0; ctr < num_of_columns ; ctr++) {
                     	//msaber: todo, need to check the projection operator construction
                     	//and modify it to allow selecting graph vertex attributes
@@ -351,6 +369,36 @@ void VertexScanExecutor::outputTuple(TableTuple& tuple)
     //
     vassert(m_tmpOutputTable);
     m_tmpOutputTable->insertTempTuple(tuple);
+}
+
+void VertexScanExecutor::vertexCover(GraphView* graphView, std::map<string, bool>* visited) {
+
+    std::map<string, Vertex*> vertexMap = graphView->getVertexMap();
+    Edge* e = NULL;
+
+    for (std::map<string, Vertex*>::iterator i=vertexMap.begin(); i!=vertexMap.end(); ++i) {
+        string name = i->second->getId();
+
+        if (visited->count(name) > 0) {
+            // this vertex is already added to the set
+            continue;
+        }
+
+        int fanOut = i->second->fanOut();
+
+        for (int j = 0; j < fanOut; j++){
+            e = i->second->getOutEdge(j);
+            string startVertexId = e->getStartVertexId();
+            string endVertexId = e->getEndVertexId();
+
+            if( (visited->count(startVertexId) == 0) && (visited->count(endVertexId) == 0)){
+                (*visited)[startVertexId] = true;
+                (*visited)[endVertexId] = true;
+                break;
+            } 
+        }
+        // cout << "VertexScanExecutor:398:" << endl;
+    }
 }
 
 
