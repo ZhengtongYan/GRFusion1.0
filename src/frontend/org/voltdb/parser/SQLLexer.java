@@ -202,6 +202,11 @@ public class SQLLexer extends SQLPatternFactory
         if (ddlMatcher.find()) {
             ddlToken = ddlMatcher.group(1).toLowerCase();
         }
+        // LX FEAT4: make select g2g to be ddl
+        else {
+            if (sql.toLowerCase().startsWith("select graph("))
+                ddlToken = "g2g";
+        }
         return ddlToken;
     }
 
@@ -262,6 +267,14 @@ public class SQLLexer extends SQLPatternFactory
         if (matcher.find()) {
             return matcher.group(2).toLowerCase();
         }
+        // LX FEAT4: select g2g is ddl, extract new graph name
+        else {
+            String sqlarr[]= (sql.toLowerCase()).split(" ");
+            for (int i = 0; i < sqlarr.length; i++) {
+                if( sqlarr.equals("into"))
+                    return sqlarr[i+1];
+            }
+        }
         return null;
     }
 
@@ -299,7 +312,13 @@ public class SQLLexer extends SQLPatternFactory
                 break;
             }
         }
-        if (!hadWLMatch) {
+
+        // LX FEAT4
+        boolean matchG2G = false;
+        if ((sql.toLowerCase()).startsWith("select graph("))
+            matchG2G = true;
+
+        if (!hadWLMatch && !matchG2G) {
             return String.format("AdHoc DDL contains an unsupported statement: %s", sql);
         }
 

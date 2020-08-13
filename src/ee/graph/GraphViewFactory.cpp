@@ -173,6 +173,158 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 	return vw;
 }
 
+GraphView* GraphViewFactory::createSubGraphView(const std::string &graphViewName, const bool isDirected, vector<std::string> vLabels,
+			  vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, 
+			  vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, 
+			  TupleSchema* vSchema, TupleSchema* eSchema,
+			  vector<std::string> vertexColumnNames, vector<std::string> edgeColumnNames,
+			  vector<int> columnIdsInVertexTable, vector<int> columnIdsInEdgeTable,
+	          voltdb::CatalogId databaseId, char *signature, const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)
+{
+	GraphView* vw = new GraphView();
+	vw->m_name = graphViewName;
+	vw->m_isDirected = isDirected;
+	// vw->m_vertexTable = vTable;
+	// LX FEAT2
+	int vLableCount = vLabels.size();
+	vw->m_vertexLabels.resize(vLableCount);
+	for (int i = 0; i < vLableCount; i++){
+		vw->m_vertexLabels[i] = vLabels[i];
+	}
+	int vTableCount = vTables.size();
+	vw->m_vertexTables.resize(vTableCount);
+	for (int i = 0; i < vTableCount; i++){
+		vw->m_vertexTables[i] = vTables[i];
+	}
+
+	// vw->m_edgeTable = eTable;
+	// LX FEAT3
+	int eLableCount = eLabels.size();
+	vw->m_edgeLabels.resize(eLableCount);
+	for (int i = 0; i < eLableCount; i++){
+		vw->m_edgeLabels[i] = eLabels[i];
+	}
+	int eTableCount = eTables.size();
+	vw->m_edgeTables.resize(eTableCount);
+	for (int i = 0; i < eTableCount; i++){
+		vw->m_edgeTables[i] = eTables[i];
+	}
+	int startVCount = startVLabels.size();
+	vw->m_startVLabels.resize(startVCount);
+	for (int i = 0; i < startVCount; i++) {
+		vw->m_startVLabels[i] = startVLabels[i];
+	}
+	int endVCount = endVLabels.size();
+	vw->m_endVLabels.resize(endVCount);
+	for (int i = 0; i < endVCount; i++) {
+		vw->m_endVLabels[i] = endVLabels[i];
+	}
+
+	//construct the path schema
+	vw->constructPathSchema();
+	//construct the path temp table
+	vw->constructPathTempTable();
+
+	vw->constructGraphSchema();
+	vw->constructGraphTempTable();
+
+	//set the vertex column names
+	int vColumnCount = vertexColumnNames.size();
+	vw->m_vertexColumnNames.resize(vColumnCount);
+	for(int i = 0; i < vColumnCount; i++)
+	{
+		vw->m_vertexColumnNames[i] = vertexColumnNames[i];
+	}
+
+	int colCountInVTable = columnIdsInVertexTable.size();
+	vw->m_columnIDsInVertexTable.resize(colCountInVTable);
+	for(int i = 0; i < colCountInVTable; i++)
+	{
+		vw->m_columnIDsInVertexTable[i] = columnIdsInVertexTable[i];
+	}
+
+	//set the edges columns
+	//int eColumnCount = eSchema->columnCount();
+	int eColumnCount = edgeColumnNames.size();
+	vw->m_edgeColumnNames.resize(eColumnCount);
+	for(int i = 0; i < eColumnCount; i++)
+	{
+		vw->m_edgeColumnNames[i] = edgeColumnNames[i];
+	}
+
+	int colCountInETable = columnIdsInEdgeTable.size();
+	vw->m_columnIDsInEdgeTable.resize(colCountInETable);
+	for(int i = 0; i < colCountInETable; i++)
+	{
+		vw->m_columnIDsInEdgeTable[i] = columnIdsInEdgeTable[i];
+	}
+
+	vw->m_vPropColumnIndex = -1;
+	vw->m_ePropColumnIndex = -1;
+
+	for(int i = 0; i < vw->m_vertexColumnNames.size(); i++)
+	{
+		// if (vw->m_vertexColumnNames[i] == "ID")
+		// LX FEAT2
+		int d = vw->m_vertexColumnNames[i].find(".");
+		int s = vw->m_vertexColumnNames[i].size();
+		if (d == -1) // currently FANIN FANOUT are not given col names 
+			continue;
+		// cout << "GraphViewFactory:96:" << vw->m_vertexColumnNames[i] << ", " << d << ", " << s << endl;
+		if (vw->m_vertexColumnNames[i].substr(d, s-d) == ".ID")
+		{
+			// vw->m_vertexIdColumnIndex = vw->m_columnIDsInVertexTable[i];
+			std::string label = vw->m_vertexColumnNames[i].substr(0, d);
+			vw->m_vertexIdColIdxList.insert(std::pair<std::string, int>(label, vw->m_columnIDsInVertexTable[i]));
+		}
+		
+		else if (vw->m_vertexColumnNames[i] == "VPROP")
+		{
+			vw->m_vPropColumnIndex = vw->m_columnIDsInVertexTable[i];
+		}
+	}
+	//TODO: fix issue by setting vw->m_vertexIdColumnIndex dynamically
+	//Fixed
+	// vw->m_vertexIdColumnIndex = 0;
+
+	for(int i = 0; i < vw->m_edgeColumnNames.size(); i++)
+	{
+		// LX FEAT3
+		int d = vw->m_edgeColumnNames[i].find(".");
+		int s = vw->m_edgeColumnNames[i].size();
+		if (d == -1) 
+			continue;
+		if (vw->m_edgeColumnNames[i].substr(d, s-d) == ".ID")
+		{
+			// vw->m_edgeIdColumnIndex = vw->m_columnIDsInEdgeTable[i];
+			std::string label = vw->m_edgeColumnNames[i].substr(0, d);
+			vw->m_edgeIdColIdxList.insert(std::pair<std::string, int>(label, vw->m_columnIDsInEdgeTable[i]));
+		}
+		else if (vw->m_edgeColumnNames[i].substr(d, s-d) == ".FROM")
+		{
+			// vw->m_edgeFromColumnIndex = vw->m_columnIDsInEdgeTable[i];
+			std::string label = vw->m_edgeColumnNames[i].substr(0, d);
+			vw->m_edgeFromColIdxList.insert(std::pair<std::string, int>(label, vw->m_columnIDsInEdgeTable[i]));
+		}
+		else if (vw->m_edgeColumnNames[i].substr(d, s-d) == ".TO")
+		{
+			// vw->m_edgeToColumnIndex = vw->m_columnIDsInEdgeTable[i];
+			std::string label = vw->m_edgeColumnNames[i].substr(0, d);
+			vw->m_edgeToColIdxList.insert(std::pair<std::string, int>(label, vw->m_columnIDsInEdgeTable[i]));
+		}
+		else if (vw->m_edgeColumnNames[i] == "EPROP")
+		{
+			vw->m_ePropColumnIndex = vw->m_columnIDsInEdgeTable[i];
+		}
+	}
+	
+	vw->m_databaseId = databaseId;
+	::memcpy(&(vw->m_signature), signature, 20);
+
+	vw->fillSubGraphFromRelationalTables(subGraphVPredicate, subGraphEPredicate, oldGraphName, vlabelName, elabelName, isV);
+
+	return vw;
+}
 /*
 GraphView* GraphViewFactory::createGraphView(const catalog::GraphView &catalogGraphView,
            voltdb::CatalogId databaseId, Table* vTable, Table* eTable, char *signature)

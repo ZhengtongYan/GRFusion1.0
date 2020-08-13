@@ -191,11 +191,9 @@ public class CatalogContext {
         if (hasSchemaChange) {
             m_defaultProcs = new DefaultProcedureManager(database);
             m_ptool = new PlannerTool(database, m_catalogInfo.m_catalogHash);
-            System.out.println("CatalogContext:198:schema changes");
         } else {
             m_defaultProcs = defaultProcManager;
             m_ptool = plannerTool.updateWhenNoSchemaChange(database, m_catalogInfo.m_catalogHash);
-            System.out.println("CatalogContext:198:schema no changes");
         }
 
         m_jdbc = new JdbcDatabaseMetaDataGenerator(catalog, m_defaultProcs, m_catalogInfo.m_jarfile);
@@ -204,12 +202,10 @@ public class CatalogContext {
         if (procedures != null) {
             for (Procedure proc : procedures) {
                 if (proc.getSinglepartition() && proc.getPartitiontable() != null) {
-                    System.out.println("CatalogContext:207");
                     ProcedurePartitionInfo ppi =
                             new ProcedurePartitionInfo(VoltType.get((byte)proc.getPartitioncolumn().getType()),
                                                        proc.getPartitionparameter());
                     proc.setAttachment(ppi);
-                    System.out.println("CatalogContext:212");
                 }
             }
         }

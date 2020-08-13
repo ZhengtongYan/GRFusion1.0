@@ -231,7 +231,7 @@ public abstract class AbstractJoinPlanNode extends AbstractPlanNode implements I
             if (index == -1) {
                 throw new RuntimeException("Unable to find index for column: " + col.toString());
             }
-System.out.println("AbstractJoinPlanNode:234");
+// System.out.println("AbstractJoinPlanNode:234");
             tve.setColumnIndex(index);
             tve.setDifferentiator(index);
         }

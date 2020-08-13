@@ -826,6 +826,8 @@ public class VoltCompiler {
 
         // Build DDL from Catalog Data
         String ddlWithBatchSupport = CatalogSchemaTools.toSchema(catalog);
+        // LX this prints out the catalog ddl file
+        // System.out.println("voltCompiler:829:" + ddlWithBatchSupport); 
         m_canonicalDDL = CatalogSchemaTools.toSchemaWithoutInlineBatches(ddlWithBatchSupport);
         // generate the catalog report and write it to disk
         try {
@@ -1056,6 +1058,7 @@ public class VoltCompiler {
         Database db = initCatalogDatabase(m_catalog);
         // shutdown and make a new hsqldb <-- NOTE
         HSQLInterface hsql = HSQLInterface.loadHsqldb(ParameterizationInfo.getParamStateManager());
+        // System.out.println("voltCompiler:1059");
         compileDatabase(db, hsql, voltDdlTracker, cannonicalDDLIfAny, previousDBIfAny,
                 ddlReaderList, sqlNodes, classDependencies, DdlProceduresToLoad.ALL_DDL_PROCEDURES, jarOutput);
     }
@@ -1100,7 +1103,7 @@ public class VoltCompiler {
             }
 
             m_dirtyTables.clear();
-            m_dirtyGraphs.clear();// LX FEAT5
+            // m_dirtyGraphs.clear();// LX FEAT5
 
             for (final VoltCompilerReader schemaReader : schemaReaders) {
                 String origFilename = m_currentFilename;
@@ -1342,7 +1345,7 @@ public class VoltCompiler {
             if (tableref.getTuplelimit() != Integer.MAX_VALUE) {
                 throw new VoltCompilerException("Streams cannot have row limits configured");
             }
-            System.out.println("voltCompiler:1345:..............partition");
+            // System.out.println("voltCompiler:1345:..............partition");
             Column pc = tableref.getPartitioncolumn();
             //Get views
             List<Table> tlist = CatalogUtil.getMaterializeViews(catdb, tableref);
@@ -1941,10 +1944,10 @@ public class VoltCompiler {
 
             // set procedure parameter types
             Class<?>[] paramTypes = ProcedureCompiler.setParameterTypes(this, procedure, shortName, procMethod);
-System.out.println("VoltCompiler:1943:............partition");
+// System.out.println("VoltCompiler:1943:............partition");
             ProcedurePartitionData partitionData = ProcedurePartitionData.extractPartitionData(procedure);
             ProcedureCompiler.addPartitioningInfo(this, procedure, db, paramTypes, partitionData);
-System.out.println("VoltCompiler:1946:............partition");
+// System.out.println("VoltCompiler:1946:............partition");
             // put the compiled code for this procedure into the jarFile
             // need to find the outermost ancestor class for the procedure in the event
             // that it's actually an inner (or inner inner...) class.

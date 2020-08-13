@@ -104,7 +104,7 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
 
     // Short-circuit an empty scan
     if (node->isEmptyScan()) {
-        cout << "VertexScanExecutor:106" << endl;
+        // cout << "VertexScanExecutor:106" << endl;
         VOLT_DEBUG ("Empty Vertex Scan :\n %s", output_table->debug().c_str());
         return true;
     }
@@ -120,7 +120,7 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
     // LX FEAT2
     std::string vertexLabel = node->getVertexLabel();
     Table* input_table = graphView->getVertexTableFromLabel(vertexLabel);
-    // cout << "VertexScanExecutor:122:" << vertexLabel << ", " << input_table->name() << endl;
+    int labelIdx = graphView->getIndexFromVertexLabels(vertexLabel);
 
     // LX FEAT7
     bool hasHint = false;
@@ -241,7 +241,7 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                        (int)input_table->activeTupleCount());
             pmp.countdownProgress();
             // LogManager::GLog("VertexScanExecutor", "p_execute", 230, tuple.debug(input_table->name()).c_str());
-            cout << "VertexScanExecutor:233:" << tuple.debug(input_table->name()).c_str() << endl;
+            // cout << "VertexScanExecutor:233:" << tuple.debug(input_table->name()).c_str() << endl;
             //
             // For each tuple we need to evaluate it against our predicate and limit/offset
             //
@@ -257,13 +257,13 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
 
                     VOLT_TRACE("inline projection...");
                     //get the vertex id
-                    vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
-                    // cout << "VertexScanExecutor:250:" << vertexId << endl;
-                    Vertex *v = graphView->getVertex(vertexLabel + "." + to_string(vertexId));
-                    // cout << "VertexScanExecutor:252" << v->toString() << endl;
-                    fanOut = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanOut();
-                    fanIn = graphView->getVertex(vertexLabel + "." + to_string(vertexId))->fanIn();
-                    // cout << "VertexScanExecutor:251:vertexID:" << vertexId << ": " << fanOut << ", " << fanIn << endl;
+                    vertexId = ValuePeeker::peekInteger(tuple.getNValue(0)) * 10 + labelIdx;
+                    if (!graphView->hasVertex(vertexId))
+                        continue;
+                    
+                    Vertex *v = graphView->getVertex(vertexId);
+                    fanOut = graphView->getVertex(vertexId)->fanOut();
+                    fanIn = graphView->getVertex(vertexId)->fanIn();
 
                     // LX FEAT7
                     if (hasHint) {
@@ -277,7 +277,7 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
                         
                         // LX: add workaround to solve inconsistent column index issue: given a ctr index, find the column name
                         string t_coln = projectionNode->getOutputColumnNames()[ctr];
-                        cout << "VertexScanExecutor:257:" << t_coln << endl;
+                        // cout << "VertexScanExecutor:257:" << t_coln << endl;
                         // cout << "VertexScanExecutor:259:" << projectionNode->getOutputColumnExpressions()[ctr]->debug(true).c_str() << endl;
                         if (t_coln.compare(vertexLabel + ".FANIN") == 0){
                             temp_tuple.setNValue(ctr, ValueFactory::getIntegerValue(fanIn));

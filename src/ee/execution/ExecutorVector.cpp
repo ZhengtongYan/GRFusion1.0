@@ -62,7 +62,7 @@ boost::shared_ptr<ExecutorVector> ExecutorVector::fromCatalogStatement(
 boost::shared_ptr<ExecutorVector> ExecutorVector::fromJsonPlan(
       VoltDBEngine* engine, const std::string& jsonPlan, int64_t fragId) {
     std::unique_ptr<PlanNodeFragment> pnf;
-    std::cout << "ExecutorVector:65" << endl;
+    // std::cout << "ExecutorVector:65" << endl;
     try {
         pnf.reset(PlanNodeFragment::createFromCatalog(jsonPlan.c_str()));
     } catch (SerializableEEException&) {

@@ -257,7 +257,7 @@ public class StmtTargetGraphScan extends StmtTableScan {
 
     public AbstractExpression resolveTVE(TupleValueExpression expr, String propertytype) {
         // add LX
-        System.out.println("StmtTargetGraphScan:260");
+        // System.out.println("StmtTargetGraphScan:260");
         AbstractExpression resolvedExpr = processTVE(expr, propertytype);
 
         List<TupleValueExpression> tves = ExpressionUtil.getTupleValueExpressions(resolvedExpr);
@@ -292,9 +292,9 @@ public class StmtTargetGraphScan extends StmtTableScan {
 
     // LX FEAT4
     public void addSubgraphToGraph() {
-        System.out.println("StmtTargetGraphScan:294: ADDED SUBGRAPH ONCE");
+        // System.out.println("StmtTargetGraphScan:294: ADDED SUBGRAPH ONCE");
         for (SubGraph s: m_graph.getSubgraphs()) {
-            System.out.println("StmtTargetGraphScan:297:" + s.getSubgraphname());
+            // System.out.println("StmtTargetGraphScan:297:" + s.getSubgraphname());
         }
         SubGraph sg = m_graph.getSubgraphs().add(m_newGraphName);
         sg.setSubgraphname(m_newGraphName);

@@ -192,7 +192,13 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
                 return AdHocSQLMix.MIXED;
             }
 
-            validatedHomogeonousSQL.add(stmt);
+            // LX FEAT4: has to modify "select graph(" into "create graph("
+            if (ddlToken != null && ddlToken.equals("g2g")) {
+                String newStmt = "create" + stmt.substring(6, stmt.length());
+                validatedHomogeonousSQL.add(newStmt);
+            }
+            else
+                validatedHomogeonousSQL.add(stmt);
         }
 
         if (validatedHomogeonousSQL.isEmpty()) {
@@ -228,6 +234,7 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
         }
 
         try {
+            // System.out.println("AdHocNTBase:231");
             return ptool.planSql(sqlStatement, partitioning, explainMode != ExplainMode.NONE,
                     userParamSet, isSwapTables, isLargeQuery);
         } catch (Exception e) {
@@ -299,17 +306,17 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
 
         for (final String sqlStatement : sqlStatements) {
             try {
+                // System.out.println("AdHocNTBase:304");
                 AdHocPlannedStatement result = compileAdHocSQL(
                         context.m_ptool, sqlStatement, inferSP, userPartitionKey, explainMode, isLargeQuery,
                         isSwapTables, userParamSet);
-                System.out.println("AdHocNTBase:304");
                 // The planning tool may have optimized for the single partition case
                 // and generated a partition parameter.
                 if (inferSP) {
                     partitionParamIndex = result.getPartitioningParameterIndex();
                     partitionParamType = result.getPartitioningParameterType();
                     partitionParamValue = result.getPartitioningParameterValue();
-                    System.out.println("AdHocNTBase:312:" + partitionParamIndex);
+                    // System.out.println("AdHocNTBase:312:" + partitionParamIndex);
                 }
                 stmts.add(result);
             } catch (PlanningErrorException e) {
@@ -513,6 +520,7 @@ public abstract class AdHocNTBase extends UpdateApplicationBase {
         Object partitionKey = singlePartition ? "1" : null;
 
         List<AdHocPlannedStatement> stmts = new ArrayList<>();
+        // System.out.println("AdHocNTBase:517");
         AdHocPlannedStatement result = compileAdHocSQL(ptool, sql, false, partitionKey,
                 ExplainMode.NONE, false, false, userParams);
         // System.out.println("AdHocNTBase:517");

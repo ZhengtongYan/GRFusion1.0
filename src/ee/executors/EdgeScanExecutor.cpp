@@ -116,7 +116,7 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 	// LX FEAT3
     std::string edgeLabel = node->getEdgeLabel();
     Table* input_table = graphView->getEdgeTableFromLabel(edgeLabel);
-    cout << "EdgeScanExecutor:122:" << edgeLabel << ", " << input_table->name() << endl;
+    // cout << "EdgeScanExecutor:122:" << edgeLabel << ", " << input_table->name() << endl;
 	vassert(input_table);
 
 	// int vertexId = -1, fanIn = -1, fanOut = -1;
@@ -143,7 +143,7 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 	if (projection_node != NULL) {
 		num_of_columns = static_cast<int> (projection_node->getOutputColumnExpressions().size());
 	}
-	cout << "EdgeScanExecutor:146:" << num_of_columns << endl;
+	// cout << "EdgeScanExecutor:146:" << num_of_columns << endl;
 	//
 	// OPTIMIZATION: NESTED LIMIT
 	// How nice! We can also cut off our scanning with a nested limit!
@@ -199,13 +199,16 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 			temp_tuple = m_tmpOutputTable->tempTuple();
 		}
 
+		unsigned edgeId;
+		int labelIdx = graphView->getIndexFromVertexLabels(edgeLabel);
+
 		while (postfilter.isUnderLimit() && iterator.next(tuple))
 		{
 			VOLT_TRACE("INPUT TUPLE: %s, %d/%d\n",
 					   tuple.debug(input_table->name()).c_str(), tuple_ctr,
 					   (int)input_table->activeTupleCount());
 			pmp.countdownProgress();
-cout << "EdgeScanExecutor:208:" << tuple.debug(input_table->name()).c_str() << endl;
+
 			//
 			// For each tuple we need to evaluate it against our predicate and limit/offset
 			//
@@ -219,12 +222,14 @@ cout << "EdgeScanExecutor:208:" << tuple.debug(input_table->name()).c_str() << e
 				{
 					VOLT_TRACE("inline projection...");
 
-					cout << "EdgeScanExecutor:222:" << ValuePeeker::peekInteger(tuple.getNValue(0)) << endl;
-
+					edgeId = ValuePeeker::peekInteger(tuple.getNValue(0)) * 10 + labelIdx;
+					// cout << "EdgeScanExecutor:222:" << edgeId << endl;
+					if (!graphView->hasEdge(edgeId))
+						continue;
 					for (int ctr = 0; ctr < num_of_columns; ctr++) {
 						//msaber: todo, need to check the projection operator construction
 						string t_coln = projection_node->getOutputColumnNames()[ctr];
-                        cout << "EdgeScanExecutor:227:" << t_coln << endl;
+                        // cout << "EdgeScanExecutor:227:" << t_coln << endl;
 
 						NValue value = projection_node->getOutputColumnExpressions()[ctr]->eval(&tuple, NULL);
 						temp_tuple.setNValue(ctr, value);

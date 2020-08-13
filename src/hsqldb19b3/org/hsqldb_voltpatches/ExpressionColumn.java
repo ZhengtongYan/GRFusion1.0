@@ -215,7 +215,7 @@ public class ExpressionColumn extends Expression {
     }
 
     void setAttributesAsColumn(RangeVariable range, int index) {
-System.out.println("ExpressionColumn:171:set objectName");
+
         columnIndex   = index;
         column        = range.getColumn(index);
         dataType      = column.getDataType();
@@ -416,7 +416,7 @@ System.out.println("ExpressionColumn:171:set objectName");
     @Override
     public HsqlList resolveColumnReferences(RangeVariable[] rangeVarArray,
             int rangeCount, HsqlList unresolvedSet, boolean acceptsSequences) {
-        System.out.println("ExpressionColumn:419:" + objectName);
+        // System.out.println("ExpressionColumn:419:" + objectName);
         switch (opType) {
 
             case OpTypes.SEQUENCE :
@@ -460,8 +460,11 @@ System.out.println("ExpressionColumn:171:set objectName");
                         continue;
                     }
 
+                    if (rangeVar.isGraph)
+                        setObjectName(rangeVar);
+
                     // LX FEAT2
-                    if (labelName == null && objectName != null && objectName.equals("VERTEXES") ){ // not specify label
+                    if (labelName == null && objectName != null && objectName.equals("VERTEXES")  ){ // not specify label
                         ArrayList<String> vl = rangeVar.getGraph().getVertexLabelList();
                         for (int j = 0; j < vl.size(); j++) {
                             prependColname(vl.get(j));
@@ -511,9 +514,57 @@ System.out.println("ExpressionColumn:171:set objectName");
                             }
                             trimColname();
                         }
-                    }  
+                    } 
+                    else if (labelName == null && objectName != null && objectName.equals("VERTEX_EDGE") ) {
+                        ArrayList<String> vl = rangeVar.getGraph().getVertexLabelList();
+                        for (int j = 0; j < vl.size(); j++) {
+                            prependColname(vl.get(j));
+                            if (rangeVar.getGraph().findVertexProp(columnName) != -1) {
+                                ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
+                                if (resolution != null) {
+                                    if (resolution instanceof ExpressionColumnReferenceResolution) {
+                                        if (usingResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    else {
+                                        assert(resolution instanceof RangeVariableColumnReferenceResolution);
+                                        if (rangeVariableResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    // Cache this in case this is the only resolution.
+                                    lastRes = resolution;
+                                }
+                            }
+                            trimColname();
+                        }
+                        ArrayList<String> el = rangeVar.getGraph().getEdgeLabelList();
+                        for (int j = 0; j < el.size(); j++) {
+                            prependColname(el.get(j));
+                            if (rangeVar.getGraph().findEdgeProp(columnName) != -1) {
+                                ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
+                                if (resolution != null) {
+                                    if (resolution instanceof ExpressionColumnReferenceResolution) {
+                                        if (usingResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    else {
+                                        assert(resolution instanceof RangeVariableColumnReferenceResolution);
+                                        if (rangeVariableResolutions.add(resolution)) {
+                                            foundSize += 1;
+                                        }
+                                    }
+                                    // Cache this in case this is the only resolution.
+                                    lastRes = resolution;
+                                }
+                            }
+                            trimColname();
+                        }
+                    }
                     else {
-                        System.out.println("ExpressionColumn:516");
+                        // System.out.println("ExpressionColumn:516");
                         ColumnReferenceResolution resolution = resolveColumnReference(rangeVar);
                         if (resolution != null) {
                             if (resolution instanceof ExpressionColumnReferenceResolution) {
@@ -533,12 +584,12 @@ System.out.println("ExpressionColumn:171:set objectName");
                     }                
                 }
                 if (foundSize == 1) {
-                    System.out.println("ExpressionColumn:536");
+                    // System.out.println("ExpressionColumn:536");
                     lastRes.finallyResolve();
                     return unresolvedSet;
                 }
                 if (foundSize > 1) {
-                    System.out.println("ExpressionColumn:541");
+                    // System.out.println("ExpressionColumn:541");
                     StringBuffer sb = new StringBuffer();
                     sb.append(String.format("Column \"%s\" is ambiguous.  It's in tables: ", columnName));
                     String sep = "";
@@ -690,14 +741,14 @@ System.out.println("ExpressionColumn:171:set objectName");
     }
 
     public ColumnReferenceResolution resolveColumnReference(RangeVariable rangeVar) {
-        System.out.println("ExpressionColumn:574:" + tableName + "," + columnName);
+        // System.out.println("ExpressionColumn:574:" + tableName + "," + columnName);
         // LX FEAT2 
-        if (rangeVar.isGraph)
-            setObjectName(rangeVar);
-        System.out.println("ExpressionColumn:661:" + tableName + "," + columnName);
+        // if (rangeVar.isGraph)
+        //     setObjectName(rangeVar);
+        // System.out.println("ExpressionColumn:661:" + tableName + "," + columnName);
         if (tableName == null) {
             Expression e = rangeVar.getColumnExpression(columnName);
-
+            // System.out.println("ExpressionColumn:700:" + e);
             if (e != null) {
                 return new ExpressionColumnReferenceResolution(e);
             }
@@ -822,7 +873,6 @@ System.out.println("ExpressionColumn:171:set objectName");
             }
             case OpTypes.ASTERISK :
             case OpTypes.MULTICOLUMN :
-                System.out.println("ExpressionColumn:718");
             default :
                 throw Error.runtimeError(ErrorCode.U_S0500, "Expression");
         }
@@ -867,7 +917,6 @@ System.out.println("ExpressionColumn:171:set objectName");
             }
 
             case OpTypes.MULTICOLUMN : {
-                System.out.println("ExpressionColumn:763");
                 if (nodes.length == 0) {
                     return "*";
                 }
@@ -949,7 +998,6 @@ System.out.println("ExpressionColumn:171:set objectName");
                 break;
 
             case OpTypes.MULTICOLUMN :
-                System.out.println("ExpressionColumn:845");
             // shouldn't get here
         }
 
@@ -962,7 +1010,6 @@ System.out.println("ExpressionColumn:171:set objectName");
      */
     String getTableName() {
         if (opType == OpTypes.MULTICOLUMN) {
-            System.out.println("ExpressionColumn:858");
             return tableName;
         }
 

@@ -41,6 +41,7 @@ public class AdHoc extends AdHocNTBase {
 
     @Override
     public CompletableFuture<ClientResponse> run(ParameterSet params) {
+        // System.out.println("AdHoc:44");
         return runInternal(params);
     }
 
@@ -85,7 +86,7 @@ public class AdHoc extends AdHocNTBase {
             return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE,
                     "Adhoc system procedure requires at least the query parameter.");
         }
-// System.out.println("adhoc:88");
+// System.out.println("AdHoc:88");
         final Object[] paramArray = params.toArray();
         final String sql = (String) paramArray[0];
         final Object[] userParams = params.size() > 1 ? Arrays.copyOfRange(paramArray, 1, paramArray.length) : null;
@@ -111,16 +112,19 @@ public class AdHoc extends AdHocNTBase {
 
     private CompletableFuture<ClientResponse> runDDLBatch(List<String> sqlStatements, List<SqlNode> sqlNodes) {
         // conflictTables tracks dropped tables before removing the ones that don't have CREATEs.
+        // System.out.println("AdHoc:115");
         final SortedSet<String> conflictTables = new TreeSet<>();
         final Set<String> createdTables = new HashSet<>();
 
         for (String stmt : sqlStatements) {         // check that the DDL is allowed
+            // System.out.println("AdHoc:120:" + stmt);
             String rejectionExplanation = SQLLexer.checkPermitted(stmt);
             if (rejectionExplanation != null) {
                 return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE, rejectionExplanation);
             }
 
             final String ddlToken = SQLLexer.extractDDLToken(stmt);
+            // System.out.println("AdHoc:126:" + ddlToken);
             // make sure not to mix drop and create in the same batch for the
             // same table
             if (ddlToken.equals("drop")) {

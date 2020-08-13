@@ -648,7 +648,7 @@ void ExpressionUtil::loadIndexedExprsFromJson(
       std::vector<AbstractExpression*>& indexed_exprs, const std::string& jsonarraystring) {
     PlannerDomRoot domRoot(jsonarraystring.c_str());
     PlannerDomValue expressionsArray = domRoot();
-    cout << "expressionutil:639" << endl;
+    // cout << "expressionutil:639" << endl;
     for (int i = 0; i < expressionsArray.arrayLen(); i++) {
         PlannerDomValue exprValue = expressionsArray.valueAtIndex(i);
         AbstractExpression *expr = AbstractExpression::buildExpressionTree(exprValue);

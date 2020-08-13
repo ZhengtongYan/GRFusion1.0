@@ -973,7 +973,7 @@ public class DDLCompiler {
         String binDDL = CompressionService.compressAndBase64Encode(m_fullDDL);
         db.setSchema(binDDL);
         // output the xml catalog to disk
-        /* enable to debug */ System.out.println("DEBUG: DDLCompiler:946" + m_schema);
+        // /* enable to debug */ System.out.println("DEBUG: DDLCompiler:946" + m_schema);
         BuildDirectoryUtils.writeFile("schema-xml", "hsql-catalog-output.xml", m_schema.toString(), true);
         // Build the local catalog from the xml catalog.  Note that we've already
         // saved the previous user defined function set, so we don't need
@@ -1748,6 +1748,75 @@ public class DDLCompiler {
         TableAnnotation annotation = new TableAnnotation();
         graph.setAnnotation(annotation);
         annotation.ddl = node.attributes.get("DDL");
+
+        // LX FEAT4 add them in catalog to support select g2g
+        String subGraphVertexPredicate = node.attributes.get("subGraphVertexPredicate");
+        String subGraphEdgePredicate = node.attributes.get("subGraphEdgePredicate");
+        String chosenVertexlabel = node.attributes.get("chosenVertexLabel");
+        String chosenEdgelabel = node.attributes.get("chosenEdgeLabel");
+        String fromWhichTable = node.attributes.get("fromWhichTable");
+
+        graph.setFromwhichtable(fromWhichTable);
+
+        // need to convert the predicate (where clause) part to abstract expression
+        if (subGraphVertexPredicate != null || subGraphEdgePredicate != null) {
+            VoltXMLElement xmlquery = null;
+            try {
+                if (subGraphVertexPredicate != null)
+                    xmlquery = m_hsql.getXMLCompiledStatement(subGraphVertexPredicate);
+                else
+                    xmlquery = m_hsql.getXMLCompiledStatement(subGraphEdgePredicate);
+            }
+            catch (HSQLParseException e) {
+                e.printStackTrace();
+            }
+            assert(xmlquery != null);
+            
+            ParsedSelectStmt stmt = null;
+            try {
+                if (subGraphVertexPredicate != null)
+                    stmt = (ParsedSelectStmt) AbstractParsedStmt.parse(null, subGraphVertexPredicate, xmlquery, null, db, null);
+                else
+                    stmt = (ParsedSelectStmt) AbstractParsedStmt.parse(null, subGraphEdgePredicate, xmlquery, null, db, null);
+            }
+            catch (Exception e) {
+                throw m_compiler.new VoltCompilerException(e.getMessage());
+            }
+            assert(stmt != null);
+            AbstractExpression where = stmt.getSingleTableFilterExpression();
+            if (where != null) {
+                // System.out.println("DDLCompiler:1776:" + where.toJSONString());
+                String hex = Encoder.hexEncode(where.toJSONString());
+
+                if (subGraphVertexPredicate != null) {
+                    graph.setSubgraphvertexpredicate(hex);
+                    graph.setChosenvertexlabel(chosenVertexlabel);
+                    graph.setSubgraphedgepredicate("");
+                    graph.setChosenedgelabel("");
+                }
+                else {
+                    graph.setSubgraphvertexpredicate("");
+                    graph.setChosenvertexlabel("");
+                    graph.setSubgraphedgepredicate(hex);
+                    graph.setChosenedgelabel(chosenEdgelabel);
+                }
+            }
+            else {
+                graph.setSubgraphvertexpredicate("");
+                graph.setChosenvertexlabel("");
+                graph.setSubgraphedgepredicate("");
+                graph.setChosenedgelabel("");
+            }
+        }
+        else {
+            graph.setSubgraphvertexpredicate("");
+            graph.setChosenvertexlabel("");
+            graph.setSubgraphedgepredicate("");
+            graph.setChosenedgelabel("");
+        }    
+
+        String oldGraphName = node.attributes.get("oldGraphName");
+        graph.setOldgraphname(oldGraphName);
 
         // all tables start replicated
         // if a partition is found in the project file later,

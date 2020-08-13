@@ -1225,7 +1225,9 @@ public class SQLCommand {
         } else {
             //TODO: In the future, if/when we change the prompt when waiting for the remainder of an unfinished command,
             // successful DDL commands may just silently return to a normal prompt without this verbose feedback.
-            System.out.println("Command succeeded.");
+            // LX FEAT4 add elapsed time for DDL command
+            long elapsedTime = System.nanoTime() - m_startTime;
+            System.out.printf("Command succeeded in %.2fs\n.", elapsedTime / 1000000000.0);
         }
     }
 

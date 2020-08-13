@@ -56,15 +56,18 @@ void GraphViewCatalogDelegate::init(catalog::Database const &catalogDatabase,
 	        return;
 	}
 
-	/*
-	evaluateExport(catalogDatabase, catalogTable);
+	m_graphView->incrementRefcount();
+}
 
-	// configure for stats tables
-	PersistentTable* persistenttable = dynamic_cast<PersistentTable*>(m_table);
-	if (persistenttable) {
-	      persistenttable->configureIndexStats();
+// LX FEAT4 initialize a subgraph
+void GraphViewCatalogDelegate::initSubgraph(catalog::Database const &catalogDatabase,
+	            catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)// LX FEAT2
+{
+	m_graphView = constructSubGraphViewFromCatalog(catalogDatabase, catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVPredicate, subGraphEPredicate, oldGraphName, vlabelName, elabelName, isV);
+	if (!m_graphView) {
+	        return;
 	}
-	*/
+
 	m_graphView->incrementRefcount();
 }
 
@@ -78,80 +81,19 @@ void GraphViewCatalogDelegate::processGraphViewChange(catalog::Database const &c
     existingGraph->decrementRefcount();
 }
 
-// GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable)
+// LX create normal graph view
 GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable) // LX FEAT2
 {
-	LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 71, "graphViewName = " + catalogGraphView.name());
-	// Create a persistent graph view for this table in our catalog
-	int32_t graphView_id = catalogGraphView.relativeIndex();
-	std::stringstream params;
-	params << " graphView_id (relative index) = " << graphView_id;
-	LogManager::GLog("GraphViewCatalogDelegate", "GraphViewCatalogDelegate", 68, params.str());
-
-	// get an array of the vertex column names
 	int numColumns = catalogGraphView.VertexProps().size();
-	map<string, catalog::Column*>::const_iterator col_iterator;
 	vector<string> columnNamesVertex(numColumns);
 	vector<int> columnIdsInVertexTable(numColumns);
-	
-	int colIndex = 0;
-	for (col_iterator = catalogGraphView.VertexProps().begin();
-		 col_iterator != catalogGraphView.VertexProps().end();
-		 col_iterator++)
-	{
-		const catalog::Column *catalog_column = col_iterator->second;
-		if(catalog_column->matviewsource()) // columns except FANIN and FANOUT
-		{
-			columnNamesVertex[colIndex] = catalog_column->name(); // LX label.colName
 
-			std::stringstream params;
-			params << "Graph vCol Index = " << colIndex
-					<< ", Graph vCol Name = " << catalog_column->name();
-
-			columnIdsInVertexTable[colIndex] = catalog_column->matviewsource()->index();
-
-			params << ", VertexTable Column Index = " << catalog_column->matviewsource()->index();
-
-			// cout << "GraphViewCatalogDelegate:108:" << "Graph vCol Index = " << colIndex
-			// 		<< ", Graph vCol Name = " << catalog_column->name()  << ", VertexTable Column Index = " << catalog_column->matviewsource()->index() << endl;
-			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 108, params.str());
-			colIndex++;
-		}
-		// TODO: FEAT2 check when FANIN FANOUT are added to columns, maybe move it here?
-	}
-
-	colIndex = 0;
 	numColumns = catalogGraphView.EdgeProps().size();
 	vector<string> columnNamesEdge(numColumns);
-	// vector<int> columnIdsInEdgeTable(catalogGraphView.ETable()->columns().size());
-	vector<int> columnIdsInEdgeTable(numColumns); // LX FEAT3
-	for (col_iterator = catalogGraphView.EdgeProps().begin();
-			 col_iterator != catalogGraphView.EdgeProps().end();
-			 col_iterator++)
-	{
-		const catalog::Column *catalog_column = col_iterator->second;
-		if(catalog_column->matviewsource())
-		{
-			//colIndex = catalog_column->index();
-			columnNamesEdge[colIndex] = catalog_column->name();
+	vector<int> columnIdsInEdgeTable(numColumns);
 
-			std::stringstream params;
-			params << "Graph eCol Index = " << colIndex
-					<< ", Graph eCol Name = " << catalog_column->name();
+	preprocessGraphView(catalogGraphView, &columnNamesVertex, &columnIdsInVertexTable, &columnNamesEdge, &columnIdsInEdgeTable);
 
-			columnIdsInEdgeTable[colIndex] = catalog_column->matviewsource()->index();
-
-			params << ", EdgeTable Column Index = " << catalog_column->matviewsource()->index();
-			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 139, params.str());
-			colIndex++;
-		}
-	}
-
-
-	// get the schema
-	//TODO: we will uncomment the code below when the graph attributes indexes are fixed
-	//TupleSchema *vSchema = createOutputVertexTupleSchema(catalogDatabase, catalogGraphView);
-	//TupleSchema *eSchema = createOutputEdgeTupleSchema(catalogDatabase, catalogGraphView);
 	TupleSchema *vSchema = NULL;
 	TupleSchema *eSchema = NULL;
 
@@ -161,14 +103,182 @@ GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Data
 	SHA1Init(&shaCTX);
 	SHA1Update(&shaCTX, reinterpret_cast<const uint8_t *>(catalogGraphView.signature().c_str()), (uint32_t )::strlen(catalogGraphView.signature().c_str()));
 	SHA1Final(reinterpret_cast<unsigned char *>(m_signatureHash), &shaCTX);
-	// Persistent table will use default size (2MB) if tableAllocationTargetSize is zero.
 
 	GraphView *graphView = GraphViewFactory::createGraphView(catalogGraphView.name(), catalogGraphView.isDirected(), vLabels,
-			vTables, eLabels, eTables, startVLabels, endVLabels, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable,
-			columnIdsInEdgeTable, databaseId, m_signatureHash);
+			vTables, eLabels, eTables, startVLabels, endVLabels, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable, columnIdsInEdgeTable, databaseId, m_signatureHash);
 
 	return graphView;
 }
+
+// LX this is a subgraph
+GraphView *GraphViewCatalogDelegate::constructSubGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV) 
+{
+	int numColumns = catalogGraphView.VertexProps().size();
+	vector<string> columnNamesVertex(numColumns);
+	vector<int> columnIdsInVertexTable(numColumns);
+
+	numColumns = catalogGraphView.EdgeProps().size();
+	vector<string> columnNamesEdge(numColumns);
+	vector<int> columnIdsInEdgeTable(numColumns);
+
+	preprocessGraphView(catalogGraphView, &columnNamesVertex, &columnIdsInVertexTable, &columnNamesEdge, &columnIdsInEdgeTable);
+
+	TupleSchema *vSchema = NULL;
+	TupleSchema *eSchema = NULL;
+
+	//const string& graphViewName = catalogGraphView.name();
+	int32_t databaseId = catalogDatabase.relativeIndex();
+	SHA1_CTX shaCTX;
+	SHA1Init(&shaCTX);
+	SHA1Update(&shaCTX, reinterpret_cast<const uint8_t *>(catalogGraphView.signature().c_str()), (uint32_t )::strlen(catalogGraphView.signature().c_str()));
+	SHA1Final(reinterpret_cast<unsigned char *>(m_signatureHash), &shaCTX);
+
+	GraphView *graphView = GraphViewFactory::createSubGraphView(catalogGraphView.name(), catalogGraphView.isDirected(), vLabels,
+			vTables, eLabels, eTables, startVLabels, endVLabels, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable, columnIdsInEdgeTable, databaseId, m_signatureHash, subGraphVPredicate, subGraphEPredicate, oldGraphName, vlabelName, elabelName, isV);
+
+	return graphView;
+}
+
+void GraphViewCatalogDelegate::preprocessGraphView(catalog::GraphView const &catalogGraphView, vector<string>* columnNamesVertex, vector<int>* columnIdsInVertexTable, vector<string>* columnNamesEdge, vector<int>* columnIdsInEdgeTable)
+{
+	map<string, catalog::Column*>::const_iterator col_iterator;
+	int colIndex = 0;
+	for (col_iterator = catalogGraphView.VertexProps().begin();
+		 col_iterator != catalogGraphView.VertexProps().end();
+		 col_iterator++)
+	{
+		const catalog::Column *catalog_column = col_iterator->second;
+		if(catalog_column->matviewsource()) // columns except FANIN and FANOUT
+		{
+			columnNamesVertex->at(colIndex) = catalog_column->name(); // LX label.colName
+
+			std::stringstream params;
+			params << "Graph vCol Index = " << colIndex << ", Graph vCol Name = " << catalog_column->name();
+
+			columnIdsInVertexTable->at(colIndex) = catalog_column->matviewsource()->index();
+
+			params << ", VertexTable Column Index = " << catalog_column->matviewsource()->index();
+
+			// cout << "GraphViewCatalogDelegate:108:" << "Graph vCol Index = " << colIndex << ", Graph vCol Name = " << catalog_column->name()  << ", VertexTable Column Index = " << catalog_column->matviewsource()->index() << endl;
+			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 108, params.str());
+			colIndex++;
+		}
+		// TODO: FEAT2 check when FANIN FANOUT are added to columns, maybe move it here?
+	}
+	colIndex = 0;
+	for (col_iterator = catalogGraphView.EdgeProps().begin();
+			 col_iterator != catalogGraphView.EdgeProps().end();
+			 col_iterator++)
+	{
+		const catalog::Column *catalog_column = col_iterator->second;
+		if(catalog_column->matviewsource())
+		{
+			//colIndex = catalog_column->index();
+			columnNamesEdge->at(colIndex) = catalog_column->name();
+
+			std::stringstream params;
+			params << "Graph eCol Index = " << colIndex << ", Graph eCol Name = " << catalog_column->name();
+
+			columnIdsInEdgeTable->at(colIndex) = catalog_column->matviewsource()->index();
+
+			params << ", EdgeTable Column Index = " << catalog_column->matviewsource()->index();
+			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 139, params.str());
+			colIndex++;
+		}
+	}
+}
+
+// GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable)
+// GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable) // LX FEAT2
+// {
+// 	// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 71, "graphViewName = " + catalogGraphView.name());
+// 	// Create a persistent graph view for this table in our catalog
+// 	// int32_t graphView_id = catalogGraphView.relativeIndex();
+// 	// std::stringstream params;
+// 	// params << " graphView_id (relative index) = " << graphView_id;
+// 	// LogManager::GLog("GraphViewCatalogDelegate", "GraphViewCatalogDelegate", 68, params.str());
+
+// 	// get an array of the vertex column names
+// 	int numColumns = catalogGraphView.VertexProps().size();
+// 	map<string, catalog::Column*>::const_iterator col_iterator;
+// 	vector<string> columnNamesVertex(numColumns);
+// 	vector<int> columnIdsInVertexTable(numColumns);
+	
+// 	int colIndex = 0;
+// 	for (col_iterator = catalogGraphView.VertexProps().begin();
+// 		 col_iterator != catalogGraphView.VertexProps().end();
+// 		 col_iterator++)
+// 	{
+// 		const catalog::Column *catalog_column = col_iterator->second;
+// 		if(catalog_column->matviewsource()) // columns except FANIN and FANOUT
+// 		{
+// 			columnNamesVertex[colIndex] = catalog_column->name(); // LX label.colName
+
+// 			std::stringstream params;
+// 			params << "Graph vCol Index = " << colIndex
+// 					<< ", Graph vCol Name = " << catalog_column->name();
+
+// 			columnIdsInVertexTable[colIndex] = catalog_column->matviewsource()->index();
+
+// 			params << ", VertexTable Column Index = " << catalog_column->matviewsource()->index();
+
+// 			// cout << "GraphViewCatalogDelegate:108:" << "Graph vCol Index = " << colIndex
+// 			// 		<< ", Graph vCol Name = " << catalog_column->name()  << ", VertexTable Column Index = " << catalog_column->matviewsource()->index() << endl;
+// 			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 108, params.str());
+// 			colIndex++;
+// 		}
+// 		// TODO: FEAT2 check when FANIN FANOUT are added to columns, maybe move it here?
+// 	}
+
+// 	colIndex = 0;
+// 	numColumns = catalogGraphView.EdgeProps().size();
+// 	vector<string> columnNamesEdge(numColumns);
+// 	// vector<int> columnIdsInEdgeTable(catalogGraphView.ETable()->columns().size());
+// 	vector<int> columnIdsInEdgeTable(numColumns); // LX FEAT3
+// 	for (col_iterator = catalogGraphView.EdgeProps().begin();
+// 			 col_iterator != catalogGraphView.EdgeProps().end();
+// 			 col_iterator++)
+// 	{
+// 		const catalog::Column *catalog_column = col_iterator->second;
+// 		if(catalog_column->matviewsource())
+// 		{
+// 			//colIndex = catalog_column->index();
+// 			columnNamesEdge[colIndex] = catalog_column->name();
+
+// 			std::stringstream params;
+// 			params << "Graph eCol Index = " << colIndex
+// 					<< ", Graph eCol Name = " << catalog_column->name();
+
+// 			columnIdsInEdgeTable[colIndex] = catalog_column->matviewsource()->index();
+
+// 			params << ", EdgeTable Column Index = " << catalog_column->matviewsource()->index();
+// 			// LogManager::GLog("GraphViewCatalogDelegate", "constructGraphViewFromCatalog", 139, params.str());
+// 			colIndex++;
+// 		}
+// 	}
+
+
+// 	// get the schema
+// 	//TODO: we will uncomment the code below when the graph attributes indexes are fixed
+// 	//TupleSchema *vSchema = createOutputVertexTupleSchema(catalogDatabase, catalogGraphView);
+// 	//TupleSchema *eSchema = createOutputEdgeTupleSchema(catalogDatabase, catalogGraphView);
+// 	TupleSchema *vSchema = NULL;
+// 	TupleSchema *eSchema = NULL;
+
+// 	//const string& graphViewName = catalogGraphView.name();
+// 	int32_t databaseId = catalogDatabase.relativeIndex();
+// 	SHA1_CTX shaCTX;
+// 	SHA1Init(&shaCTX);
+// 	SHA1Update(&shaCTX, reinterpret_cast<const uint8_t *>(catalogGraphView.signature().c_str()), (uint32_t )::strlen(catalogGraphView.signature().c_str()));
+// 	SHA1Final(reinterpret_cast<unsigned char *>(m_signatureHash), &shaCTX);
+// 	// Persistent table will use default size (2MB) if tableAllocationTargetSize is zero.
+
+// 	GraphView *graphView = GraphViewFactory::createGraphView(catalogGraphView.name(), catalogGraphView.isDirected(), vLabels,
+// 			vTables, eLabels, eTables, startVLabels, endVLabels, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable,
+// 			columnIdsInEdgeTable, databaseId, m_signatureHash);
+
+// 	return graphView;
+// }
 
 void GraphViewCatalogDelegate::processSchemaChanges(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, std::map<std::string, GraphViewCatalogDelegate*> const &graphViewsByName)
 {

@@ -678,10 +678,17 @@ public abstract class CatalogSchemaTools {
                 }
 
                 // Implement LX to support multiple graph views (FEAT1)
+                // TODO: need to find a better way to add in the graph
+                // better do it in the same order as added into the catalog
                 CatalogMap<GraphView> graphViews = db.getGraphviews();
                 if (! graphViews.isEmpty()) {
                     for (GraphView graphView : graphViews) {
-                        toSchema(sb, graphView);
+                        if (graphView.getOldgraphname() == null)
+                            toSchema(sb, graphView); // first add big graph
+                    }
+                    for (GraphView graphView : graphViews) {
+                        if (graphView.getOldgraphname() != null)
+                            toSchema(sb, graphView); // then add subgraph that depend on the previous graphs
                     }
                 }
                 // LX

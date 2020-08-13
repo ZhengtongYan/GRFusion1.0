@@ -12,8 +12,8 @@ class Edge
 protected:
 	// int m_startVertexId; 
 	// int m_endVertexId;
-	string m_startVertexId; // LX FEAT2
-	string m_endVertexId; // LX FEAT2
+	unsigned m_startVertexId; // LX FEAT2
+	unsigned m_endVertexId; // LX FEAT2
 
 public:
 	Edge(void);
@@ -23,10 +23,10 @@ public:
 	// int getEndVertexId();
 	// void setStartVertexId(int id);
 	// void setEndVertexId(int id);
-	string getStartVertexId(); // LX FEAT2
-	string getEndVertexId(); // LX FEAT2
-	void setStartVertexId(string id); // LX FEAT2
-	void setEndVertexId(string id); // LX FEAT2
+	unsigned getStartVertexId(); // LX FEAT2
+	unsigned getEndVertexId(); // LX FEAT2
+	void setStartVertexId(unsigned id); // LX FEAT2
+	void setEndVertexId(unsigned id); // LX FEAT2
 	Vertex* getStartVertex();
 	Vertex* getEndVertex();
 	string toString();

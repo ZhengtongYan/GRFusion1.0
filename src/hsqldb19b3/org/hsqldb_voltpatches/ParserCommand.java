@@ -57,12 +57,12 @@ public class ParserCommand extends ParserDDL {
     Statement compileStatement() {
 
         Statement cs = compilePart();
-        System.out.println("ParserCommand:60");
+        // System.out.println("ParserCommand:60");
         if (token.tokenType == Tokens.X_ENDPARSE) {
             if (cs.getSchemaName() == null) {
                 cs.setSchemaHsqlName(session.getCurrentSchemaHsqlName());
             }
-System.out.println("ParserCommand:65");
+// System.out.println("ParserCommand:65");
             return cs;
         }
 
@@ -110,13 +110,18 @@ System.out.println("ParserCommand:65");
     private Statement compilePart() {
 
         Statement cs = null;
+        
+        // if(selectGraph){
+        //     selectGraph = false;
+        //     return compileCreateSubgraph();
+        // }
 
         setParsePosition(getPosition());
 
         if (token.tokenType == Tokens.X_STARTPARSE) {
             read();
         }
-System.out.println("ParserCommand:119：" + token.tokenType);
+// System.out.println("ParserCommand:119：" + token.tokenType);
         switch (token.tokenType) {
 
             // DQL
@@ -193,7 +198,6 @@ System.out.println("ParserCommand:119：" + token.tokenType);
             // DDL
             case Tokens.CREATE :
                 cs = compileCreate();
-                System.out.println("ParserCommand:196");
                 break;
 
             case Tokens.ALTER :
@@ -247,10 +251,10 @@ System.out.println("ParserCommand:119：" + token.tokenType);
                 cs = compileSessionVariableDeclaration();
                 break;
 
-            default :System.out.println("ParserCommand:251");
+            default :
                 throw unexpectedToken();
         }
-        System.out.println("ParserCommand:260");
+        // System.out.println("ParserCommand:260");
         if (cs.type != StatementTypes.SET_SESSION_AUTHORIZATION) {
             cs.setSQL(getLastPart());
         }
@@ -258,7 +262,7 @@ System.out.println("ParserCommand:119：" + token.tokenType);
         if (token.tokenType == Tokens.SEMICOLON) {
             read();
         } else if (token.tokenType == Tokens.X_ENDPARSE) {}
-        System.out.println("ParserCommand:261");
+        // System.out.println("ParserCommand:261");
         return cs;
     }
 
@@ -443,10 +447,10 @@ System.out.println("ParserCommand:119：" + token.tokenType);
     private Statement compileSet() {
 
         int position = super.getPosition();
-System.out.println("ParserCommand:446:" + position);
+// System.out.println("ParserCommand:446:" + position);
         session.setScripting(false);
         read();
-System.out.println("ParserCommand:449:" + token.tokenType);
+// System.out.println("ParserCommand:449:" + token.tokenType);
         switch (token.tokenType) {
 
             case Tokens.SCHEMA : {

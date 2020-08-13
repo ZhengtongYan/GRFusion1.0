@@ -661,7 +661,7 @@ int8_t VoltDBIPC::updateCatalog(struct ipc_command *cmd) {
     if (!m_engine) {
         return kErrorCode_Error;
     }
-std::cout << "VoltDBIPC:664" << endl;
+
     try {
         if (m_engine->updateCatalog(ntohll(uc->timestamp), (uc->isStreamChange != 0), std::string(uc->data)) == true) {
             return kErrorCode_Success;

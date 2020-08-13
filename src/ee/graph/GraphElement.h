@@ -22,20 +22,21 @@ class GraphElement
 {
 protected:
 	// int m_id;
-	std::string m_id; // implement by LX, make id to be label::id
+	// std::string m_id; // implement by LX, make id to be label::id
+	unsigned m_id; // LX back to int because of the space issue
 	char* m_tupleData;
 	GraphView* m_gview;
 	bool m_isRemote;
 public:
 	GraphElement(void);
 	// GraphElement(int id, char* tupleData, GraphView* graphView, bool remote);
-	GraphElement(std::string id, char* tupleData, GraphView* graphView, bool remote); //implement by LX FEAT2, make id to be label::id
+	GraphElement(unsigned id, char* tupleData, GraphView* graphView, bool remote); //implement by LX FEAT2, make id to be label::id
 	~GraphElement(void);
 
 	// void setId(int id);
-	void setId(std::string id); //implement by LX FEAT2
+	void setId(unsigned id); //implement by LX FEAT2
 	// int getId();
-	std::string getId(); //implement by LX FEAT2
+	unsigned getId(); //implement by LX FEAT2
 	void setTupleData(char* tupleData);
 	void setGraphView(GraphView* gView);
 	char* getTupleData();

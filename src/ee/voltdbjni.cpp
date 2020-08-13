@@ -433,7 +433,6 @@ Java_org_voltdb_jni_ExecutionEngine_nativeUpdateCatalog(
     string str(reinterpret_cast<char*>(utf_chars), env->GetArrayLength(catalog_diffs));
     env->ReleaseByteArrayElements(catalog_diffs, utf_chars, JNI_ABORT);
     VOLT_DEBUG("calling loadCatalog...");
-std::cout << "VoltDBJNI:436" << endl;
     try {
         bool success = engine->updateCatalog( timestamp, streamChanges, str);
 

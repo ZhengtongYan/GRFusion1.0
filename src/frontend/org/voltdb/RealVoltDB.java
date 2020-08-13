@@ -1353,7 +1353,7 @@ public class RealVoltDB implements VoltDBInterface, RestoreAgent.Callback, HostM
                         m_config.asClusterSettingsMap(), fromPropertyFile.asMap(), fromDeploymentFile);
                 clusterSettings.store();
                 hostLog.info("Partitions on this host:" + m_config.m_recoveredPartitions);
-                System.out.println("RealVoltDB:1356:" + "Partitions on this host:" + m_config.m_recoveredPartitions);
+                // System.out.println("RealVoltDB:1356:" + "Partitions on this host:" + m_config.m_recoveredPartitions);
                 for (Integer partition : partitions) {
                     m_iv2InitiatorStartingTxnIds.put(partition, TxnEgo.makeZero(partition).getTxnId());
                 }
@@ -2757,7 +2757,7 @@ public class RealVoltDB implements VoltDBInterface, RestoreAgent.Callback, HostM
                 // (such as <= 0 host count)
                 VoltDB.crashLocalVoltDB(result);
             }
-System.out.println("RealVoltDB:2760");
+// System.out.println("RealVoltDB:2760");
             m_catalogContext = new CatalogContext(catalog,
                                                   new DbSettings(m_clusterSettings, m_nodeSettings),
                                                   0, //timestamp
@@ -3975,7 +3975,7 @@ System.out.println("RealVoltDB:2760");
                     Integer partition = siteTracker.getPartitionForSite(site);
                     partitions.add(Pair.of(partition, CoreUtils.getSiteIdFromHSId(site)));
                 }
-System.out.println("RealVoltDB:3978");
+// System.out.println("RealVoltDB:3978");
                 // 1. update the export manager.
                 ExportManagerInterface.instance().updateCatalog(m_catalogContext, requireCatalogDiffCmdsApplyToEE,
                         requiresNewExportGeneration, partitions);
@@ -4018,11 +4018,11 @@ System.out.println("RealVoltDB:3978");
                 // this after flushing the stats -- this will re-register
                 // the MPI statistics.
                 if (m_MPI != null) {
-                    System.out.println("RealVoltDB:4021");
+                    // System.out.println("RealVoltDB:4021");
                     m_MPI.updateCatalog(diffCommands, m_catalogContext, isForReplay,
                             requireCatalogDiffCmdsApplyToEE, requiresNewExportGeneration);
                 }
-System.out.println("RealVoltDB:4025");
+// System.out.println("RealVoltDB:4025");
                 // Update catalog for import processor this should be just/stop start and update partitions.
                 ImportManager.instance().updateCatalog(m_catalogContext, m_messenger);
 
@@ -4035,7 +4035,7 @@ System.out.println("RealVoltDB:4025");
                     // update. If it was created above, no need to notify
                     // because the consumer already has the latest catalog.
                     final String newDRConnectionSource = m_catalogContext.cluster.getDrmasterhost();
-                    System.out.println("RealVoltDB:4038");
+                    // System.out.println("RealVoltDB:4038");
                     m_consumerDRGateway.updateCatalog(m_catalogContext,
                                                       (newDRConnectionSource != null && !newDRConnectionSource.equals(oldDRConnectionSource)
                                                        ? newDRConnectionSource
@@ -4052,7 +4052,7 @@ System.out.println("RealVoltDB:4025");
 
                 // 6.3. If we are a DR master, update the DR table signature hash
                 if (m_producerDRGateway != null) {
-                    System.out.println("RealVoltDB:4055");
+                    // System.out.println("RealVoltDB:4055");
                     m_producerDRGateway.updateCatalog(m_catalogContext,
                             VoltDB.getReplicationPort(m_catalogContext.cluster.getDrproducerport()));
                 }

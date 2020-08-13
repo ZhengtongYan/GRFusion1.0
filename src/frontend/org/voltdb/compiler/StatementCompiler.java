@@ -211,7 +211,7 @@ public abstract class StatementCompiler {
                 }
                 else {
                     planner.parse();
-                    System.out.println("StatementCompiler:214");
+                    // System.out.println("StatementCompiler:214");
                 }
 
                 plan = planner.plan();
@@ -535,7 +535,7 @@ public abstract class StatementCompiler {
         newCatProc.setDefaultproc(true);
         newCatProc.setEverysite(false);
         newCatProc.setHasjava(false);
-        System.out.println("StatementCompiler:538:..............partition");
+        // System.out.println("StatementCompiler:538:..............partition");
         newCatProc.setPartitioncolumn(catProc.getPartitioncolumn());
         newCatProc.setPartitionparameter(catProc.getPartitionparameter());
         newCatProc.setPartitiontable(catProc.getPartitiontable());
@@ -679,7 +679,7 @@ public abstract class StatementCompiler {
     private static Procedure addProcedure(Table catTable, String procName) {
         // fake db makes it easy to create procedures that aren't part of the main catalog
         Database fakeDb = new Catalog().getClusters().add("cluster").getDatabases().add("database");
-        System.out.println("stmteCompiler:682:..............partition");
+        // System.out.println("stmteCompiler:682:..............partition");
         Column partitionColumn = catTable.getPartitioncolumn();
         Procedure newCatProc = fakeDb.getProcedures().add(procName);
         newCatProc.setClassname(procName);

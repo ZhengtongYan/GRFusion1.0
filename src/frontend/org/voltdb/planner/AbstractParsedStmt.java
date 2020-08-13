@@ -218,15 +218,15 @@ public abstract class AbstractParsedStmt {
             VoltXMLElement stmtTypeElement, String joinOrder) {
         // parse tables and parameters
         parsedStmt.parseTablesAndParams(stmtTypeElement);
-System.out.println("AbstractParsedStmt:221:" );
+// System.out.println("AbstractParsedStmt:221:" );
 
         // parse specifics
         parsedStmt.parse(stmtTypeElement);
-System.out.println("AbstractParsedStmt:225:" );
+// System.out.println("AbstractParsedStmt:225:" );
 
         // post parse action
         parsedStmt.postParse(sql, joinOrder);
-System.out.println("AbstractParsedStmt:229:" );
+// System.out.println("AbstractParsedStmt:229:" );
     }
 
     /**
@@ -243,11 +243,11 @@ System.out.println("AbstractParsedStmt:229:" );
 
         // reset the statement counters
         NEXT_STMT_ID = 0;
-System.out.println("AbstractParsedStmt:243:");
+// System.out.println("AbstractParsedStmt:243:");
         AbstractParsedStmt retval = getParsedStmt(parent, stmtTypeElement, paramValues, db);
-System.out.println("AbstractParsedStmt:245:" );
+// System.out.println("AbstractParsedStmt:245:" );
         parse(retval, sql, stmtTypeElement, joinOrder);
-System.out.println("AbstractParsedStmt:247:" );
+// System.out.println("AbstractParsedStmt:247:" );
         return retval;
     }
 
@@ -583,7 +583,7 @@ System.out.println("AbstractParsedStmt:247:" );
         // TupleValueExpression tve = new TupleValueExpression(tableName, tableAlias, columnName, columnAlias, -1, differentiator);  comment LX
         // Add LX
         String propertytype = exprNode.attributes.get("propertytype");
-        System.out.println("AbstractParsedStmt:585:" + propertytype);
+        // System.out.println("AbstractParsedStmt:585:" + propertytype);
         int objectidx = (exprNode.attributes.get("propertytypeidx") != null) ? 
                             Integer.parseInt(exprNode.attributes.get("propertytypeidx")) : -1;
         
@@ -631,7 +631,7 @@ System.out.println("AbstractParsedStmt:247:" );
             tableScan = (StmtTableScan)graphScan;
         }   
         else {
-            System.out.println("AbstractParsedStmt:633");
+            // System.out.println("AbstractParsedStmt:633");
             resolvedExpr = tableScan.resolveTVE(expr);
         }
         // End LX
@@ -1510,7 +1510,7 @@ System.out.println("AbstractParsedStmt:247:" );
         for (VoltXMLElement childNode : graphNode.children) {
             if (!childNode.name.equalsIgnoreCase("graphscan")) 
                 continue;
-            System.out.println("AbstractParsedStmt:1504:" + debugct);
+            // System.out.println("AbstractParsedStmt:1504:" + debugct);
             debugct++;
             String oldGraphName = childNode.attributes.get("oldgraph");
             String newGraphName = childNode.attributes.get("newgraph");
@@ -1583,7 +1583,7 @@ System.out.println("AbstractParsedStmt:247:" );
     * @param tableNode
     */
    private void parseGraph(VoltXMLElement tableNode) {
-System.out.println("AbstractParsedStmt:1488:" + tableNode);
+// System.out.println("AbstractParsedStmt:1488:" + tableNode);
        String tableName = tableNode.attributes.get("graph");
        assert(tableName != null);
 

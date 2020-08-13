@@ -20,15 +20,25 @@ int Vertex::fanIn()
 }
 
 // int Vertex::getOutEdgeId(int index)
-std::string Vertex::getOutEdgeId(int index) // LX FEAT2
+unsigned Vertex::getOutEdgeId(int index) // LX FEAT2
 {
 	return this->m_outEdgeIds[index];
 }
 
 // int Vertex::getInEdgeId(int index)
-std::string Vertex::getInEdgeId(int index) // LX FEAT2
+unsigned Vertex::getInEdgeId(int index) // LX FEAT2
 {
 	return this->m_inEdgeIds[index];
+}
+
+std::vector<unsigned> Vertex::getAllOutEdges()
+{
+	return this->m_outEdgeIds;
+}
+
+std::vector<unsigned> Vertex::getAllInEdges()
+{
+	return this->m_inEdgeIds;
 }
 
 Edge* Vertex::getOutEdge(int index)

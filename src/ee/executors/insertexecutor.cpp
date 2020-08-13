@@ -199,7 +199,7 @@ bool InsertExecutor::p_execute_init_internal(const TupleSchema *inputSchema,
             !m_sourceIsPartitioned && m_engine->getPartitionId() != 0) {
         m_count_tuple.setNValue(0, ValueFactory::getBigIntValue(0L));
         // put the tuple into the output table
-        cout << "InsertExecutor:202" << endl;
+        // cout << "InsertExecutor:202" << endl;
         m_tmpOutputTable->insertTuple(m_count_tuple);
         return false;
     }
@@ -338,9 +338,9 @@ void InsertExecutor::p_execute_tuple_internal(TableTuple &tuple) {
         // use it when doing the insert below.
         m_targetTable = m_persistentTable;
     }
-    cout << "InsertExecutor:341:" << endl;
+    // cout << "InsertExecutor:341:" << endl;
     m_targetTable->insertTuple(m_templateTuple);
-    cout << "InsertExecutor:343:" << m_targetTable->debug().c_str() << endl;
+    // cout << "InsertExecutor:343:" << m_targetTable->debug().c_str() << endl;
     VOLT_TRACE("Target table:\n%s\n", m_targetTable->debug().c_str());
     // successfully inserted
     ++m_modifiedTuples;
@@ -378,7 +378,7 @@ void InsertExecutor::p_execute_finish() {
     }
     m_count_tuple.setNValue(0, ValueFactory::getBigIntValue(m_modifiedTuples));
     // put the tuple into the output table
-    cout << "InsertExecutor:381" << endl;
+    // cout << "InsertExecutor:381" << endl;
     m_tmpOutputTable->insertTuple(m_count_tuple);
 
     // add to the planfragments count of modified tuples

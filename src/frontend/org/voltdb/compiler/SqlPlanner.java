@@ -156,9 +156,10 @@ final class SqlPlanner {
             if (m_isSwapTables) {
                 planner.planSwapTables();
             } else {
+                // System.out.println("SqlPlanner:159");
                 planner.parse();
             }
-            System.out.println("SqlPlanner:161");
+            
             m_parsedToken = planner.parameterize();
 
             // check the parameters count
@@ -193,7 +194,7 @@ final class SqlPlanner {
                 }
             }
             // If not caching or there was no cache hit, do the expensive full planning.
-            System.out.println("SqlPlanner:196");
+            // System.out.println("SqlPlanner:196");
             return plan(planner);
         } catch (Exception e) {
             /*

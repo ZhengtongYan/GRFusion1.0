@@ -84,6 +84,9 @@ public:
     CountingPostfilter(const AbstractTempTable* table, const AbstractExpression * postPredicate, int limit, int offset,
         CountingPostfilter* parentPostfilter = NULL);
 
+    // LX FEAT4 a new constructor for eval tuple that doesn't require a table output
+    CountingPostfilter(const AbstractExpression * postPredicate, int limit, int offset, CountingPostfilter* parentPostfilter = NULL);    
+
     // Returns true is LIMIT is not reached yet
     bool isUnderLimit() const {
         return m_under_limit;

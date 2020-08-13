@@ -924,10 +924,6 @@ class __attribute__((visibility("default"))) VoltDBEngine {
         static VoltEEExceptionType s_loadTableException;
         static int s_drHiddenColumnSize;
 
-        int64_t m_timestamp;
-        bool m_isStreamUpdate;
-        std::string m_catalogPayload;
-
 };
 
 inline bool startsWith(const string& s1, const string& s2) {

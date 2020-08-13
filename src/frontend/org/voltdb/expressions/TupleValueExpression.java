@@ -236,7 +236,7 @@ public class TupleValueExpression extends AbstractValueExpression {
      * @param columnIndex The index of the column to set
      */
     public void setColumnIndex(int columnIndex) {
-        System.out.println("tve:239:" + m_columnIndex + ", " + columnIndex);
+        // System.out.println("tve:239:" + m_columnIndex + ", " + columnIndex);
         m_columnIndex = columnIndex;
     }
 
@@ -445,7 +445,7 @@ public class TupleValueExpression extends AbstractValueExpression {
     public void toJSONString(JSONStringer stringer) throws JSONException {
         super.toJSONString(stringer);
         stringer.keySymbolValuePair(Members.COLUMN_IDX, m_columnIndex);
-System.out.println("tve:448:" + m_columnIndex);
+// System.out.println("tve:448:" + m_columnIndex);
         // Added by LX
         if (m_graphObject != null) {
             stringer.keySymbolValuePair(Members.GRAPH_OBJECT, m_graphObject);
@@ -490,7 +490,7 @@ System.out.println("tve:448:" + m_columnIndex);
         assert(column != null);
         m_tableName = table.getTypeName();
         m_columnIndex = column.getIndex();
-        System.out.println("tve:492:" + m_columnIndex);
+        // System.out.println("tve:492:" + m_columnIndex);
         setTypeSizeAndInBytes(column);
     }
 
@@ -526,7 +526,7 @@ System.out.println("tve:448:" + m_columnIndex);
     public void resolveForGraph(GraphView graph, String type) {
         assert(graph != null);
         Column column;
-        System.out.println("TupleValueExpression:501:" + m_columnName + ", " + type);
+        // System.out.println("TupleValueExpression:501:" + m_columnName + ", " + type);
         if (type == "path") {
             column = graph.getPathprops().getExact(m_columnName);
             if (m_graphObject == null) 
@@ -550,7 +550,7 @@ System.out.println("tve:448:" + m_columnIndex);
         assert(column != null);
         m_tableName = graph.getTypeName();
         m_columnIndex = column.getIndex();
-        System.out.println("tve:527:" + m_columnIndex);
+        // System.out.println("tve:527:" + m_columnIndex);
         setTypeSizeAndInBytes(column);
         // setTypeSizeBytes(column.getType(), column.getSize(), column.getInbytes());
     }
@@ -567,7 +567,7 @@ System.out.println("tve:448:" + m_columnIndex);
             //* enable to debug*/ System.out.println("DEBUG: setColumnIndex candidates: " + inputSchema);
             return index;
         }
-        System.out.println("tve:545" + m_tableName + ", " + m_columnName);
+        // System.out.println("tve:545" + m_tableName + ", " + m_columnName);
 
         // LX FEAT2 FEAT3
         if (m_graphObject != "VERTEXES" && m_graphObject != "EDGES")

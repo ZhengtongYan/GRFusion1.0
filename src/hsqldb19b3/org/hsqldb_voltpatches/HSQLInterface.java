@@ -156,6 +156,7 @@ public class HSQLInterface {
             Session sessionProxy = DatabaseManager.newSession(DatabaseURL.S_MEM, name, "SA", "", props, 0);
             // make HSQL case insensitive
             sessionProxy.executeDirectStatement("SET IGNORECASE TRUE;");
+            // System.out.println("HSQLInterface:159");
             sessionProxy.setParameterStateManager(psMgr);
             return new HSQLInterface(sessionProxy);
         }
@@ -226,7 +227,7 @@ public class HSQLInterface {
         }
 
         runDDLCommand(ddl);
-        System.out.println("HSQLInterface:229");
+        // System.out.println("HSQLInterface:229");
         // If we expect to fail, but the statement above didn't bail...
         // (Shouldn't get here ever I think)
         if (expectFailure) {
@@ -240,13 +241,15 @@ public class HSQLInterface {
         if (expectedTableAffected != null) {
             // tableXMLNew = getXMLForTable(expectedTableAffected); comment LX
             // Add LX
-            System.out.println("HSQLInterface:243");
-            if (stmtInfo.noun == HSQLDDLInfo.Noun.GRAPH)
+            // System.out.println("HSQLInterface:243");
+            if (stmtInfo.noun == HSQLDDLInfo.Noun.GRAPH)  {
+                // System.out.println("HSQLInterface:246");
                 tableXMLNew = getXMLForGraph(expectedTableAffected);
+            }
             else tableXMLNew = getXMLForTable(expectedTableAffected);
             // End LX
             tableXMLOld = lastSchema.get(expectedTableAffected);
-            System.out.println("HSQLInterface:249");
+            // System.out.println("HSQLInterface:249");
         }
 
         // valid reasons for tableXMLNew to be null are DROP IF EXISTS and not much else
@@ -285,7 +288,7 @@ public class HSQLInterface {
         if (expectedTableAffected != null) {
             lastSchema.put(expectedTableAffected, tableXMLNew.duplicate());
         }
-        System.out.println("HSQLInterface:229");
+        // System.out.println("HSQLInterface:289");
         return diff;
     }
 
@@ -299,12 +302,15 @@ public class HSQLInterface {
         // search all the graphs XXX probably could do this non-linearly,
         //  but i don't know about case-insensitivity yet
         HashMappedList hsqlGraphs = getHSQLGraphs();
+        // System.out.println("HSQLInterface:305:" + graphName + ".");
         for (int i = 0; i < hsqlGraphs.size(); i++) {
+            // System.out.println("HSQLInterface:306:" + i);
             GraphView graph = (GraphView) hsqlGraphs.get(i);
-            String candidateGraphName = graph.getName().name;
-
+            String candidateGraphName = graph.getName().name.toLowerCase();
+// System.out.println("HSQLInterface:306:" + candidateGraphName + ".");
             // found the graph of interest
-            if (candidateGraphName.equalsIgnoreCase(graphName)) {
+            if (candidateGraphName.equalsIgnoreCase(graphName.toLowerCase())) {
+                // System.out.println("HSQLInterface:313:");
                 VoltXMLElement vxmle = graph.voltGetGraphXML(sessionProxy);
                 assert(vxmle != null);
                 xml.children.add(vxmle);
@@ -329,11 +335,11 @@ public class HSQLInterface {
     public void runDDLCommand(String ddl) throws HSQLParseException {
         sessionProxy.clearLocalTables();
         Result result = sessionProxy.executeDirectStatement(ddl);
-        System.out.println("HSQLInterface:328");
+        // System.out.println("HSQLInterface:328");
         if (result.hasError()) {
             throw new HSQLParseException(result.getMainString());
         }
-        System.out.println("HSQLInterface:332");
+        // System.out.println("HSQLInterface:332");
     }
 
     /**
@@ -377,7 +383,7 @@ public class HSQLInterface {
 
         try {
             cs = sessionProxy.compileStatement(sql);
-            System.out.println("HSQLInterface:374");
+            // System.out.println("HSQLInterface:374");
         } catch (HsqlException caught) {
             // a switch in case we want to give more error details on additional error codes
             switch(caught.getErrorCode()) {
@@ -412,7 +418,7 @@ public class HSQLInterface {
                     "An unexpected system error was logged by the SQL parser for statement \"" + sql + "\" ",
                     caught);
         }
-        System.out.println("HSQLInterface:409");
+        // System.out.println("HSQLInterface:409");
         //Result result = Result.newPrepareResponse(cs.id, cs.type, rmd, pmd);
         Result result = Result.newPrepareResponse(cs);
         if (result.hasError()) {
@@ -420,9 +426,9 @@ public class HSQLInterface {
         }
 
         VoltXMLElement xml = null;
-        System.out.println("HSQLInterface:417");
+        // System.out.println("HSQLInterface:417");
         xml = cs.voltGetStatementXML(sessionProxy);
-        System.out.println("HSQLInterface:419");
+        // System.out.println("HSQLInterface:419");
         if (m_logger.isDebugEnabled()) {
             try {
                 /*

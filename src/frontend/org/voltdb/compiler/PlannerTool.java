@@ -112,14 +112,13 @@ public class PlannerTool {
             }
             try {
                 m_hsql.runDDLCommand(decoded_cmd);
-                System.out.println("PlannerTool:115");
             } catch (HSQLParseException e) {
                 // need a good error message here
                 throw new RuntimeException("Error creating hsql: " + e.getMessage() + " in DDL statement: " + decoded_cmd);
             }
         }
         hostLog.debug("hsql loaded");
-        System.out.println("PlannerTool:122");
+
         // Create and register a singleton planner stats collector, if this is the first time.
         if (m_plannerStats == null) {
             synchronized (this.getClass()) {
@@ -133,7 +132,6 @@ public class PlannerTool {
                 }
             }
         }
-        System.out.println("PlannerTool:136");
     }
 
     public PlannerTool(final Database database, byte[] catalogHash, SchemaPlus schemaPlus) {
@@ -166,7 +164,6 @@ public class PlannerTool {
     }
 
     public AdHocPlannedStatement planSqlForTest(String sqlIn) {
-        // System.out.println("PlannerTool:167");
         StatementPartitioning infer = StatementPartitioning.inferPartitioning();
         return planSql(sqlIn, infer, false, null, false, false);
     }
@@ -191,6 +188,7 @@ public class PlannerTool {
                 costModel, null, null, DeterminismMode.FASTER, false)) {
 
             // do the expensive full planning.
+            // System.out.println("PlannerTool:194");
             planner.parse();
             // System.out.println("PlannerTool:192");
             plan = planner.plan();
@@ -385,7 +383,7 @@ public class PlannerTool {
                 // OUTPUT THE RESULT
                 //////////////////////
                 final CorePlan core = new CorePlan(plan, m_catalogHash);
-                System.out.println("PlannerTool:388");
+                // System.out.println("PlannerTool:388");
                 final AdHocPlannedStatement ahps = new AdHocPlannedStatement(plan, core);
 
                 // Do not put wrong parameter explain query into cache.
@@ -397,7 +395,7 @@ public class PlannerTool {
                     // to -1 and to null, respectively.
                     core.setPartitioningParamIndex(partitioning.getInferredParameterIndex());
                     core.setPartitioningParamValue(partitioning.getInferredPartitioningValue());
-                    System.out.println("PlannerTool:388:.............");
+                    // System.out.println("PlannerTool:388:.............");
                     assert (parsedToken != null);
                     // Again, plans with inferred partitioning are the only ones supported in the cache.
                     m_cache.put(sql, parsedToken, ahps, planner.getExtractedLiterals(), planner.hasQuestionMark(),

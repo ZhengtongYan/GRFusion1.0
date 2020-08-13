@@ -1960,7 +1960,7 @@ public abstract class SubPlanAssembler {
         {
             SeqScanPlanNode scanNode = null;
             // build the scan node
-            System.out.println("SubPlanAssembler:1962:" + ((StmtTargetGraphScan)graphScan).getGraphElementName());
+            // System.out.println("SubPlanAssembler:1962:" + ((StmtTargetGraphScan)graphScan).getGraphElementName());
             if (((StmtTargetGraphScan)graphScan).getGraphElementName() == "VERTEXES")
                 scanNode = new VertexScanPlanNode(graphScan);
             else if (((StmtTargetGraphScan)graphScan).getGraphElementName() == "EDGES")

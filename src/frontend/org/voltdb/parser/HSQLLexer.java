@@ -52,7 +52,7 @@ public class HSQLLexer extends SQLPatternFactory
             SPF.capture("verb", SPF.tokenAlternatives("create", "drop", "alter")),
             SPF.optional(SPF.capture("dir", SPF.tokenAlternatives("directed", "undirected"))),
             SPF.capture("object", SPF.tokenAlternatives("graph")),
-            SPF.capture("obj2", SPF.tokenAlternatives("view")),
+            SPF.capture("obj2", SPF.tokenAlternatives("view")), 
             SPF.capture("name", SPF.databaseObjectName()),  // table/view/index name
             SPF.optional(SPF.clause(
                     SPF.token("on"),
@@ -80,7 +80,6 @@ public class HSQLLexer extends SQLPatternFactory
         // if (matcher.find()) {
         //org.voltdb.VLog.GLog("HSQLLexer", "preprocessHSQLDDL", 668, 
         //      "HSQL_DDLGRAPH_PREPROCESSOR is called");
-        
         // Added by LX
         Matcher matcher = HSQL_DDLGRAPH_PREPROCESSOR.matcher(ddl);
         boolean found = matcher.find(); 
@@ -91,6 +90,24 @@ public class HSQLLexer extends SQLPatternFactory
             matcher = HSQL_DDL_PREPROCESSOR.matcher(ddl);
             found = matcher.find(); 
         }
+
+        // LX FEAT4 add for select g2g
+        // TODO: use the pattern matcher instead of this 
+        String newGraphName = null;
+        boolean selectGraph = false;
+        if (!found) {
+            if ((ddl.toLowerCase()).startsWith("create graph(")) {
+                found = true;
+                selectGraph = true;
+                String[] tokenArr = (ddl.toLowerCase()).split(" ");
+                for (int i = 0; i < tokenArr.length; i++) {
+                    if (tokenArr[i].equals("into")) {
+                        newGraphName = tokenArr[i+1];
+                        break;
+                    }
+                }
+            }
+        }
         
         // Added by LX
         if (found) {
@@ -98,13 +115,25 @@ public class HSQLLexer extends SQLPatternFactory
             // Matcher matcher = HSQL_DDL_PREPROCESSOR.matcher(ddl);
             // if (matcher.find()) {
             // End LX
-            String verbString = matcher.group("verb");
+
+            // LX FEAT4 rewrite the following
+            String verbString = null;
+            if (selectGraph)
+                verbString = "create";
+            else
+                verbString = matcher.group("verb");
+
             HSQLDDLInfo.Verb verb = HSQLDDLInfo.Verb.get(verbString);
             if (verb == null) {
                 return null;
             }
 
-            String nounString = matcher.group("object");
+            String nounString;
+            if (selectGraph)
+                nounString = "graph";
+            else
+                nounString = matcher.group("object");
+
             HSQLDDLInfo.Noun noun = HSQLDDLInfo.Noun.get(nounString);
             if (noun == null) {
                 return null;
@@ -112,12 +141,21 @@ public class HSQLLexer extends SQLPatternFactory
             boolean createStream = verb.equals(HSQLDDLInfo.Verb.CREATE) &&
                                    noun.equals(HSQLDDLInfo.Noun.STREAM);
 
-            String name = matcher.group("name");
+            String name;
+            if (selectGraph)
+                name = newGraphName;
+            else
+                name = matcher.group("name");
+
             if (name == null) {
                 return null;
             }
 
-            String secondName = matcher.group("subject");
+            String secondName;
+            if (selectGraph)
+                secondName = null;
+            else
+                secondName = matcher.group("subject");
             if (secondName != null) {
                 secondName = secondName.toLowerCase();
             }

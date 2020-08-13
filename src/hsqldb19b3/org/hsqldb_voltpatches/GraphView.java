@@ -24,6 +24,13 @@ public class GraphView implements SchemaObject {
     protected boolean isDirected;
     protected int type;
 	
+    private String subGraphVertexPredicate;
+    private String subGraphEdgePredicate;
+    private String chosenVertexLabel; // for feat4. The label in the predicate
+    private String chosenEdgeLabel;
+    private String oldGraphName;
+    private String fromWhichTable; // just a hack
+
     HashMappedList VSubQueryList;// map label to vquery index LX FEAT2
     HashMappedList ESubQueryList; // LX FEAT3
 
@@ -81,6 +88,8 @@ public class GraphView implements SchemaObject {
     
 
     String Hint;
+
+    
 	
     public GraphView(Database database, HsqlName name, int type) {
     	this.database = database;
@@ -94,18 +103,18 @@ public class GraphView implements SchemaObject {
         VSubQueryList = new HashMappedList();//LX FEAT2
         VLabelList = new ArrayList<String>(); // LX FEAT2
 
-        ETableNameList = new HashMappedList();//LX FEAT3
-        ESubQueryList = new HashMappedList();//LX FEAT3
-        ELabelList = new ArrayList<String>(); // LX FEAT3
+        ETableNameList = new HashMappedList();
+        ESubQueryList = new HashMappedList();
+        ELabelList = new ArrayList<String>(); 
 
-        EStartVertexLabelList = new HashMappedList(); // LX FEAT3
-        EEndVertexLabelList = new HashMappedList(); // LX FEAT3
+        EStartVertexLabelList = new HashMappedList(); 
+        EEndVertexLabelList = new HashMappedList(); 
     	
     	AllPropList     = new ArrayList();
-        AllVTableList   = new ArrayList<HsqlName>();// LX FEAT2
-        AllVSubQueryList = new ArrayList<String>();// LX FEAT2
+        AllVTableList   = new ArrayList<HsqlName>();
+        AllVSubQueryList = new ArrayList<String>();
 
-        AllETableList   = new ArrayList<HsqlName>();// LX FEAT3
+        AllETableList   = new ArrayList<HsqlName>();
         AllESubQueryList = new ArrayList<String>();// LX FEAT3
 
         idxToVIdx0           = new HashMappedList(); // LX FEAT2
@@ -127,6 +136,159 @@ public class GraphView implements SchemaObject {
         GraphPropList   = new HashMappedList(); // LX FEAT4
         graphPropCount =  0; // LX FEAT4
     	
+    }
+
+
+    public HashMappedList getVTableNameList() {
+        return VTableNameList;
+    }
+
+    public HashMappedList getVSubQueryList() {
+        return VSubQueryList;
+    }
+
+    public HashMappedList getETableNameList() {
+        return ETableNameList;
+    }
+
+    public HashMappedList getESubQueryList() {
+        return ESubQueryList;
+    }
+
+    public HashMappedList getEStartVertexLabelList() {
+        return EStartVertexLabelList;
+    }
+
+    public HashMappedList getEEndVertexLabelList() {
+        return EEndVertexLabelList;
+    }
+
+    public ArrayList getAllPropList() {
+        return AllPropList;
+    }
+
+    public ArrayList<HsqlName> getAllVTableList() {
+        return AllVTableList;
+    }
+
+    public ArrayList<String> getAllVSubQueryList() {
+        return AllVSubQueryList;
+    }
+
+    public ArrayList<HsqlName> getAllETableList() {
+        return AllETableList;
+    }
+
+    public ArrayList<String> getAllESubQueryList() {
+        return AllESubQueryList;
+    }
+
+    public HashMappedList getidxToVIdx0() {
+        return idxToVIdx0;
+    }
+
+    public HashMappedList getidxToEIdx0() {
+        return idxToEIdx0;
+    }
+
+    public HashMappedList getidxToPIdx0() {
+        return idxToPIdx0;
+    }
+
+    public HashMappedList getidxToGIdx0() {
+        return idxToGIdx0;
+    }
+
+    public HashMappedList getidxToPropTypeList() {
+        return idxToPropTypeList;
+    }
+
+    public HashMappedList getidxToVLabelIdxList() {
+        return idxToVLabelIdxList;
+    }
+
+    public HashMappedList getidxToELabelIdxList() {
+        return idxToELabelIdxList;
+    }
+
+    public HashMappedList getVertexPropList() {
+        return VertexPropList;
+    }
+
+    public HashMappedList getEdgePropList() {
+        return EdgePropList;
+    }
+    
+    public HashMappedList getPathPropList() {
+        return PathPropList;
+    }
+    
+    public HashMappedList getGraphPropList() {
+        return GraphPropList;
+    }
+
+    public int getVertexPropCount() {
+        return vertexPropCount;
+    }
+
+    public int getEdgePropCount() {
+        return edgePropCount;
+    }
+
+    public int getPathPropCount() {
+        return pathPropCount;
+    }
+
+    public int getGraphPropCount() {
+        return graphPropCount;
+    }
+
+    
+    public GraphView(Database database, HsqlName name, int type, GraphView g) {
+        this.database = database;
+        GraphName = name;
+        
+        this.type = g.getType();
+        if (type == TableBase.DIRECTED_GRAPH) isDirected = true;
+        else isDirected = false;
+
+        VTableNameList = g.getVTableNameList();
+        VSubQueryList = g.getVSubQueryList();
+        VLabelList = g.getVertexLabelList(); 
+
+        ETableNameList = g.getETableNameList();
+        ESubQueryList = g.getESubQueryList();
+        ELabelList = g.getEdgeLabelList(); 
+
+        EStartVertexLabelList = g.getEStartVertexLabelList();
+        EEndVertexLabelList = g.getEEndVertexLabelList();
+        
+        AllPropList     = g.getAllPropList();
+        AllVTableList   = g.getAllVTableList();
+        AllVSubQueryList = g.getAllVSubQueryList();
+
+        AllETableList   = g.getAllETableList();
+        AllESubQueryList = g.getAllESubQueryList();
+
+        idxToVIdx0           = g.getidxToVIdx0();
+        idxToEIdx0           = g.getidxToEIdx0();
+        idxToPIdx0           = g.getidxToPIdx0();
+        idxToGIdx0           = g.getidxToGIdx0();
+
+        idxToPropTypeList    = g.getidxToPropTypeList();
+
+        idxToVLabelIdxList    = g.getidxToVLabelIdxList();
+        idxToELabelIdxList    = g.getidxToELabelIdxList();
+
+        VertexPropList  = g.getVertexPropList();
+        vertexPropCount = g.getVertexPropCount();
+        EdgePropList    = g.getEdgePropList();
+        edgePropCount = g.getEdgePropCount();
+        PathPropList    = g.getPathPropList();
+        pathPropCount = g.getPathPropCount();
+        GraphPropList   = g.getGraphPropList();
+        graphPropCount =  g.getGraphPropCount(); // LX FEAT4
+        
     }
     
     /*
@@ -214,7 +376,7 @@ public class GraphView implements SchemaObject {
     	addPathPropNoCheck(col);
     	
     }
-    
+
 	@Override
 	public int getType() {
 		// TODO Auto-generated method stub
@@ -297,11 +459,19 @@ public class GraphView implements SchemaObject {
 
         graphxml.attributes.put("isdirected", String.valueOf(isDirected));        
         graphxml.attributes.put("DDL", statement);
+        // LX FEAT4: stores the predicate to select the subgraph
+        graphxml.attributes.put("subGraphVertexPredicate", subGraphVertexPredicate); 
+        graphxml.attributes.put("subGraphEdgePredicate", subGraphEdgePredicate); 
+        graphxml.attributes.put("chosenVertexLabel", chosenVertexLabel);
+        graphxml.attributes.put("chosenEdgeLabel", chosenEdgeLabel);
+        graphxml.attributes.put("oldGraphName", oldGraphName);
+        graphxml.attributes.put("fromWhichTable", fromWhichTable);
         
         // LX FEAT2        
         for (int i = 0; i < VLabelList.size(); i++){
             VoltXMLElement vertex = new VoltXMLElement("vertex");
             String curLabel = VLabelList.get(i);
+
             vertex.attributes.put("vlabel", curLabel);
             vertex.attributes.put("Vtable", AllVTableList.get((int)VTableNameList.get(curLabel)).name);
             vertex.attributes.put("Vquery", AllVSubQueryList.get((int)VSubQueryList.get(curLabel)));
@@ -334,7 +504,7 @@ public class GraphView implements SchemaObject {
             edge.attributes.put("Equery", AllESubQueryList.get((int)ESubQueryList.get(curLabel)));
             edge.attributes.put("StartVLabel", (String)EStartVertexLabelList.get(curLabel));
             edge.attributes.put("EndVLabel", (String)EEndVertexLabelList.get(curLabel));
-       
+
             for (int j = 0; j < getAllPropCount(); j++){
                 if (idxToPropTypeList.get(j) == EDGE ){
                     if ((int)idxToELabelIdxList.get(idxToELabelIdxList.getIndex(j)) == ELabelList.indexOf(curLabel)){
@@ -345,6 +515,7 @@ public class GraphView implements SchemaObject {
                         propChild.attributes.put("index0", Integer.toString((int)idxToEIdx0.get(idxToEIdx0.getIndex(j))));
                         edge.children.add(propChild);
                         assert(propChild != null);
+                        // System.out.println("2:index:" + j + ", index0:" + Integer.toString((int)idxToEIdx0.get(idxToEIdx0.getIndex(j))));
                     }
                 }
             }
@@ -388,6 +559,30 @@ public class GraphView implements SchemaObject {
         graphxml.children.add(graph);
         
         return graphxml;
+    }
+
+    public void setSubgraphVertexPredicate(String pred) {
+        subGraphVertexPredicate = pred;
+    }
+
+    public void setSubgraphEdgePredicate(String pred) {
+        subGraphEdgePredicate = pred;
+    }
+
+    public void setFromWhichTable(String t) {
+        fromWhichTable = t;
+    }
+
+    public void setChosenVertexLabel(String lab) {
+        chosenVertexLabel = lab;
+    }
+
+    public void setChosenEdgeLabel(String lab) {
+        chosenEdgeLabel = lab;
+    }
+
+    public void setOldGraphName(String name) {
+        oldGraphName = name;
     }
 
     // LX FEAT3

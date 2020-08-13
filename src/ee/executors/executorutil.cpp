@@ -56,4 +56,12 @@ CountingPostfilter::CountingPostfilter(const AbstractTempTable* table, const Abs
     m_offset(offset),
     m_under_limit(true) {}
 
+// LX FEAT4 
+CountingPostfilter::CountingPostfilter(const AbstractExpression * postPredicate, int limit, int offset, CountingPostfilter* parentPostfilter) :
+    m_postPredicate(postPredicate),
+    m_parentPostfilter(parentPostfilter),
+    m_limit(limit),
+    m_offset(offset),
+    m_under_limit(true) {}
+
 }

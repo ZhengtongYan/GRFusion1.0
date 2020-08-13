@@ -69,6 +69,9 @@ public abstract class StatementDMQL extends Statement {
     public static final String PCOL_PREFIX        = "@p";
     static final String        RETURN_COLUMN_NAME = "@p0";
 
+    // LX FEAT4
+    boolean isGraph2Graph;
+
     /** target table for INSERT_XXX, UPDATE and DELETE and MERGE */
     Table targetTable;
     Table baseTable;
@@ -178,6 +181,12 @@ public abstract class StatementDMQL extends Statement {
 
         this.schemaName             = schemaName;
         this.isTransactionStatement = true;
+        this.isGraph2Graph = false; // LX FEAT4
+    }
+
+    // LX FEAT4
+    public boolean getisGraph2Graph() {
+        return isGraph2Graph;
     }
 
     void setBaseIndexColumnMap() {

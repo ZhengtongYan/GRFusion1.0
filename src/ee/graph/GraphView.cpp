@@ -7,12 +7,15 @@
 #include "common/tabletuple.h"
 #include "common/TupleSchemaBuilder.h"
 #include "logging/LogManager.h"
+#include "expressions/expressionutil.h"
 #include "PathIterator.h"
 #include "Vertex.h"
 #include "Edge.h"
 #include <string>
 #include <map>
 #include <unordered_set>
+#include "executors/executorutil.h"
+#include "execution/ProgressMonitorProxy.h"
 
 #include <queue>
 using namespace std;
@@ -25,222 +28,6 @@ GraphView::GraphView(void) //: m_pathIterator(this)
 	m_pathIterator = new PathIterator(this);
 }
 
-float GraphView::shortestPath(int source, int destination, int costColumnId)
-{
-	//TODO: write real shortest path code that consults the edges table using costColumnId
-	return (float)source * destination;
-}
-
-std::map<string, Vertex*> GraphView::getVertexMap() 
-{
-	return this->m_vertexes;
-}
-
-// Vertex* GraphView::getVertex(int id)
-Vertex* GraphView::getVertex(string id) // LX FEAT2
-{
-	return this->m_vertexes[id];
-}
-
-// LX FEAT2
-Table* GraphView::getVertexTableById(string id)
-{
-	return this->m_idToVTableMap[id];
-}
-
-void GraphView::setVertexTableMap(std::string id, Table* table) {
-	this->m_idToVTableMap[id] = table;
-}
-
-// LX FEAT3
-Table* GraphView::getEdgeTableById(string id)
-{
-	return this->m_idToETableMap[id];
-}
-
-// LX FEAT4
-void GraphView::addToSubgraphList(string name) {
-	this->m_subgraphList.push_back(name);
-}
-
-// LX FEAT4
-void GraphView::addToSubgraphVertex(std::vector<Vertex*> subgraphVertex) {
-	this->m_subgraphVertexList.push_back(subgraphVertex);
-}
-
-// LX FEAT4
-void GraphView::addToSubgraphEdge(std::vector<Edge*> subgraphEdge) {
-	this->m_subgraphEdgeList.push_back(subgraphEdge);
-}
-
-// TableTuple* GraphView::getVertexTuple(int id)
-TableTuple* GraphView::getVertexTuple(string id) // LX FEAT2
-{
-	Vertex* v = this->getVertex(id);
-	Table* t = this->getVertexTableById(id);
-	return new TableTuple(v->getTupleData(), t->schema());
-}
-
-// Edge* GraphView::getEdge(int id)
-Edge* GraphView::getEdge(string id) // LX FEAT2
-{
-	return this->m_edges[id];
-}
-
-// TableTuple* GraphView::getEdgeTuple(int id)
-TableTuple* GraphView::getEdgeTuple(string id) // LX FEAT2
-{
-	Edge* e = this->getEdge(id);
-	Table* t = this->getEdgeTableById(id);
-	return new TableTuple(e->getTupleData(), t->schema());
-}
-
-// TableTuple* GraphView::getEdgeTuple(char* data)
-// {
-// 	return new TableTuple(data, this->m_edgeTable->schema());
-// }
-
-// void GraphView::addVertex(int id, Vertex* vertex)
-void GraphView::addVertex(string id, Vertex* vertex) // LX FEAT2
-{
-	this->m_vertexes[id] = vertex;
-}
-	
-// void GraphView::addEdge(int id, Edge* edge)
-void GraphView::addEdge(string id, Edge* edge) // LX FEAT2
-{
-	this->m_edges[id] = edge;
-}
-
-// Table* GraphView::getVertexTable()
-// {
-// 	return this->m_vertexTables[0]; // LX FEAT2 keep for debugging purpose
-// }
-
-std::vector<Table*> GraphView::getVertexTables() {
-	return this->m_vertexTables;
-}
-
-std::vector<Table*> GraphView::getEdgeTables() {
-	return this->m_edgeTables;
-}
-
-std::vector<std::string> GraphView::getVertexLabels() {
-	return this->m_vertexLabels;
-}
-
-std::vector<std::string> GraphView::getEdgeLabels() {
-	return this->m_edgeLabels;
-}
-
-Table* GraphView::getVertexTableByIndex(int idx) {
-	return this->m_vertexTables[idx];
-}
-
-Table* GraphView::getEdgeTableByIndex(int idx) {
-	return this->m_edgeTables[idx];
-}
-
-std::string GraphView::getVertexLabelByIndex(int idx) {
-	return this->m_vertexLabels[idx];
-}
-
-std::string GraphView::getEdgeLabelByIndex(int idx) {
-	return this->m_edgeLabels[idx];
-}
-
-
-// LX FEAT2
-Table* GraphView::getVertexTableFromLabel(string vlabel)
-{
-	for (int i = 0; i < (this->m_vertexLabels).size(); i++){
-		if (((this->m_vertexLabels[i]).compare(vlabel)) == 0)
-			return this->m_vertexTables[i];
-	}
-	return NULL;
-}
-
-// LX FEAT3
-Table* GraphView::getEdgeTableFromLabel(string elabel)
-{
-	for (int i = 0; i < (this->m_edgeLabels).size(); i++){
-		if (((this->m_edgeLabels[i]).compare(elabel)) == 0)
-			return this->m_edgeTables[i];
-	}
-	return NULL;
-}
-
-// Table* GraphView::getEdgeTable()
-// {
-// 	return this->m_edgeTable;
-// }
-
-int GraphView::getVertexIdColIdxList(std::string label) {
-	return this->m_vertexIdColIdxList[label];
-}
-
-Table* GraphView::getPathTable()
-{
-	return this->m_pathTable;
-}
-
-// LX FEAT4
-Table* GraphView::getGraphTable()
-{
-	return this->m_graphTable;
-}
-
-int GraphView::numOfVertexes()
-{
-	return this->m_vertexes.size();
-}
-
-TupleSchema* GraphView::getVertexSchema()
-{
-	return m_vertexSchema;
-}
-
-TupleSchema* GraphView::getEdgeSchema()
-{
-	return m_edgeSchema;
-}
-
-TupleSchema* GraphView::getPathSchema()
-{
-	return m_pathSchema;
-}
-
-// LX FEAT4
-TupleSchema* GraphView::getGraphSchema()
-{
-	return m_graphSchema;
-}
-
-void GraphView::setVertexSchema(TupleSchema* s)
-{
-	m_vertexSchema = s;
-}
-
-void GraphView::setEdgeSchema(TupleSchema* s)
-{
-	m_edgeSchema = s;
-}
-
-void GraphView::setPathSchema(TupleSchema* s)
-{
-	m_pathSchema = s;
-}
-
-// LX FEAT4
-void GraphView::setGraphSchema(TupleSchema* s)
-{
-	m_graphSchema = s;
-}
-	
-int GraphView::numOfEdges()
-{
-	return this->m_edges.size();
-}
 
 string GraphView::name()
 {
@@ -252,9 +39,194 @@ bool GraphView::isDirected()
 	return m_isDirected;
 }
 
+////////////////////////////////////////////
+
+// get vertex
+int GraphView::numOfVertexes()
+{
+	return this->m_vertexes.size();
+}
+
+Vertex* GraphView::getVertex(unsigned id) // LX FEAT2
+{
+	return this->m_vertexes[id];
+}
+
+bool GraphView::hasVertex(unsigned id) 
+{
+	std::map<unsigned, Vertex*>::iterator it = this->m_vertexes.find(id);
+
+	if(it != this->m_vertexes.end())
+	{
+		return true;
+	}
+	return false;
+}
+
+TableTuple* GraphView::getVertexTuple(unsigned id) // LX FEAT2
+{
+	Vertex* v = this->getVertex(id);
+	Table* t = this->getVertexTableById(id);
+	return new TableTuple(v->getTupleData(), t->schema());
+}
+
+Table* GraphView::getVertexTableFromLabel(string vlabel)
+{
+	for (int i = 0; i < (this->m_vertexLabels).size(); i++){
+		if (((this->m_vertexLabels[i]).compare(vlabel)) == 0)
+			return this->m_vertexTables[i];
+	}
+	return NULL;
+}
+
+Table* GraphView::getVertexTableById(unsigned id)
+{
+	return this->m_idToVTableMap[id];
+}
+
+std::vector<Table*> GraphView::getVertexTables() {
+	return this->m_vertexTables;
+}
+
+std::vector<std::string> GraphView::getVertexLabels() {
+	return this->m_vertexLabels;
+}
+
+Table* GraphView::getVertexTableByIndex(int idx) {
+	return this->m_vertexTables[idx];
+}
+
+std::string GraphView::getVertexLabelByIndex(int idx) {
+	return this->m_vertexLabels[idx];
+}
+
+TupleSchema* GraphView::getVertexSchema()
+{
+	return m_vertexSchema;
+}
+
 int GraphView::getVertexIdColumnIndex()
 {
 	return m_vertexIdColumnIndex;
+}
+
+int GraphView::getColumnIdInVertexTable(int vertexAttributeId)
+{
+	// -1 means FanOut
+	// -2 means FanIn
+	// -3 invalid
+	// >= 0 means columnIndex
+	//int numOfVertexTableColumns = this->m_vertexTable->columnCount();
+	//if(vertexAttributeId >= numOfVertexTableColumns)
+	return m_columnIDsInVertexTable[vertexAttributeId];
+}
+
+string GraphView::getVertexAttributeName(int vertexAttributeId)
+{
+	return m_vertexColumnNames[vertexAttributeId];
+}
+
+std::map<unsigned, Vertex*> GraphView::getVertexMap() 
+{
+	return this->m_vertexes;
+}
+
+int GraphView::getIndexFromVertexLabels(string label) 
+{
+	std::vector<string>::iterator it;
+	it = find(this->m_vertexLabels.begin(), this->m_vertexLabels.end(), label);
+	if (it != this->m_vertexTables.end())
+		return distance(this->m_vertexLabels.begin(), it);
+	return 0;
+}
+
+void GraphView::setVertexSchema(TupleSchema* s)
+{
+	m_vertexSchema = s;
+}
+
+void GraphView::addVertex(unsigned id, Vertex* vertex) // LX FEAT2
+{
+	this->m_vertexes[id] = vertex;
+}
+	
+////////////////////////////////////////////
+
+// get edge
+int GraphView::numOfEdges()
+{
+	return this->m_edges.size();
+}
+
+std::map<unsigned, Edge*> GraphView::getEdgeMap() 
+{
+	return this->m_edges;
+}
+
+Table* GraphView::getEdgeTableById(unsigned id)
+{
+	return this->m_idToETableMap[id];
+}
+
+Edge* GraphView::getEdge(unsigned id) // LX FEAT2
+{
+	return this->m_edges[id];
+}
+
+bool GraphView::hasEdge(unsigned id) 
+{
+	std::map<unsigned, Edge*>::iterator it = this->m_edges.find(id);
+
+	if(it != this->m_edges.end())
+	{
+		return true;
+	}
+	return false;
+}
+
+TableTuple* GraphView::getEdgeTuple(unsigned id) // LX FEAT2
+{
+	Edge* e = this->getEdge(id);
+	Table* t = this->getEdgeTableById(id);
+	return new TableTuple(e->getTupleData(), t->schema());
+}
+
+std::vector<Table*> GraphView::getEdgeTables() {
+	return this->m_edgeTables;
+}
+
+std::vector<std::string> GraphView::getEdgeLabels() {
+	return this->m_edgeLabels;
+}
+
+std::vector<std::string> GraphView::getStartVertexLabels() {
+	return this->m_startVLabels;
+}
+
+std::vector<std::string> GraphView::getEndVertexLabels() {
+	return this->m_endVLabels;
+}
+
+Table* GraphView::getEdgeTableByIndex(int idx) {
+	return this->m_edgeTables[idx];
+}
+
+std::string GraphView::getEdgeLabelByIndex(int idx) {
+	return this->m_edgeLabels[idx];
+}
+
+Table* GraphView::getEdgeTableFromLabel(string elabel)
+{
+	for (int i = 0; i < (this->m_edgeLabels).size(); i++){
+		if (((this->m_edgeLabels[i]).compare(elabel)) == 0)
+			return this->m_edgeTables[i];
+	}
+	return NULL;
+}
+
+TupleSchema* GraphView::getEdgeSchema()
+{
+	return m_edgeSchema;
 }
 
 int GraphView::getEdgeIdColumnIndex()
@@ -272,30 +244,68 @@ int GraphView::getEdgeToColumnIndex()
 	return m_edgeToColumnIndex;
 }
 
-int GraphView::getColumnIdInVertexTable(int vertexAttributeId)
-{
-	// -1 means FanOut
-	// -2 means FanIn
-	// -3 invalid
-	// >= 0 means columnIndex
-	//int numOfVertexTableColumns = this->m_vertexTable->columnCount();
-	//if(vertexAttributeId >= numOfVertexTableColumns)
-	return m_columnIDsInVertexTable[vertexAttributeId];
-}
-
 int GraphView::getColumnIdInEdgeTable(int edgeAttributeId)
 {
 	return m_columnIDsInEdgeTable[edgeAttributeId];
 }
 
-string GraphView::getVertexAttributeName(int vertexAttributeId)
-{
-	return m_vertexColumnNames[vertexAttributeId];
-}
-
 string GraphView::getEdgeAttributeName(int edgeAttributeId)
 {
 	return m_edgeColumnNames[edgeAttributeId];
+}
+
+int GraphView::getIndexFromEdgeLabels(string label) 
+{
+	std::vector<string>::iterator it;
+	it = find(this->m_edgeLabels.begin(), this->m_edgeLabels.end(), label);
+	if (it != this->m_edgeTables.end())
+		return distance(this->m_edgeLabels.begin(), it);
+	return 0;
+}
+
+void GraphView::addEdge(unsigned id, Edge* edge) // LX FEAT2
+{
+	this->m_edges[id] = edge;
+}
+
+void GraphView::setEdgeSchema(TupleSchema* s)
+{
+	m_edgeSchema = s;
+}
+////////////////////////////////////////////
+
+// path
+Table* GraphView::getPathTable()
+{
+	return this->m_pathTable;
+}
+
+// LX FEAT4
+Table* GraphView::getGraphTable()
+{
+	return this->m_graphTable;
+}
+
+TupleSchema* GraphView::getPathSchema()
+{
+	return m_pathSchema;
+}
+
+// LX FEAT4
+TupleSchema* GraphView::getGraphSchema()
+{
+	return m_graphSchema;
+}
+
+void GraphView::setPathSchema(TupleSchema* s)
+{
+	m_pathSchema = s;
+}
+
+// LX FEAT4
+void GraphView::setGraphSchema(TupleSchema* s)
+{
+	m_graphSchema = s;
 }
 
 void GraphView::constructPathSchema()
@@ -327,7 +337,13 @@ void GraphView::constructPathSchema()
 	schemaBuilder.setColumnAtIndex(4, ValueType::tVARCHAR, 1024, true, false); //Path
 
 	m_pathSchema = schemaBuilder.build();
+}	
+float GraphView::shortestPath(int source, int destination, int costColumnId)
+{
+	//TODO: write real shortest path code that consults the edges table using costColumnId
+	return (float)source * destination;
 }
+
 
 void GraphView::constructPathTempTable()
 {
@@ -360,6 +376,9 @@ void GraphView::constructGraphTempTable()
 	m_graphTable = TableFactory::buildTempTable(m_graphTableName, m_graphSchema, m_graphColumnNames, NULL);
 }
 
+////////////////////////////////////////////
+
+// traverse graph
 PathIterator* GraphView::iteratorDeletingAsWeGo(GraphOperationType opType) // LX
 {
 	//empty the paths table, which is the staging memory for the paths to be explored
@@ -465,8 +484,7 @@ void GraphView::expandCurrentPathOperation()
 	}
 }
 
-// void GraphView::SP_TopK(int src, int dest, int k)
-void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
+void GraphView::SP_TopK(unsigned src, unsigned dest, int k)
 {
 	double minCost = DBL_MAX;
 	int foundPathsSoFar = 0;
@@ -477,9 +495,9 @@ void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
 	pq.push(make_pair(0, make_pair(src, 0))); //zero cost to reach Vertex from
 	Vertex* v = NULL;
 	Edge* e = NULL;
-	string currVId;
+	unsigned currVId;
 	int fanOut = -1;
-	string candVertexId = "";
+	unsigned candVertexId ;
 	
 	//upper-bound to avoid loops (considering an average fan-out of 10
 	int maxPQOperations = this->numOfVertexes() * 10;
@@ -490,8 +508,8 @@ void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
 	while(!pq.empty())
 	{
 		//select next vertex to explore
-		currVId = ((pair<string, int >)( pq.top().second)).first;
-		length = ((pair<string, int >)( pq.top().second)).second;
+		currVId = ((pair<unsigned, int >)( pq.top().second)).first;
+		length = ((pair<unsigned, int >)( pq.top().second)).second;
 		minCost = pq.top().first;
 		if(currVId == dest)
 		{
@@ -525,7 +543,7 @@ void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
 		for(int i = 0; i < fanOut; i++)
 		{
 			// e = v->getOutEdge(i);
-			string es = v->getOutEdgeId(i);
+			unsigned es = v->getOutEdgeId(i);
 			candVertexId = e->getEndVertex()->getId();
 
 			if (spColumnIndexInEdgesTable >= 0)
@@ -556,19 +574,18 @@ void GraphView::SP_TopK(string src, string dest, int k) // LX FEAT2
 	LogManager::GLog("GraphView", "TopK_SP", 334, paramsToPrint.str());
 }
 
-// void GraphView::SP_ToAllVertexes_EdgeSelectivity(int src, int edgeSelectivity)
-void GraphView::SP_ToAllVertexes_EdgeSelectivity(string src, int edgeSelectivity) //LX FEAT2
+void GraphView::SP_ToAllVertexes_EdgeSelectivity(unsigned src, int edgeSelectivity)
 {
 	int minCost = INT_MAX;
 	priority_queue<PQEntry, vector<PQEntry>, std::greater<PQEntry>> pq;
-	map<string, int> costMap;
+	map<unsigned, int> costMap;
 	costMap[src] = 0;
 	pq.push(make_pair(0, src)); //zero cost to reach Vertex from
 	Vertex* v = NULL;
 	Edge* e = NULL;
-	string currVId;
+	unsigned currVId;
 	int fanOut = -1;
-	string candVertexId = "";
+	unsigned candVertexId ;
 
 	while(!pq.empty())
 	{
@@ -624,17 +641,16 @@ void GraphView::SP_ToAllVertexes_EdgeSelectivity(string src, int edgeSelectivity
 }
 
 
-// void GraphView::SP_EdgeSelectivity(int src, int dest, int edgeSelectivity)
-void GraphView::SP_EdgeSelectivity(string src, string dest, int edgeSelectivity) // LX FEAT2
+void GraphView::SP_EdgeSelectivity(unsigned src, unsigned dest, int edgeSelectivity)
 {
 	int minCost = INT_MAX;
 	priority_queue<PQEntry, vector<PQEntry>, std::greater<PQEntry>> pq;
-	map<string, int> costMap;
+	map<unsigned, int> costMap;
 	costMap[src] = 0;
 	pq.push(make_pair(0, src)); //zero cost to reach Vertex from
 	Vertex* v = NULL;
 	Edge* e = NULL;
-	string currVId,  candVertexId = "";
+	unsigned currVId,  candVertexId ;
 	int fanOut = -1;
 
 	while(!pq.empty())
@@ -688,8 +704,7 @@ void GraphView::SP_EdgeSelectivity(string src, string dest, int edgeSelectivity)
 	LogManager::GLog("GraphView", "SP_eSelectivity", 398, paramsToPrint.str());
 }
 
-// void GraphView::BFS_Reachability_ByDepth_eSelectivity(int startVertexId, int depth, int eSelectivity)
-void GraphView::BFS_Reachability_ByDepth_eSelectivity(string startVertexId, int depth, int eSelectivity) // LX FEAT2
+void GraphView::BFS_Reachability_ByDepth_eSelectivity(unsigned startVertexId, int depth, int eSelectivity)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
@@ -725,7 +740,7 @@ void GraphView::BFS_Reachability_ByDepth_eSelectivity(string startVertexId, int 
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)(outVertex->Level + 1)));
 					//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 					if(m_pathTable->activeTupleCount() <= 100)
-					m_pathTable->insertTempTuple(temp_tuple);
+						m_pathTable->insertTempTuple(temp_tuple);
 				}
 				else
 				{
@@ -741,13 +756,12 @@ void GraphView::BFS_Reachability_ByDepth_eSelectivity(string startVertexId, int 
 	LogManager::GLog("GraphView", "BFS_ByDepth", 463, paramsToPrint.str());
 }
 
-// void GraphView::BFS_Reachability_ByDepth(int startVertexId, int depth)
-void GraphView::BFS_Reachability_ByDepth(string startVertexId, int depth) // LX FEAT2
+void GraphView::BFS_Reachability_ByDepth(unsigned startVertexId, int depth)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
-	std::map<string, int> vertexToLevel;
-	std::unordered_set<string> visited;
+	std::map<unsigned, int> vertexToLevel;
+	std::unordered_set<unsigned> visited;
 	// cout << "1" << endl;
 	if(NULL != currentVertex)
 	{
@@ -817,13 +831,12 @@ void GraphView::BFS_Reachability_ByDepth(string startVertexId, int depth) // LX 
 	LogManager::GLog("GraphView", "BFS_ByDepth", 463, paramsToPrint.str());
 }
 
-// void GraphView::BFS_Reachability_ByDestination(int startVertexId, int destVerexId)
-void GraphView::BFS_Reachability_ByDestination(string startVertexId, string destVerexId) // LX FEAT2
+void GraphView::BFS_Reachability_ByDestination(unsigned startVertexId, unsigned destVerexId)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = this->m_vertexes[startVertexId];
-	std::map<string, int> vertexToLevel;
-	std::unordered_set<string> visited;
+	std::map<unsigned, int> vertexToLevel;
+	std::unordered_set<unsigned> visited;
 
 	if(NULL != currentVertex)
 	{
@@ -872,7 +885,7 @@ void GraphView::BFS_Reachability_ByDestination(string startVertexId, string dest
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)level));
 					temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 					if(m_pathTable->activeTupleCount() <= 1000)
-					m_pathTable->insertTempTuple(temp_tuple);
+						m_pathTable->insertTempTuple(temp_tuple);
 
 					//outVertex->Level = outVertex->Level + 1;
 					vertexToLevel[outVertex->getId()] = level;
@@ -894,8 +907,7 @@ void GraphView::BFS_Reachability_ByDestination(string startVertexId, string dest
 	LogManager::GLog("GraphView", "BFS_Reachability", 513, paramsToPrint.str());
 }
 
-// void GraphView::SubGraphLoopFromStartVertex(int startVertexId, int length, int vSelectivity, int eSelectivity)
-void GraphView::SubGraphLoopFromStartVertex(string startVertexId, int length, int vSelectivity, int eSelectivity) // LX FEAT2
+void GraphView::SubGraphLoopFromStartVertex(unsigned startVertexId, int length, int vSelectivity, int eSelectivity)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = NULL;
@@ -945,7 +957,7 @@ void GraphView::SubGraphLoopFromStartVertex(string startVertexId, int length, in
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 						if(m_pathTable->activeTupleCount() <= 1000)
-						m_pathTable->insertTempTuple(temp_tuple);
+							m_pathTable->insertTempTuple(temp_tuple);
 					}
 				}
 				else
@@ -975,8 +987,8 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = NULL;
-	string startVertexId = NULL; // LX FEAT2
-	for(std::map<string, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
+	unsigned startVertexId ; // LX FEAT2
+	for(std::map<unsigned, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
 	{
 		currentVertex = it->second;
 		if(currentVertex->vProp > vSelectivity)
@@ -1020,7 +1032,7 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 						if(m_pathTable->activeTupleCount() <= 100)
-						m_pathTable->insertTempTuple(temp_tuple);
+							m_pathTable->insertTempTuple(temp_tuple);
 					}
 				}
 				else
@@ -1045,12 +1057,11 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 	LogManager::GLog("GraphView", "SubGraphLoop", 625, paramsToPrint.str());
 }
 
-// void GraphView::SubGraphLoop(int startVertexId, int length)
-void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
+void GraphView::SubGraphLoop(unsigned startVertexId, int length)
 {
 	queue<Vertex*> q;
 	Vertex* currentVertex = NULL;
-	if(startVertexId != "")
+	if(startVertexId != 0)
 	{
 		currentVertex = this->m_vertexes[startVertexId];
 	}
@@ -1085,7 +1096,7 @@ void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 						if(m_pathTable->activeTupleCount() <= 100)
-						m_pathTable->insertTempTuple(temp_tuple);
+							m_pathTable->insertTempTuple(temp_tuple);
 					}
 				}
 				else
@@ -1098,7 +1109,7 @@ void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
 	}
 	else
 	{
-		for (std::map<string, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
+		for (std::map<unsigned, Vertex*>::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it)
 		{
 			currentVertex = it->second;
 			currentVertex->Level = 0;
@@ -1130,7 +1141,7 @@ void GraphView::SubGraphLoop(string startVertexId, int length) // LX FEAT2
 							temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 							//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
 							if(m_pathTable->activeTupleCount() <= 100)
-							m_pathTable->insertTempTuple(temp_tuple);
+								m_pathTable->insertTempTuple(temp_tuple);
 						}
 					}
 					else
@@ -1165,6 +1176,7 @@ void GraphView::processTupleInsertInGraphView(TableTuple& target, std::string ta
 
 void GraphView::fillGraphFromRelationalTables()
 {
+
 	this->m_vertexes.clear();
 	this->m_edges.clear();
 
@@ -1205,13 +1217,16 @@ void GraphView::fillGraphFromRelationalTables()
 	bool vPropExists = (m_vPropColumnIndex >= 0);
 	bool ePropExists = (m_ePropColumnIndex >= 0);
 
-	string id = ""; // LX FEAT2
+	// string id = ""; // LX FEAT2 string takes too much space, use int instead
+	// LX this is a decimal number. The least significant position holds the index of label (at most 9 labels)
+	unsigned id; // the maximum number is 4294967295
+
 	//fill the vertex collection
 	// LX FEAT2
 	for (int i = 0; i < this->m_vertexTables.size(); i++){
 		Table* curTable = this->m_vertexTables[i];
 		string curLabel = this->m_vertexLabels[i];
-		// cout << "GraphView:1046:" << m_vertexIdColumnIndex << endl;
+
 		TableIterator iter = curTable->iterator();
 		schema = curTable->schema();
 		TableTuple tuple(schema);
@@ -1223,11 +1238,13 @@ void GraphView::fillGraphFromRelationalTables()
 				if (tuple.isActive())
 				{
 					// id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColumnIndex));
-					id = curLabel + "." + to_string(ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])));
+					// id = curLabel + "." + to_string(ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])));
+					id = ValuePeeker::peekInteger(tuple.getNValue(m_vertexIdColIdxList[curLabel])) * 10 + i;
 					vertex = new Vertex();
 					vertex->setGraphView(this);
 					vertex->setId(id);
 					vertex->setTupleData(tuple.address());
+					// cout << "GraphView:1258:vertex id is " << id << endl;
 					if(vPropExists)
 					{
 						// cout << "GraphView.cpp:1066:vPropExists!" << endl;
@@ -1237,27 +1254,24 @@ void GraphView::fillGraphFromRelationalTables()
 					this->m_idToVTableMap[id] = curTable;
 					//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 77, "vertex: " + vertex->toString());
 				}
-				id = "";
+				// id = "";
 			}
 		}
 	}
 	
-	string from = "", to = "";	
-	// TODO: LX need to figure out how to set the vertex label for the from vertex and to vertex
-	// TODO: add another layer for lookup
+	unsigned from, to;	
 	// we know the vertex table for the edge node (by foreign key)
 	// we then can lookup the label for this vertex table
 	// then we can prepend the label to the vertex of the edge
 
-	// hard-coded for now
-	// string fromVertexLabel = "BALL.";
-	// string toVertexLabel = "BALL.";
 	//fill the edge collection
 	for (int i = 0; i < this->m_edgeTables.size(); i++){
 		Table* curTable = this->m_edgeTables[i];
 		string curLabel = this->m_edgeLabels[i];
 		string fromVertexLabel = this->m_startVLabels[i];
 		string endVertexLabel = this->m_endVLabels[i];
+		unsigned fromIdx = getIndexFromVertexLabels(fromVertexLabel);
+		unsigned toIdx = getIndexFromVertexLabels(toVertexLabel);
 
 		TableIterator iter = curTable->iterator();
 		schema = curTable->schema();
@@ -1272,44 +1286,367 @@ void GraphView::fillGraphFromRelationalTables()
 			{
 				if (edgeTuple.isActive())
 				{
-					id = curLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])));
-					from = fromVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColIdxList[curLabel])));
-					to = endVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColIdxList[curLabel])));
+					// id = curLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])));
+					// from = fromVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColIdxList[curLabel])));
+					// to = endVertexLabel + "." + to_string(ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColIdxList[curLabel])));
+					id = ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeIdColIdxList[curLabel])) * 10 + i;
+					from = ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeFromColIdxList[curLabel])) * 10 + fromIdx;
+					to = ValuePeeker::peekInteger(edgeTuple.getNValue(m_edgeToColIdxList[curLabel])) * 10 + toIdx;
 					edge = new Edge();
 					edge->setGraphView(this);
 					edge->setId(id);
 					edge->setTupleData(edgeTuple.address());
 					edge->setStartVertexId(from);
 					edge->setEndVertexId(to);
+
 					if(ePropExists)
 					{
 						edge->eProp = ValuePeeker::peekInteger(edgeTuple.getNValue(m_ePropColumnIndex));
 					}
+
 					//update the endpoint vertexes in and out lists
 					vFrom = edge->getStartVertex();
 					vTo = edge->getEndVertex();
 					vFrom->addOutEdge(edge);
 					vTo->addInEdge(edge);
+
 					if(!this->isDirected())
 					{
 						vTo->addOutEdge(edge);
 						vFrom->addInEdge(edge);
 					}
+
 					this->addEdge(id, edge);
+					// cout << "GraphView:1335:edge id is " << id << endl; 
 					this->m_idToETableMap[id] = curTable;
 				}
-				id = "";
+				// id = "";
 			}
 		}
 
-	}	
-	
-		
-		
-	LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 159, "graph: " + this->debug());
+	}			
+	// LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 159, "graph: " + this->debug());
 	//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 73, "vTable: " + this->m_vertexTable->debug());
 	//LogManager::GLog("GraphView", "fillGraphFromRelationalTables", 73, "eTable: " + this->m_edgeTable->debug());
 
+}
+
+void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphView, std::string vlabelName, std::string elabelName, bool useV)
+{
+
+
+	this->m_vertexes.clear();
+	this->m_edges.clear();
+
+	// LX FEAT4
+	// start from the oldGraphView, check vertex by vertex, or edge by edge
+	// filter by the subgraphPredicate
+
+	// first check the predicate is about vertex or edge
+    std::string curLabel = "";
+    Table* input_table = NULL;
+    bool isV;
+    AbstractExpression* predicate = NULL;
+    if (subGraphVPredicate.size() != 0) {
+    	curLabel = vlabelName;
+    	input_table = oldGraphView->getVertexTableFromLabel(curLabel);
+    	isV = true;
+
+    	vassert(subGraphVPredicate.length() % 2 == 0);
+	    int bufferLength = (int)subGraphVPredicate.size() / 2 + 1;
+	    boost::shared_array<char> buffer(new char[bufferLength]);
+	    catalog::Catalog::hexDecodeString(subGraphVPredicate, buffer.get());
+
+	    PlannerDomRoot domRoot(buffer.get());
+	    if (domRoot.isNull()) {
+	        return ;
+	    }
+	    PlannerDomValue expr = domRoot();
+
+    	predicate = AbstractExpression::buildExpressionTree(expr);
+    }
+    else {
+    	curLabel = elabelName;
+    	input_table = oldGraphView->getEdgeTableFromLabel(curLabel);
+    	isV = false;
+
+    	vassert(subGraphEPredicate.length() % 2 == 0);
+	    int bufferLength = (int)subGraphEPredicate.size() / 2 + 1;
+	    boost::shared_array<char> buffer(new char[bufferLength]);
+	    catalog::Catalog::hexDecodeString(subGraphEPredicate, buffer.get());
+
+	    PlannerDomRoot domRoot(buffer.get());
+	    if (domRoot.isNull()) {
+	        return ;
+	    }
+	    PlannerDomValue expr = domRoot();
+
+    	predicate = AbstractExpression::buildExpressionTree(expr);
+    }		
+    
+
+    int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter(predicate, limit, offset);
+
+
+
+    if (!useV && !isV) {
+    	// predicate is about edges and we want to start from edges
+    	// cout << "GraphView:1407: edge predicate starts from edges" << endl;
+    	// std::string curLabel = labelName;
+    	// Table* input_table = oldGraphView->getEdgeTableFromLabel(curLabel);
+    	
+    	// get all the edges from the old graph
+    	Edge* curEdge;
+    	unsigned curEdgeId, from, to;
+    	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+
+    	// traverse all the edges and get their tuple data
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+
+			curEdgeId = it->first;
+			curEdge = it->second;
+			TableTuple* tuple = new TableTuple(curEdge->getTupleData(), input_table->schema());
+
+			//check if the tuple satisfy the predicate
+			if (postfilter.eval(tuple, NULL)) {
+				Edge *newEdge = NULL;
+				Vertex* vFrom = NULL;
+				Vertex* vTo = NULL;
+	    		newEdge = new Edge();
+				newEdge->setGraphView(this);
+				newEdge->setId(curEdgeId);
+				newEdge->setTupleData(curEdge->getTupleData());
+
+				from = curEdge->getStartVertexId();
+				to = curEdge->getEndVertexId();
+
+				// add these two vertices to new graph
+				vFrom = new Vertex();
+				vFrom->setGraphView(this);
+				vFrom->setId(from);
+				vFrom->setTupleData(oldGraphView->getVertex(from)->getTupleData()); 
+				vTo = new Vertex();
+				vTo->setGraphView(this);
+				vTo->setId(to);
+				vTo->setTupleData(oldGraphView->getVertex(to)->getTupleData()); 
+				this->addVertex(from, vFrom);
+				this->addVertex(to, vTo);
+
+				newEdge->setStartVertexId(from);
+				newEdge->setEndVertexId(to);
+
+				//update the endpoint vertexes in and out lists
+				vFrom = newEdge->getStartVertex();
+				vTo = newEdge->getEndVertex();
+				vFrom->addOutEdge(newEdge);
+				vTo->addInEdge(newEdge);
+
+				if(!this->isDirected())
+				{
+					vTo->addOutEdge(newEdge);
+					vFrom->addInEdge(newEdge);
+				}
+				this->addEdge(curEdgeId, newEdge);
+			}
+		}
+    }
+    else if (useV && !isV){
+    	// predicate is about edges and we want to start from vertices
+    	// cout << "GraphView:1468: edge predicate starts from vertices" << endl;
+    	// std::string curLabel = labelName;
+    	// vector<std::string> allEdgeLabels = oldGraphView->getEdgeLabels();
+    	// Table* input_table = oldGraphView->getEdgeTableFromLabel(curLabel);
+
+		// get all the vertices from the old graph
+    	Vertex* curVertex;
+    	unsigned curVertexId;
+    	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+
+    	// traverse all the vertices
+		for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+		{
+			curVertexId = it->first;
+			curVertex = it->second;
+
+			std::vector<unsigned> edgeIds;
+
+			// get the edges from this vertex's adjacency list
+			if (oldGraphView->isDirected()) {
+				// has to scan both inedges and out edges
+				edgeIds = curVertex->getAllOutEdges();
+				vector<unsigned> another = curVertex->getAllInEdges();
+				edgeIds.insert(edgeIds.end(), another.begin(), another.end() );
+			}
+			else {
+				// only needs to scan inedges list or outedges list
+				edgeIds = curVertex->getAllOutEdges();
+			}
+
+			unsigned from, to;
+			// iterate all related edges (all edges are visited twice)
+			for (unsigned edgeId: edgeIds) {
+				Edge *edge = oldGraphView->getEdge(edgeId);
+				TableTuple* tuple = new TableTuple(edge->getTupleData(), input_table->schema());
+				if (postfilter.eval(tuple, NULL)) {
+					Edge *newEdge = NULL;
+					Vertex* vFrom = NULL;
+					Vertex* vTo = NULL;
+		    		newEdge = new Edge();
+					newEdge->setGraphView(this);
+					newEdge->setId(edgeId);
+					newEdge->setTupleData(edge->getTupleData());
+
+					from = edge->getStartVertexId();
+					to = edge->getEndVertexId();
+
+					// add these two vertices to new graph
+					vFrom = new Vertex();
+					vFrom->setGraphView(this);
+					vFrom->setId(from);
+					vFrom->setTupleData(oldGraphView->getVertex(from)->getTupleData()); 
+					vTo = new Vertex();
+					vTo->setGraphView(this);
+					vTo->setId(to);
+					vTo->setTupleData(oldGraphView->getVertex(to)->getTupleData()); 
+					this->addVertex(from, vFrom);
+					this->addVertex(to, vTo);
+
+					newEdge->setStartVertexId(from);
+					newEdge->setEndVertexId(to);
+
+					//update the endpoint vertexes in and out lists
+					vFrom = newEdge->getStartVertex();
+					vTo = newEdge->getEndVertex();
+					vFrom->addOutEdge(newEdge);
+					vTo->addInEdge(newEdge);
+
+					if(!this->isDirected())
+					{
+						vTo->addOutEdge(newEdge);
+						vFrom->addInEdge(newEdge);
+					}
+					this->addEdge(edgeId, newEdge);
+				}
+			}				
+		}
+    }
+    else if (useV && isV) {
+    	// predicate is about vertices and we want to start from vertices
+    	// cout << "GraphView:1549: vertex predicate starts from vertices" << endl;
+    	// get all the vertices from the old graph
+    	Vertex* curVertex;
+    	unsigned curVertexId;
+    	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+
+    	// traverse all the vertices and get their tuple data
+		for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+		{
+
+			curVertexId = it->first;
+			curVertex = it->second;
+			TableTuple* tuple = new TableTuple(curVertex->getTupleData(), input_table->schema());
+
+			//check if the tuple satisfy the predicate
+			if (postfilter.eval(tuple, NULL)) {
+				Vertex *newVertex = NULL;
+	    		newVertex = new Vertex();
+				newVertex->setGraphView(this);
+				newVertex->setId(curVertexId);
+				newVertex->setTupleData(curVertex->getTupleData());
+				this->addVertex(curVertexId, newVertex);
+			}
+		}
+
+		// has to scan oldGraphView edges again to add edges if both end nodes are selected
+		std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+		Edge *curEdge;
+		unsigned curEdgeId;
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+			curEdgeId = it->first;
+			curEdge = it->second;
+			unsigned from = curEdge->getStartVertexId();
+			unsigned to = curEdge->getEndVertexId();
+			if ((this->hasVertex(from)) && (this->hasVertex(to))){
+				Edge* newEdge = NULL;
+				newEdge = new Edge();
+				newEdge->setGraphView(this);
+				newEdge->setId(curEdgeId);
+				newEdge->setTupleData(curEdge->getTupleData());
+				newEdge->setStartVertexId(from);
+				newEdge->setEndVertexId(to);
+
+				Vertex* vFrom = newEdge->getStartVertex();
+				Vertex* vTo = newEdge->getEndVertex();
+				vFrom->addOutEdge(newEdge);
+				vTo->addInEdge(newEdge);
+				this->addEdge(curEdgeId, newEdge);
+			}
+		}
+    }
+    else if (!useV && isV) {
+    	// predicate is about vertices and we want to start from edges
+    	// cout << "GraphView:1603: vertex predicate starts from edges" << endl;
+    	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+		Edge *curEdge;
+		unsigned curEdgeId, from, to;
+		Vertex* vFrom;
+		Vertex* vTo;
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+			curEdgeId = it->first;
+			curEdge = it->second;
+			vFrom = curEdge->getStartVertex();
+			vTo = curEdge->getEndVertex();
+			TableTuple* fromtuple = new TableTuple(vFrom->getTupleData(), input_table->schema());
+			TableTuple* totuple = new TableTuple(vTo->getTupleData(), input_table->schema());
+			if (postfilter.eval(fromtuple, NULL) && postfilter.eval(totuple, NULL)) {
+				// only if both nodes satisfy the predicate, they as well as the edge are added
+				Edge *newEdge = NULL;
+				Vertex* vNewFrom = NULL;
+				Vertex* vNewTo = NULL;
+	    		newEdge = new Edge();
+				newEdge->setGraphView(this);
+				newEdge->setId(curEdgeId);
+				newEdge->setTupleData(curEdge->getTupleData());
+
+				from = curEdge->getStartVertexId();
+				to = curEdge->getEndVertexId();
+
+				// add these two vertices to new graph
+				vNewFrom = new Vertex();
+				vNewFrom->setGraphView(this);
+				vNewFrom->setId(from);
+				vNewFrom->setTupleData(vFrom->getTupleData()); 
+				vNewTo = new Vertex();
+				vNewTo->setGraphView(this);
+				vNewTo->setId(to);
+				vNewTo->setTupleData(vTo->getTupleData()); 
+				this->addVertex(from, vNewFrom);
+				this->addVertex(to, vNewTo);
+
+				newEdge->setStartVertexId(from);
+				newEdge->setEndVertexId(to);
+
+				//update the endpoint vertexes in and out lists
+				vNewFrom = newEdge->getStartVertex();
+				vNewTo = newEdge->getEndVertex();
+				vNewFrom->addOutEdge(newEdge);
+				vNewTo->addInEdge(newEdge);
+
+				if(!this->isDirected())
+				{
+					vNewTo->addOutEdge(newEdge);
+					vNewFrom->addInEdge(newEdge);
+				}
+				this->addEdge(curEdgeId, newEdge);
+			}
+		}
+    }
+	    
 }
 
 string GraphView::debug()
@@ -1324,7 +1661,8 @@ string GraphView::debug()
 	output << "#Edges = " << eCount << endl;
 	output << "Vertexes" << endl;
 	Vertex* currentVertex;
-	for (std::map<string,Vertex* >::iterator it= this->m_vertexes.begin(); it != this->m_vertexes.end(); ++it)
+	Edge* currentEdge;
+	for (std::map<unsigned,Vertex* >::iterator it= this->m_vertexes.begin(); it != this->m_vertexes.end(); ++it)
 	{
 		currentVertex = it->second;
 		output << "\t" << currentVertex->toString() << endl;
@@ -1339,6 +1677,13 @@ string GraphView::debug()
 			output << "\t\t\t" << currentVertex->getInEdge(j)->toString() << endl;
 		}
 	}
+	output << "Edges" << endl;
+	for (std::map<unsigned,Edge* >::iterator it= this->m_edges.begin(); it != this->m_edges.end(); ++it)
+	{
+		currentEdge = it->second;
+		output << "\t\t\t" << currentEdge->toString() << endl;
+	}
+	output << "#############" << endl;
 	return output.str();
 }
 

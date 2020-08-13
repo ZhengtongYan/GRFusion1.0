@@ -563,6 +563,7 @@ void Table::loadTable(SerializeInputBE &serialize_io,
         switch (type) {
             case ValueType::tVARCHAR:
                 columnSizes.push_back(20);
+                break;// LX add because of make error on bigdata1
             default:
                 columnSizes.push_back(NValue::getTupleStorageSize(type));
         }

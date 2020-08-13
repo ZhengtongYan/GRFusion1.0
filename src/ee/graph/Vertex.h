@@ -19,8 +19,8 @@ protected:
 	// 2) graph elements may be hosted by other remote machines
 	// vector<int> m_outEdgeIds;
 	// vector<int> m_inEdgeIds;
-	vector<std::string> m_outEdgeIds; // LX FEAT2
-	vector<std::string> m_inEdgeIds; // LX FEAT2
+	vector<unsigned> m_outEdgeIds; // LX FEAT2
+	vector<unsigned> m_inEdgeIds; // LX FEAT2
 
 public:
 	Vertex(void);
@@ -32,10 +32,12 @@ public:
 	// int getInEdgeId(int index);
 	// Edge* getOutEdge(int index);
 	// Edge* getInEdge(int index);
-	std::string getOutEdgeId(int index); // LX FEAT2
-	std::string getInEdgeId(int index); // LX FEAT2
+	unsigned getOutEdgeId(int index); // LX FEAT2
+	unsigned getInEdgeId(int index); // LX FEAT2
 	Edge* getOutEdge(int index); // LX FEAT2
 	Edge* getInEdge(int index); // LX FEAT2
+	vector<unsigned> getAllOutEdges();
+	vector<unsigned> getAllInEdges();
 	
 	void addOutEdge(Edge* edge);
 	void addInEdge(Edge* edge);

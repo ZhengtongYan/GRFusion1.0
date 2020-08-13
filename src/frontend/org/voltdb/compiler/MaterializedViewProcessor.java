@@ -87,7 +87,7 @@ public class MaterializedViewProcessor {
         for (Entry<Table, String> entry : matViewMap.entrySet()) {
             Table destTable = entry.getKey();
             String query = entry.getValue();
-            System.out.println(query);
+            // System.out.println(query);
             // get the xml for the query
             VoltXMLElement xmlquery = null;
             try {
@@ -279,6 +279,7 @@ public class MaterializedViewProcessor {
                 matviewinfo.setDest(destTable);
 
                 AbstractExpression where = stmt.getSingleTableFilterExpression();
+// System.out.println("MaterializedViewProcessor:282:" + where.toJSONString());
                 if (where != null) {
                     String hex = Encoder.hexEncode(where.toJSONString());
                     matviewinfo.setPredicate(hex);

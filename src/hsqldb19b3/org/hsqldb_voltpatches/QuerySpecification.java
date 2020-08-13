@@ -143,7 +143,7 @@ public class QuerySpecification extends QueryExpression {
 
         addRangeVariable(range);
         resolveReferences(session);
-        System.out.println("QuerySpecification:144");
+        // System.out.println("QuerySpecification:144");
         resolveTypes(session);
         resolveTypes(session);
 
@@ -168,6 +168,11 @@ public class QuerySpecification extends QueryExpression {
     // LX FEAT3
     void setDDL(boolean b) {
         isDDL = b;
+    }
+
+    // LX FEAT4
+    void setIsGraph2Graph(boolean b) {
+        isGraph2Graph = true;
     }
 
     private void finaliseRangeVariables() {
@@ -226,18 +231,18 @@ public class QuerySpecification extends QueryExpression {
     public void resolveReferences(Session session) {
 // System.out.println("QuerySpecification:212");
         finaliseRangeVariables();
-        System.out.println("QuerySpecification:214");
+        // System.out.println("QuerySpecification:214");
         resolveColumnReferencesForAsterisk();
-        System.out.println("QuerySpecification:216");
+        // System.out.println("QuerySpecification:216");
         finaliseColumns();
-        System.out.println("QuerySpecification:218");
+        // System.out.println("QuerySpecification:218");
         resolveColumnReferences();
-        System.out.println("QuerySpecification:220");
+        // System.out.println("QuerySpecification:220");
         unionColumnTypes = new Type[indexLimitVisible];
         unionColumnMap   = new int[indexLimitVisible];
 
         ArrayUtil.fillSequence(unionColumnMap);
-        System.out.println("QuerySpecification:239");
+        // System.out.println("QuerySpecification:239");
     }
 
     /**
@@ -432,7 +437,6 @@ public class QuerySpecification extends QueryExpression {
             if (rangeVar.isGraph()) {
                 String[] vlablist = rangeVar.getVertexLabels();
                 for (int j = 0; j < vlablist.length; j++) {
-                    System.out.println("QuerySpecification:420:" + tablename + ", " + vlablist[j]);
                     if (tablename.equals(vlablist[j])) 
                         return true;
                 }
@@ -451,14 +455,13 @@ public class QuerySpecification extends QueryExpression {
 
         for (int pos = 0; pos < indexLimitVisible; ) {
             Expression e = (Expression) (exprColumnList.get(pos));
-            System.out.println("QuerySpecification:416:" + pos);
+            // System.out.println("QuerySpecification:416:" + pos);
             if (e.getType() == OpTypes.MULTICOLUMN) {
                 exprColumnList.remove(pos);
 
                 String tablename = ((ExpressionColumn) e).getTableName();
 
                 if (tablename == null) {
-                    System.out.println("QuerySpecification:423");
                     // LX FEAT2
                     // String objectname = ((ExpressionColumn) e).getObjectName();
                     // if (objectname == null)
@@ -466,10 +469,8 @@ public class QuerySpecification extends QueryExpression {
                     // else
                         // addAllJoinedLabeledColumns(e);
                 } else {
-                    System.out.println("QuerySpecification:426");                    
                     int rangeIndex =
                         e.findMatchingRangeVariableIndex(rangeVariables);
-
                     if (rangeIndex == -1) {
                         // LX FEAT2
                         if (!hasLabelInRangeGraph(tablename)) 
@@ -496,7 +497,6 @@ public class QuerySpecification extends QueryExpression {
 
                     pos++;
                 }
-
                 indexLimitVisible += e.nodes.length - 1;
             } else {
                 pos++;
@@ -506,11 +506,11 @@ public class QuerySpecification extends QueryExpression {
 
     private void resolveColumnReferencesAndAllocate(Expression expression,
             int count, boolean withSequences) {
-
+// System.out.println("QuerySpecification:514:");
         if (expression == null) {
             return;
         }
-
+// System.out.println("QuerySpecification:518:");
         HsqlList list = expression.resolveColumnReferences(rangeVariables,
             count, null, withSequences);
 
@@ -906,7 +906,7 @@ public class QuerySpecification extends QueryExpression {
         if (isResolved) {
             return;
         }
-System.out.println("QuerySpecification:901");
+// System.out.println("QuerySpecification:901");
         resolveTypesPartOne(session);
         resolveTypesPartTwo(session);
         ArrayUtil.copyArray(resultTable.colTypes, unionColumnTypes,

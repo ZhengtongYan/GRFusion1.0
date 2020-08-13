@@ -148,7 +148,7 @@ static void parse(const string &stmt,
 void Catalog::executeOne(const string &stmt) {
     string command, ref, coll, child;
     parse(stmt, command, ref, coll, child);
-cout << "catalog.cpp:151:" << stmt << endl;
+// cout << "catalog.cpp:151:" << stmt << endl;
     CatalogType *item = NULL;
     if (ref.compare("$PREV") == 0) {
         if (!m_lastUsedPath) {
@@ -182,7 +182,7 @@ cout << "catalog.cpp:151:" << stmt << endl;
         params << "collection = " << coll << ", child = " << child;
         if (coll == "tables" || coll == "graphViews")
            params << ", relative index = " << type->relativeIndex();
-        voltdb::LogManager::GLog("Catalog", "executeOne", 177, params.str());
+        // voltdb::LogManager::GLog("Catalog", "executeOne", 177, params.str());
         //End LX
 
         if (type == NULL) {

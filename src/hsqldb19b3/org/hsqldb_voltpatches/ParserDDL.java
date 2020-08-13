@@ -85,9 +85,10 @@ public class ParserDDL extends ParserRoutine {
         boolean isTable   = false;
         boolean isStream   = false;
         boolean isGraph    = false;//Added by LX
+        boolean isSelectGraph = false; // LX FEAT4
 
         read();
-
+// System.out.println("ParserDDL:88:tokenType: " + token.tokenType);
         switch (token.tokenType) {
 
             case Tokens.GLOBAL :
@@ -168,9 +169,15 @@ public class ParserDDL extends ParserRoutine {
             // Added by LX  
             case Tokens.GRAPH :
                 read();
-                readThis(Tokens.VIEW);
 
-                isGraph   = true;
+                if (readIfThis(Tokens.OPENBRACKET)) {
+                    isSelectGraph = true;
+                }
+                else {
+                    readThis(Tokens.VIEW);
+                    isGraph   = true;
+                }
+
                 tableType = database.schemaManager.getDefaultTableType();
                 break;
             // End LX
@@ -196,8 +203,12 @@ public class ParserDDL extends ParserRoutine {
 
         // Added by LX
         if (isGraph) {
-            // System.out.println("graph view");
             return compileCreateGraph(tableType);
+        }
+
+        // LX FEAT4
+        if (isSelectGraph) {
+            return compileCreateSubgraph(tableType);
         }
         // End LX
 
@@ -277,11 +288,101 @@ public class ParserDDL extends ParserRoutine {
             }
         }
     }
+
+    // LX FEAT4
+    private StatementSchema compileCreateSubgraph(int type) {
+
+        StringBuilder vbr = new StringBuilder("SELECT ");
+        StringBuilder ebr = new StringBuilder("SELECT ");
+        vbr.append(token.namePrePrefix + "." + token.namePrefix + "." + token.tokenString + " FROM ");
+        String chosenVLabel = token.namePrefix;
+        read();
+
+        readThis(Tokens.COMMA);
+        // br.append(", ");
+
+        ebr.append(token.namePrePrefix + "." + token.namePrefix + "." + token.tokenString + " FROM ");
+        String chosenELabel = token.namePrefix;
+        read();
+        readThis(Tokens.CLOSEBRACKET);
+
+        // TODO: this is just a hack
+        // which is used to indicate whether to use vertex-based traverse or edge-based
+        // this is up to the user to decide when typing input
+        String whichTable = token.tokenString;
+        read();
+
+        readThis(Tokens.INTO);
+
+        HsqlName schema = readNewSchemaObjectNameNoCheck(SchemaObject.GRAPHVIEW);
+        schema.setSchemaIfNull(session.getCurrentSchemaHsqlName());
+        String sqls = session.parser.getScanner().sqlString; 
+
+        int position = getPosition(); // at keyword FROM
+
+        // get the name of the old graph view
+        // GraphView oldGraph = database.schemaManager.getGraph(session, token.namePrefix, token.namePrePrefix);       
+        QuerySpecification selectSubgraph = new QuerySpecification(compileContext);
+        selectSubgraph.setIsGraph2Graph(true);
+        XreadTableExpression(selectSubgraph);
+        selectSubgraph.resolveReferences(session);
+
+        GraphView oldGraph = selectSubgraph.rangeVariables[0].rangeGraph;
+        String partsql = getLastPartAndCurrent(position);
+
+        // parse partsql to extract vertex part and edge part with their predicates separately
+        // TODO parse this elegantly in parserDQL and pass the result here via QuerySpecification
+        String[] partsqlarr = partsql.split("[, ]+");
+        vbr.append(partsqlarr[1] + " " + partsqlarr[2]);
+        ebr.append(partsqlarr[3] + " " + partsqlarr[4]);
+        String vertexAlias = partsqlarr[2] + ".";
+        String edgeAlias = partsqlarr[4] + ".";
+        boolean isVertexPredicate;
+        if (partsqlarr[6].startsWith(vertexAlias)){
+            isVertexPredicate = true;
+            vbr.append(" WHERE ");
+        }
+        else {
+            isVertexPredicate = false;
+            ebr.append(" WHERE ");
+        }
+        for (int i = 6; i < partsqlarr.length; i++) {
+            if (isVertexPredicate)
+                vbr.append(partsqlarr[i] + " ");
+            else
+                ebr.append(partsqlarr[i] + " ");
+        }
+
+        // make a duplicate of the old Graph
+        GraphView graph = new GraphView(database, schema, type, oldGraph);
+        graph.setSQL(sqls);
+        // graph.setSubgraphPredicate(br.toString());
+        if (isVertexPredicate) {
+            graph.setSubgraphVertexPredicate(vbr.toString());
+            graph.setChosenVertexLabel(chosenVLabel);
+        }
+        else {
+            graph.setSubgraphEdgePredicate(ebr.toString());
+            graph.setChosenEdgeLabel(chosenELabel);
+        }
+        graph.setFromWhichTable(whichTable);
+        // System.out.println("ParserDDL:362:" + vbr.toString() + ", " + chosenVLabel);
+        // System.out.println("ParserDDL:363:" + ebr.toString() + ", " + chosenELabel);
+
+        graph.setOldGraphName(oldGraph.getName().name);
+
+        String   sql  = getLastPart();
+        Object[] args = new Object[] { graph };
+
+        return new StatementSchema(sql, StatementTypes.CREATE_GRAPHVIEW, args, null, null);
+        
+    }
+    
     
     // Added by LX    
     private StatementSchema compileCreateGraph(int type) {
     // TODO
-        System.out.println("ParserDDL:284");
+        // System.out.println("ParserDDL:284");
         HsqlName schema = readNewSchemaObjectNameNoCheck(SchemaObject.GRAPHVIEW);
         schema.setSchemaIfNull(session.getCurrentSchemaHsqlName());
 
@@ -368,13 +469,13 @@ public class ParserDDL extends ParserRoutine {
             XreadTableExpression(selectVertices);
             partsql = getLastPartAndCurrent(position);
             br = new StringBuilder("SELECT ");
-            System.out.println("ParserDDL:372");
+            // System.out.println("ParserDDL:372");
             // Import columns as properties from the vertex-source table
             selectVertices.resolveReferences(session);
             // TODO set multiple vtables in graphview
             Table Vtable = selectVertices.rangeVariables[0].rangeTable;
             graph.addVTableName(Vtable.getName(), curLabel);// LX FEAT2
-            System.out.println("ParserDDL:378:" + Vtable.getName());
+            // System.out.println("ParserDDL:378:" + Vtable.getName());
             // graph.VTableName = Vtable.getName();
             for (int i = 0; i < curProps.size(); i++) {
                 ColumnSchema column = Vtable.getColumn(Vtable.findColumn(curCols.get(i).name)).duplicate();
@@ -389,7 +490,7 @@ public class ParserDDL extends ParserRoutine {
             graph.addDefVertexProps(schema, isDelimitedIdentifier(), curLabel);
             
             br.append(partsql);
-            System.out.println("ParserDDL:392:" + br.toString());
+            // System.out.println("ParserDDL:392:" + br.toString());
             graph.addVSubQuery(br.toString(), curLabel);
 
         }
@@ -530,7 +631,7 @@ public class ParserDDL extends ParserRoutine {
             br.append(partsql);          
             // graph.ESubQuery = br.toString();
             graph.addESubQuery(br.toString(), curLabel);
-            System.out.println("ParserDDL:392:" + br.toString());
+            // System.out.println("ParserDDL:392:" + br.toString());
         }
         // LX FEAT3
         if (edgeCount > 1 && !hasLabel){
@@ -546,7 +647,7 @@ public class ParserDDL extends ParserRoutine {
 
         String   sql  = getLastPart();
         Object[] args = new Object[] { graph };
-
+// System.out.println("ParserDDL:606: " + sql);
         return new StatementSchema(sql, StatementTypes.CREATE_GRAPHVIEW, args, null, null);
         
     }
@@ -1688,6 +1789,7 @@ public class ParserDDL extends ParserRoutine {
         boolean end       = false;
 
         while (!end) {
+// System.out.println("ParserDDL:1692:compileCreateTable:in while: " + token.tokenType);
             switch (token.tokenType) {
 
                 case Tokens.LIKE : {
@@ -1801,7 +1903,7 @@ public class ParserDDL extends ParserRoutine {
             table, tempConstraints, null
         };
         String   sql  = getLastPart();
-
+// System.out.println("ParserDDL:1805:compileCreateTable:rest of sql: " + sql);
         return new StatementSchema(sql, StatementTypes.CREATE_TABLE, args,
                                    null, null);
     }

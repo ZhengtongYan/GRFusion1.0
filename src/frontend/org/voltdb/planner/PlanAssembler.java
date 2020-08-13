@@ -556,7 +556,7 @@ public class PlanAssembler {
         }
         // If this is an MP query, then all tables found in common
         // table scans have to be replicated.
-        System.out.println("PlanAssembler:559..........");
+        // System.out.println("PlanAssembler:559..........");
         if (parsedStmt.allScans().stream().anyMatch(scan ->
                 scan instanceof StmtCommonTableScan && ! scan.getIsReplicated())) {
             throw new PlanningErrorException(

@@ -557,7 +557,7 @@ final class RangeVariable {
                 && namedJoinColumnExpressions.containsKey(columnName)) {
             return -1;
         }
-// System.out.println("RangeVariable:389:" + tableName + "," + columnName);
+// System.out.println("RangeVariable:560:" + columnName);
         if (variables != null) {
             return variables.getIndex(columnName);
         } else if (columnAliases != null) {
@@ -566,7 +566,7 @@ final class RangeVariable {
             // Commented by LX
             // return rangeTable.findColumn(columnName);
             // LX FEAT4
-            System.out.println("RangeVariable:569:" + columnName);
+            
                 
             if (isGraph2Graph) {
                 int res1 = rangeGraph.findVertexProp(columnName);
@@ -597,7 +597,7 @@ final class RangeVariable {
     // Added by LX
     // TODO merge with findColumn(String tableName, String columnName)
     public int findColumn(String tableName, String objectName, String columnName) {
-System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + columnName);
+// System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + columnName);
         if (namedJoinColumnExpressions != null
                 && tableName == null
                 && namedJoinColumnExpressions.containsKey(columnName)) {
@@ -804,7 +804,7 @@ System.out.println("RangeVariable:389:" + tableName + "," + objectName + "," + c
 
         GraphView graph = getGraph();
         int   count = graph.getAllPropCount();
-
+// System.out.println("RangeVariable:807:count is " + count);
         for (int i = 0; i < count; i++) {
             ColumnSchema column = null;
             if (isEdges && graph.isEdge(i)) {

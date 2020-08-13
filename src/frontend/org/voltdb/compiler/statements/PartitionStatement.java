@@ -42,7 +42,7 @@ public class PartitionStatement extends StatementProcessor {
     protected boolean processStatement(DDLStatement ddlStatement, Database db, DdlProceduresToLoad whichProcs)
             throws VoltCompilerException {
         // Matches if it is the beginning of a partition statement
-        System.out.println("PartitionStatement:45");
+        // System.out.println("PartitionStatement:45");
         Matcher statementMatcher = SQLParser.matchPartitionStatementPreamble(ddlStatement.statement);
         if (! statementMatcher.matches()) {
             return false;
@@ -148,7 +148,7 @@ public class PartitionStatement extends StatementProcessor {
                     "expected syntax: PARTITION GRAPH <graph> ",
                     statement.substring(0,statement.length()-1))); // remove trailing semicolon
         }
-        System.out.println("PartitionStatement:151");
+        // System.out.println("PartitionStatement:151");
         // group(1) -> graph
         String graphName = checkIdentifierStart(statementMatcher.group(1), statement);
         // String columnName = checkIdentifierStart(statementMatcher.group(2), statement);

@@ -81,7 +81,7 @@ PlanNodeFragment* PlanNodeFragment::createFromCatalog(const char* value) {
     //cout << "DEBUG PlanNodeFragment::createFromCatalog: value == " << value << endl;
 
     try {
-        std::cout << "PlanNodeFragment:84" << endl;
+        // std::cout << "PlanNodeFragment:84" << endl;
         return fromJSONObject(PlannerDomRoot(value)()).release();
     } catch (UnexpectedEEException& ue) {
         ue.appendContextToMessage(string("\ncreateFromCatalog:\n").append(value));
@@ -98,7 +98,7 @@ std::unique_ptr<PlanNodeFragment> PlanNodeFragment::fromJSONObject(PlannerDomVal
     }
     // read and construct plannodes from json object
     if (obj.hasNonNullKey("PLAN_NODES_LISTS")) {
-        std::cout << "PlanNodeFragment:101" << endl;
+        // std::cout << "PlanNodeFragment:101" << endl;
         if (!obj.hasNonNullKey("EXECUTE_LISTS")) {
             throwFatalException("Failed to construct plan fragment. Missing EXECUTE_LISTS key");
         }
@@ -118,10 +118,10 @@ std::unique_ptr<PlanNodeFragment> PlanNodeFragment::fromJSONObject(PlannerDomVal
             }
         }
     } else {
-        std::cout << "PlanNodeFragment:121" << endl;
+        // std::cout << "PlanNodeFragment:121" << endl;
         retval->nodeListFromJSONObject(obj.valueForKey("PLAN_NODES"), obj.valueForKey("EXECUTE_LIST"), 0);
     }
-    std::cout << "PlanNodeFragment:122" << endl;
+    // std::cout << "PlanNodeFragment:122" << endl;
     return retval;
 }
 
@@ -139,14 +139,12 @@ void PlanNodeFragment::nodeListFromJSONObject(PlannerDomValue const& planNodesLi
         m_idToNodeMap.emplace(node->getPlanNodeId(), node);
         planNodes.emplace_back(node);
     }
-    std::cout << "here" << endl;
     // walk the plannodes and complete each plannode's id-to-node maps
     for (auto* node : planNodes) {
         for(auto const& id : node->getChildIds()) {
             node->addChild(m_idToNodeMap[id]);
         }
     }
-    std::cout << "why" << endl;
     // EXECUTE_LIST
     std::vector<AbstractPlanNode*> entry;
     for (int i = 0; i < executeList.arrayLen(); i++) {

@@ -54,6 +54,10 @@ public class StatementQuery extends StatementDMQL {
 
         this.queryExpression = queryExpression;
 
+        // LX FEAT4
+        if (((QuerySpecification)queryExpression).isGraph2Graph)
+            this.isGraph2Graph = true;
+
         setDatabaseObjects(compileContext);
         checkAccessRights(session);
     }

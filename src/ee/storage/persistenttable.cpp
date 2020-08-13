@@ -774,7 +774,7 @@ void PersistentTable::insertTupleIntoDeltaTable(TableTuple& source, bool fallibl
  * uninlined strings and creates and registers an UndoAction.
  */
 bool PersistentTable::insertTuple(TableTuple& source) {
-    cout << "persistenttable:774" << endl;
+    // cout << "persistenttable:774" << endl;
     insertPersistentTuple(source, true);
     return true;
 }
@@ -785,7 +785,7 @@ void PersistentTable::insertPersistentTuple(TableTuple& source, bool fallible, b
         str << "Table " << m_name << " exceeds table maximum row count " << m_tupleLimit;
         throw ConstraintFailureException(this, source, str.str());
     }
-    cout << "persistenttable:784" << endl;
+    // cout << "persistenttable:784" << endl;
     //
     // First get the next free tuple
     // This will either give us one from the free slot list, or
@@ -929,14 +929,14 @@ void PersistentTable::insertTupleCommon(TableTuple& source, TableTuple& target,
     }
 
     // handle any materialized views
-    cout << "persistenttable:928" << endl;
+    // cout << "persistenttable:928" << endl;
     BOOST_FOREACH (auto view, m_views) {
         view->processTupleInsert(target, fallible);
     }
 
     // LX FEAT6 handle graphviews that reference this table
     BOOST_FOREACH (auto gview, m_graphViews) {
-        cout << "persistenttable:935:for graphviews" << endl;
+        // cout << "persistenttable:935:for graphviews" << endl;
         gview->processTupleInsertInGraphView(target, this->name());
     }
 }
@@ -1771,7 +1771,7 @@ void PersistentTable::processLoadedTuple(TableTuple& tuple,
             str << "Table " << m_name << " exceeds table maximum row count " << m_tupleLimit;
             throw ConstraintFailureException(this, tuple, str.str(), (! uniqueViolationOutput) ? &m_surgeon : NULL);
         }
-        cout << "persistenttable:1759" << endl;
+        // cout << "persistenttable:1759" << endl;
         insertTupleCommon(tuple, tuple, true, shouldDRStreamRows, !uniqueViolationOutput);
     } catch (ConstraintFailureException& e) {
         if ( ! uniqueViolationOutput) {

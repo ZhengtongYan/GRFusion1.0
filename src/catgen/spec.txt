@@ -197,6 +197,12 @@ begin GraphView                              "A graph view in the database"
   EdgeLabel* edgeLabels                      "The set of labels and tables of the edge"
   bool isDirected                            "Is the graph view directed?"
   bool isreplicated                          "Is the graph view replicated?"
+  string subGraphVertexPredicate             "The predicate to select graph if it is a subgraph"
+  string subGraphEdgePredicate               "The predicate to select graph if it is a subgraph"
+  string chosenVertexLabel
+  string chosenEdgeLabel
+  string fromWhichTable
+  string oldGraphName                        "The name of the graph view that to select from"
   int estimatedvertexescount                 "A rough estimate of the number of vertexes in the graph view; used for planning"
   int estimatededgescount                    "A rough estimate of the number of edges in the graph view; used for planning"
   string signature                           "Catalog version independent signature of the graph view consisting of name and schema"
