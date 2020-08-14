@@ -200,7 +200,7 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 		}
 
 		unsigned edgeId;
-		int labelIdx = graphView->getIndexFromVertexLabels(edgeLabel);
+		int labelIdx = graphView->getIndexFromEdgeLabels(edgeLabel);
 
 		while (postfilter.isUnderLimit() && iterator.next(tuple))
 		{

@@ -78,6 +78,7 @@ public:
 	int getColumnIdInVertexTable(int vertexAttributeId);
 	string getVertexAttributeName(int vertexAttributeId);
 	std::map<unsigned, Vertex*> getVertexMap(); // LX FEAT7
+	int getIndexFromVertexLabels(string label);
 
 	// get all edge related
 	int numOfEdges();
@@ -100,6 +101,7 @@ public:
 	int getColumnIdInEdgeTable(int edgeAttributeId);
 	string getEdgeAttributeName(int edgeAttributeId);
 	std::map<unsigned, Edge*> getEdgeMap(); // LX FEAT7
+	int getIndexFromEdgeLabels(string label);
 
 	// get path related
 	Table* getPathTable();
@@ -150,8 +152,6 @@ public:
 protected:
 	void fillGraphFromRelationalTables();
 	void fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
-	int getIndexFromVertexLabels(string label);
-	int getIndexFromEdgeLabels(string label);
 	void constructPathSchema(); //constucts m_pathColumnNames and m_pathSchema
 	void constructPathTempTable();
 	void constructGraphSchema(); // LX FEAT4
@@ -167,7 +167,7 @@ protected:
 	std::vector<string> m_vertexColumnNames;
 	std::vector<int> m_columnIDsInVertexTable;
 	int m_vertexIdColumnIndex;
-	std::map<unsigned, int> m_vertexIdColIdxList;// LX FEAT2: store the id col index for each label
+	std::map<std::string, int> m_vertexIdColIdxList;// LX FEAT2: store the id col index for each label
 
 	// edge
 	std::vector<std::vector<Edge*>> m_subgraphEdgeList; // LX FEAT4
@@ -183,9 +183,9 @@ protected:
 	int m_edgeIdColumnIndex;
 	int m_edgeFromColumnIndex;
 	int m_edgeToColumnIndex;
-	std::map<unsigned, int> m_edgeIdColIdxList;// LX FEAT3
-	std::map<unsigned, int> m_edgeFromColIdxList;// LX FEAT3
-	std::map<unsigned, int> m_edgeToColIdxList;// LX FEAT3
+	std::map<std::string, int> m_edgeIdColIdxList;// LX FEAT3
+	std::map<std::string, int> m_edgeFromColIdxList;// LX FEAT3
+	std::map<std::string, int> m_edgeToColIdxList;// LX FEAT3
 
 	// path
 	std::vector<string> m_subgraphList; // LX FEAT4

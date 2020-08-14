@@ -124,7 +124,7 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
 
     // LX FEAT7
     bool hasHint = false;
-    std::map<string, bool> visited;
+    std::map<unsigned, bool> visited;
     if (node->checkHasGraphHint()) {
         // cout << "VertexScanExecutor:129:hint" << endl;
         if ((node->getGraphHint()).compare("VERTEXCOVER") == 0) {
@@ -371,13 +371,13 @@ void VertexScanExecutor::outputTuple(TableTuple& tuple)
     m_tmpOutputTable->insertTempTuple(tuple);
 }
 
-void VertexScanExecutor::vertexCover(GraphView* graphView, std::map<string, bool>* visited) {
+void VertexScanExecutor::vertexCover(GraphView* graphView, std::map<unsigned, bool>* visited) {
 
-    std::map<string, Vertex*> vertexMap = graphView->getVertexMap();
+    std::map<unsigned, Vertex*> vertexMap = graphView->getVertexMap();
     Edge* e = NULL;
 
-    for (std::map<string, Vertex*>::iterator i=vertexMap.begin(); i!=vertexMap.end(); ++i) {
-        string name = i->second->getId();
+    for (std::map<unsigned, Vertex*>::iterator i=vertexMap.begin(); i!=vertexMap.end(); ++i) {
+        unsigned name = i->second->getId();
 
         if (visited->count(name) > 0) {
             // this vertex is already added to the set
@@ -388,8 +388,8 @@ void VertexScanExecutor::vertexCover(GraphView* graphView, std::map<string, bool
 
         for (int j = 0; j < fanOut; j++){
             e = i->second->getOutEdge(j);
-            string startVertexId = e->getStartVertexId();
-            string endVertexId = e->getEndVertexId();
+            unsigned startVertexId = e->getStartVertexId();
+            unsigned endVertexId = e->getEndVertexId();
 
             if( (visited->count(startVertexId) == 0) && (visited->count(endVertexId) == 0)){
                 (*visited)[startVertexId] = true;

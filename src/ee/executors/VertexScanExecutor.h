@@ -52,7 +52,7 @@ public:
         AggregateExecutorBase* m_aggExec;
         GraphView* graphView;
         std::string m_vLabel; // LX FEAT2
-        void vertexCover(GraphView* gv, std::map<string, bool>* visited);
+        void vertexCover(GraphView* gv, std::map<unsigned, bool>* visited);
 
 };
 

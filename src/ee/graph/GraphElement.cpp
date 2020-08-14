@@ -15,7 +15,7 @@ GraphElement::GraphElement(unsigned id, char* tupleData, GraphView* graphView, b
 GraphElement::GraphElement(void)
 {
 	// this->m_id = -1;
-	this->m_id = ""; // LX FEAT2
+	this->m_id = 9; // LX FEAT2
 	this->m_tupleData = NULL;
 	this->m_gview = NULL;
 	this->m_isRemote = false;

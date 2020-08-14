@@ -167,97 +167,97 @@ void GraphVEScanExecutor::checkTupleForPredicate(AbstractExpression* predicate, 
 
 void GraphVEScanExecutor::filterFromGraph(AbstractExpression* predicate, Table* inputTable, std::string label, LimitPlanNode* limit_node, ProjectionPlanNode* projectionNode, GraphView* graphView, std::string obj, const NValueArray &params) {
 
-    TableTuple tuple(inputTable->schema());
-    TableIterator iterator = inputTable->iteratorDeletingAsWeGo();
-    // AbstractExpression *predicate = node->getPredicate();
-    int num_of_columns = -1;
-    if (projectionNode != NULL) {
-        num_of_columns = static_cast<int> (projectionNode->getOutputColumnExpressions().size());
-    }
-    cout << "GraphVEScanExecutor:177:" << num_of_columns << endl;
+//     TableTuple tuple(inputTable->schema());
+//     TableIterator iterator = inputTable->iteratorDeletingAsWeGo();
+//     // AbstractExpression *predicate = node->getPredicate();
+//     int num_of_columns = -1;
+//     if (projectionNode != NULL) {
+//         num_of_columns = static_cast<int> (projectionNode->getOutputColumnExpressions().size());
+//     }
+//     cout << "GraphVEScanExecutor:177:" << num_of_columns << endl;
    
-    int limit = CountingPostfilter::NO_LIMIT;
-    int offset = CountingPostfilter::NO_OFFSET;
-    LogManager::GLog("GraphVEScanExecutor", "p_execute:189", offset, "offset");
-    if (limit_node) {
-        std::tie(limit, offset) = limit_node->getLimitAndOffset(params);
-    }
-    // Initialize the postfilter
-    CountingPostfilter postfilter(m_tmpOutputTable, predicate, limit, offset);
+//     int limit = CountingPostfilter::NO_LIMIT;
+//     int offset = CountingPostfilter::NO_OFFSET;
+//     LogManager::GLog("GraphVEScanExecutor", "p_execute:189", offset, "offset");
+//     if (limit_node) {
+//         std::tie(limit, offset) = limit_node->getLimitAndOffset(params);
+//     }
+//     // Initialize the postfilter
+//     CountingPostfilter postfilter(m_tmpOutputTable, predicate, limit, offset);
 
-    ProgressMonitorProxy pmp(m_engine->getExecutorContext(), this);
-    TableTuple temp_tuple;
-    vassert(m_tmpOutputTable);
-    if (m_aggExec != NULL){
-        LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "1");
-        const TupleSchema * inputSchema = inputTable->schema();
-        if (projectionNode != NULL) {
-            inputSchema = projectionNode->getOutputTable()->schema();
-        }
+//     ProgressMonitorProxy pmp(m_engine->getExecutorContext(), this);
+//     TableTuple temp_tuple;
+//     vassert(m_tmpOutputTable);
+//     if (m_aggExec != NULL){
+//         LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "1");
+//         const TupleSchema * inputSchema = inputTable->schema();
+//         if (projectionNode != NULL) {
+//             inputSchema = projectionNode->getOutputTable()->schema();
+//         }
         
-        temp_tuple = m_aggExec->p_execute_init(params, &pmp, inputSchema, m_tmpOutputTable, &postfilter);
+//         temp_tuple = m_aggExec->p_execute_init(params, &pmp, inputSchema, m_tmpOutputTable, &postfilter);
 
-    } else {
-        LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "2");
-        temp_tuple = m_tmpOutputTable->tempTuple();
-    }
+//     } else {
+//         LogManager::GLog("GraphVEScanExecutor", "p_execute", 206, "2");
+//         temp_tuple = m_tmpOutputTable->tempTuple();
+//     }
     
-    int id;
-    std::set<std::string> edgelist;
+//     int id;
+//     std::set<unsigned> edgelist;
 
-    while (postfilter.isUnderLimit() && iterator.next(tuple))
-    {
-#if   defined(VOLT_TRACE_ENABLED)
-        int tuple_ctr = 0;
-#endif
-        VOLT_TRACE("INPUT TUPLE: %s, %d/%d\n",
-                   tuple.debug(inputTable->name()).c_str(), tuple_ctr,
-                   (int)inputTable->activeTupleCount());
-        pmp.countdownProgress();
-        // LogManager::GLog("GraphVEScanExecutor", "p_execute", 230, tuple.debug(inputVertexTable->name()).c_str());
-        cout << "GraphVEScanExecutor:233:" << tuple.debug(inputTable->name()).c_str() << endl;
+//     while (postfilter.isUnderLimit() && iterator.next(tuple))
+//     {
+// #if   defined(VOLT_TRACE_ENABLED)
+//         int tuple_ctr = 0;
+// #endif
+//         VOLT_TRACE("INPUT TUPLE: %s, %d/%d\n",
+//                    tuple.debug(inputTable->name()).c_str(), tuple_ctr,
+//                    (int)inputTable->activeTupleCount());
+//         pmp.countdownProgress();
+//         // LogManager::GLog("GraphVEScanExecutor", "p_execute", 230, tuple.debug(inputVertexTable->name()).c_str());
+//         cout << "GraphVEScanExecutor:233:" << tuple.debug(inputTable->name()).c_str() << endl;
 
-        if (postfilter.eval(&tuple, NULL))
-        {
-            VOLT_TRACE("inline projection...");
-            //get the vertex id
-            id = ValuePeeker::peekInteger(tuple.getNValue(0));
-            if (obj.compare("VERTEX") == 0) {
-                Vertex * v = graphView->getVertex(label + "." + to_string(id));
-                // vertexlist.insert(label + "." + to_string(id));
-                // subVertex->push_back(v);
-                // add all its inEdge and outEdge list to subEdge
-                for (int i = 0; i < v->fanOut(); i++) {
-                    // subEdge->push_back(v->getOutEdge(i));
-                    edgelist.insert(v->getOutEdge(i)->getId());
-                }
-                for (int j = 0; j < v->fanIn(); j++) {
-                    // subEdge->push_back(v->getInEdge(j));
-                    edgelist.insert(v->getInEdge(j)->getId());
-                }
+//         if (postfilter.eval(&tuple, NULL))
+//         {
+//             VOLT_TRACE("inline projection...");
+//             //get the vertex id
+//             id = ValuePeeker::peekInteger(tuple.getNValue(0));
+//             if (obj.compare("VERTEX") == 0) {
+//                 Vertex * v = graphView->getVertex(label + "." + to_string(id));
+//                 // vertexlist.insert(label + "." + to_string(id));
+//                 // subVertex->push_back(v);
+//                 // add all its inEdge and outEdge list to subEdge
+//                 for (int i = 0; i < v->fanOut(); i++) {
+//                     // subEdge->push_back(v->getOutEdge(i));
+//                     edgelist.insert(v->getOutEdge(i)->getId());
+//                 }
+//                 for (int j = 0; j < v->fanIn(); j++) {
+//                     // subEdge->push_back(v->getInEdge(j));
+//                     edgelist.insert(v->getInEdge(j)->getId());
+//                 }
 
-            }
-            else if (obj.compare("EDGE") == 0) {
-                Edge * e = graphView->getEdge(label + "." + to_string(id));
-                edgelist.insert(e->getId());
-                // subEdge->push_back(e);
-                // add its startVertex and endVertex to subVertex
-                // subVertex->push_back(e->getStartVertex());
-                // subVertex->push_back(e->getEndVertex());
+//             }
+//             else if (obj.compare("EDGE") == 0) {
+//                 Edge * e = graphView->getEdge(label + "." + to_string(id));
+//                 edgelist.insert(e->getId());
+//                 // subEdge->push_back(e);
+//                 // add its startVertex and endVertex to subVertex
+//                 // subVertex->push_back(e->getStartVertex());
+//                 // subVertex->push_back(e->getEndVertex());
                 
-            }
+//             }
             
-            pmp.countdownProgress();
-        }
-    }
-    Edge * e;
-    for (std::set<std::string>::iterator it = edgelist.begin(); it!=edgelist.end(); ++it) {
-        e = graphView->getEdge(*it);
-        temp_tuple.setNValue(0, ValueFactory::getStringValue(e->getId()));
-        temp_tuple.setNValue(1, ValueFactory::getStringValue(e->getStartVertex()->getId()));
-        temp_tuple.setNValue(2, ValueFactory::getStringValue(e->getEndVertex()->getId()));
-        outputTuple(temp_tuple);
-    }
+//             pmp.countdownProgress();
+//         }
+//     }
+//     Edge * e;
+//     for (std::set<unsigned>::iterator it = edgelist.begin(); it!=edgelist.end(); ++it) {
+//         e = graphView->getEdge(*it);
+//         temp_tuple.setNValue(0, ValueFactory::getIntegerValue(e->getId()));
+//         temp_tuple.setNValue(1, ValueFactory::getIntegerValue(e->getStartVertex()->getId()));
+//         temp_tuple.setNValue(2, ValueFactory::getIntegerValue(e->getEndVertex()->getId()));
+//         outputTuple(temp_tuple);
+//     }
 
 }
 

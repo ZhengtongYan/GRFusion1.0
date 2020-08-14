@@ -1,1 +1,0 @@
-sql-grammar-reporter.py

@@ -135,7 +135,7 @@ int GraphView::getIndexFromVertexLabels(string label)
 {
 	std::vector<string>::iterator it;
 	it = find(this->m_vertexLabels.begin(), this->m_vertexLabels.end(), label);
-	if (it != this->m_vertexTables.end())
+	if (it != this->m_vertexLabels.end())
 		return distance(this->m_vertexLabels.begin(), it);
 	return 0;
 }
@@ -258,7 +258,7 @@ int GraphView::getIndexFromEdgeLabels(string label)
 {
 	std::vector<string>::iterator it;
 	it = find(this->m_edgeLabels.begin(), this->m_edgeLabels.end(), label);
-	if (it != this->m_edgeTables.end())
+	if (it != this->m_edgeLabels.end())
 		return distance(this->m_edgeLabels.begin(), it);
 	return 0;
 }
@@ -520,8 +520,8 @@ void GraphView::SP_TopK(unsigned src, unsigned dest, int k)
 			//start vertex, end vertex, length, cost, path
 			// temp_tuple.setNValue(0, ValueFactory::getIntegerValue(src));
 			// temp_tuple.setNValue(1, ValueFactory::getIntegerValue(dest));
-			temp_tuple.setNValue(0, ValueFactory::getStringValue(src)); // LX FEAT2
-			temp_tuple.setNValue(1, ValueFactory::getStringValue(dest)); // LX FEAT2
+			temp_tuple.setNValue(0, ValueFactory::getIntegerValue(src)); // LX FEAT2
+			temp_tuple.setNValue(1, ValueFactory::getIntegerValue(dest)); // LX FEAT2
 			temp_tuple.setNValue(2, ValueFactory::getIntegerValue(length));
 			temp_tuple.setNValue(3, ValueFactory::getDoubleValue(minCost));
 			//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -663,8 +663,8 @@ void GraphView::SP_EdgeSelectivity(unsigned src, unsigned dest, int edgeSelectiv
 			//add a tuple here
 			TableTuple temp_tuple = m_pathTable->tempTuple();
 			//start vertex, end vertex, length, cost, path
-			temp_tuple.setNValue(0, ValueFactory::getStringValue(src));
-			temp_tuple.setNValue(1, ValueFactory::getStringValue(dest));
+			temp_tuple.setNValue(0, ValueFactory::getIntegerValue(src));
+			temp_tuple.setNValue(1, ValueFactory::getIntegerValue(dest));
 			temp_tuple.setNValue(2, ValueFactory::getIntegerValue(minCost));
 			temp_tuple.setNValue(3, ValueFactory::getDoubleValue(minCost));
 			//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -734,8 +734,8 @@ void GraphView::BFS_Reachability_ByDepth_eSelectivity(unsigned startVertexId, in
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
 					TableTuple temp_tuple = m_pathTable->tempTuple();
 					//start vertex, end vertex, length, cost, path
-					temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
-					temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
+					temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
+					temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
 					temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)(outVertex->Level + 1)));
 					//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -806,8 +806,8 @@ void GraphView::BFS_Reachability_ByDepth(unsigned startVertexId, int depth)
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
 					TableTuple temp_tuple = m_pathTable->tempTuple();
 					//start vertex, end vertex, length, cost, path
-					temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
-					temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
+					temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
+					temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
 					temp_tuple.setNValue(2, ValueFactory::getIntegerValue(vertexToLevel[outVertex->getId()]));
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)(vertexToLevel[outVertex->getId()])));
 					//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -879,8 +879,8 @@ void GraphView::BFS_Reachability_ByDestination(unsigned startVertexId, unsigned 
 					//Now, we reached the destination vertexes, where we should add tuples into the output table
 					TableTuple temp_tuple = m_pathTable->tempTuple();
 					//start vertex, end vertex, length, cost, path
-					temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
-					temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
+					temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
+					temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
 					temp_tuple.setNValue(2, ValueFactory::getIntegerValue(level));
 					temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)level));
 					temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -951,8 +951,8 @@ void GraphView::SubGraphLoopFromStartVertex(unsigned startVertexId, int length, 
 						TableTuple temp_tuple = m_pathTable->tempTuple();
 						//start vertex, end vertex, length, cost, path
 						//set the start vertex to the vertex having an edge that closes the loop (for debugging purposes)
-						temp_tuple.setNValue(0, ValueFactory::getStringValue(outEdge->getStartVertex()->getId()));
-						temp_tuple.setNValue(1, ValueFactory::getStringValue(startVertexId));
+						temp_tuple.setNValue(0, ValueFactory::getIntegerValue(outEdge->getStartVertex()->getId()));
+						temp_tuple.setNValue(1, ValueFactory::getIntegerValue(startVertexId));
 						temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -1026,8 +1026,8 @@ void GraphView::SubGraphLoop(int length, int vSelectivity, int eSelectivity)
 						TableTuple temp_tuple = m_pathTable->tempTuple();
 						//start vertex, end vertex, length, cost, path
 						//set the start vertex to the vertex having an edge that closes the loop (for debugging purposes)
-						temp_tuple.setNValue(0, ValueFactory::getStringValue(outEdge->getStartVertex()->getId()));
-						temp_tuple.setNValue(1, ValueFactory::getStringValue(startVertexId));
+						temp_tuple.setNValue(0, ValueFactory::getIntegerValue(outEdge->getStartVertex()->getId()));
+						temp_tuple.setNValue(1, ValueFactory::getIntegerValue(startVertexId));
 						temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -1090,8 +1090,8 @@ void GraphView::SubGraphLoop(unsigned startVertexId, int length)
 						//Now, we reached the destination vertexes, where we should add tuples into the output table
 						TableTuple temp_tuple = m_pathTable->tempTuple();
 						//start vertex, end vertex, length, cost, path
-						temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
-						temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
+						temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
+						temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
 						temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 						temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 						//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -1135,8 +1135,8 @@ void GraphView::SubGraphLoop(unsigned startVertexId, int length)
 							//Now, we reached the destination vertexes, where we should add tuples into the output table
 							TableTuple temp_tuple = m_pathTable->tempTuple();
 							//start vertex, end vertex, length, cost, path
-							temp_tuple.setNValue(0, ValueFactory::getStringValue(startVertexId));
-							temp_tuple.setNValue(1, ValueFactory::getStringValue(outVertex->getId()));
+							temp_tuple.setNValue(0, ValueFactory::getIntegerValue(startVertexId));
+							temp_tuple.setNValue(1, ValueFactory::getIntegerValue(outVertex->getId()));
 							temp_tuple.setNValue(2, ValueFactory::getIntegerValue(outVertex->Level));
 							temp_tuple.setNValue(3, ValueFactory::getDoubleValue((double)outVertex->Level));
 							//temp_tuple.setNValue(4, ValueFactory::getStringValue("Test", NULL) );
@@ -1270,8 +1270,8 @@ void GraphView::fillGraphFromRelationalTables()
 		string curLabel = this->m_edgeLabels[i];
 		string fromVertexLabel = this->m_startVLabels[i];
 		string endVertexLabel = this->m_endVLabels[i];
-		unsigned fromIdx = getIndexFromVertexLabels(fromVertexLabel);
-		unsigned toIdx = getIndexFromVertexLabels(toVertexLabel);
+		int fromIdx = getIndexFromVertexLabels(fromVertexLabel);
+		int toIdx = getIndexFromVertexLabels(endVertexLabel);
 
 		TableIterator iter = curTable->iterator();
 		schema = curTable->schema();
@@ -1462,13 +1462,13 @@ void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicat
 
 		// get all the vertices from the old graph
     	Vertex* curVertex;
-    	unsigned curVertexId;
+    	// unsigned curVertexId;
     	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
 
     	// traverse all the vertices
 		for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
 		{
-			curVertexId = it->first;
+			// curVertexId = it->first;
 			curVertex = it->second;
 
 			std::vector<unsigned> edgeIds;
