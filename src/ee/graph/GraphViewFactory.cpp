@@ -179,7 +179,7 @@ GraphView* GraphViewFactory::createSubGraphView(const std::string &graphViewName
 			  TupleSchema* vSchema, TupleSchema* eSchema,
 			  vector<std::string> vertexColumnNames, vector<std::string> edgeColumnNames,
 			  vector<int> columnIdsInVertexTable, vector<int> columnIdsInEdgeTable,
-	          voltdb::CatalogId databaseId, char *signature, const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)
+	          voltdb::CatalogId databaseId, char *signature, const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate , std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)
 {
 	GraphView* vw = new GraphView();
 	vw->m_name = graphViewName;
@@ -321,7 +321,7 @@ GraphView* GraphViewFactory::createSubGraphView(const std::string &graphViewName
 	vw->m_databaseId = databaseId;
 	::memcpy(&(vw->m_signature), signature, 20);
 
-	vw->fillSubGraphFromRelationalTables(subGraphVPredicate, subGraphEPredicate, oldGraphName, vlabelName, elabelName, isV);
+	vw->fillSubGraphFromRelationalTables(subGraphVPredicate, subGraphVPredicate2, subGraphEPredicate, graphPredicate, joinVEPredicate, oldGraphName, vlabelName, elabelName, isV);
 
 	return vw;
 }

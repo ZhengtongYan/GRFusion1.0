@@ -428,6 +428,8 @@ public class Tokens {
     static final String        T_QUESTION       = "?";
     static final String        T_SEMICOLON      = ";";
     static final String        T_DOUBLE_COLON   = "::";
+    static final String        T_OPENSQUAREBRACKET = "["; // LX FEAT4 used for split predicates
+    static final String        T_CLOSESQUAREBRACKET = "]";
 
     // SQL:200n non-reserved word list
     static final String T_A                      = "A";
@@ -1575,6 +1577,7 @@ public class Tokens {
     static final int        RIGHT_ARROW_OP   = 679;
     static final int        DOUBLE_COLON     = 680;
 
+
     //
     static final int SQL_TSI_FRAC_SECOND = 681;
     static final int SQL_TSI_SECOND      = 682;
@@ -1592,6 +1595,8 @@ public class Tokens {
     static final int CACHE = 693;
     static final int NIO = 694;
 
+    static final int        OPENSQUAREBRACKET = 695; // LX
+    static final int        CLOSESQUAREBRACKET = 696; // LX
     //
     static final int SQL_BIGINT        = 701;
     static final int SQL_BINARY        = 702;
@@ -2329,6 +2334,8 @@ public class Tokens {
         commandSet.put(T_QUESTION, Tokens.QUESTION);
         commandSet.put(T_OPENBRACKET, OPENBRACKET);
         commandSet.put(T_CLOSEBRACKET, CLOSEBRACKET);
+        commandSet.put(T_OPENSQUAREBRACKET, OPENSQUAREBRACKET); // LX
+        commandSet.put(T_CLOSESQUAREBRACKET, CLOSESQUAREBRACKET); // LX
 
         // A VoltDB extension to TTL
         commandSet.put(T_TTL, TTL);

@@ -61,9 +61,9 @@ void GraphViewCatalogDelegate::init(catalog::Database const &catalogDatabase,
 
 // LX FEAT4 initialize a subgraph
 void GraphViewCatalogDelegate::initSubgraph(catalog::Database const &catalogDatabase,
-	            catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)// LX FEAT2
+	            catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)// LX FEAT2
 {
-	m_graphView = constructSubGraphViewFromCatalog(catalogDatabase, catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVPredicate, subGraphEPredicate, oldGraphName, vlabelName, elabelName, isV);
+	m_graphView = constructSubGraphViewFromCatalog(catalogDatabase, catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVPredicate, subGraphVPredicate2, subGraphEPredicate, graphPredicate, joinVEPredicate, oldGraphName, vlabelName, elabelName, isV);
 	if (!m_graphView) {
 	        return;
 	}
@@ -111,7 +111,7 @@ GraphView *GraphViewCatalogDelegate::constructGraphViewFromCatalog(catalog::Data
 }
 
 // LX this is a subgraph
-GraphView *GraphViewCatalogDelegate::constructSubGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV) 
+GraphView *GraphViewCatalogDelegate::constructSubGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV) 
 {
 	int numColumns = catalogGraphView.VertexProps().size();
 	vector<string> columnNamesVertex(numColumns);
@@ -134,7 +134,7 @@ GraphView *GraphViewCatalogDelegate::constructSubGraphViewFromCatalog(catalog::D
 	SHA1Final(reinterpret_cast<unsigned char *>(m_signatureHash), &shaCTX);
 
 	GraphView *graphView = GraphViewFactory::createSubGraphView(catalogGraphView.name(), catalogGraphView.isDirected(), vLabels,
-			vTables, eLabels, eTables, startVLabels, endVLabels, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable, columnIdsInEdgeTable, databaseId, m_signatureHash, subGraphVPredicate, subGraphEPredicate, oldGraphName, vlabelName, elabelName, isV);
+			vTables, eLabels, eTables, startVLabels, endVLabels, pTable, vSchema, eSchema, columnNamesVertex, columnNamesEdge, columnIdsInVertexTable, columnIdsInEdgeTable, databaseId, m_signatureHash, subGraphVPredicate, subGraphVPredicate2, subGraphEPredicate, graphPredicate, joinVEPredicate, oldGraphName, vlabelName, elabelName, isV);
 
 	return graphView;
 }

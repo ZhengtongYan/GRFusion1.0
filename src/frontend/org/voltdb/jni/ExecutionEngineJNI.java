@@ -164,7 +164,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
         // base class loads the volt shared library.
         super(siteId, partitionId);
         // Add LX
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "Constructor", 125, "initialize the native Engine object.");
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "Constructor", 125, "initialize the native Engine object.");
         m_mailbox = mailbox;
         // End LX
         //exceptionBuffer.order(ByteOrder.nativeOrder());
@@ -360,7 +360,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
     @Override
     protected void coreLoadCatalog(long timestamp, final byte[] catalogBytes) throws EEException {
         LOG.trace("Loading Application Catalog...");
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "loadCatalog", 234,  "Loading Application Catalog."); // Add LX
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "loadCatalog", 234,  "Loading Application Catalog."); // Add LX
         int errorCode = 0;
         errorCode = nativeLoadCatalog(pointer, timestamp, catalogBytes);
         checkErrorCode(errorCode);
@@ -374,7 +374,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
     @Override
     public void coreUpdateCatalog(long timestamp, boolean isStreamUpdate, final String catalogDiffs) throws EEException {
         LOG.trace("Loading Application Catalog...");
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "updateCatalog", 249,  "timestamp =  " + timestamp +", diff = " + catalogDiffs); // Add LX
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "updateCatalog", 249,  "timestamp =  " + timestamp +", diff = " + catalogDiffs); // Add LX
         int errorCode = 0;
         errorCode = nativeUpdateCatalog(pointer, timestamp, isStreamUpdate, getStringBytes(catalogDiffs));
         checkErrorCode(errorCode);
@@ -418,7 +418,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
             final Object[] parameterSets, DeterminismHash determinismHash, boolean[] isWriteFrags, int[] sqlCRCs,
             final long txnId, final long spHandle, final long lastCommittedSpHandle, long uniqueId,
             final long undoToken, final boolean traceOn) throws EEException {
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreExecutePlanFragments", 269, "unique id = " + uniqueId); // Add LX
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreExecutePlanFragments", 269, "unique id = " + uniqueId); // Add LX
         // plan frag zero is invalid
         assert((numFragmentIds == 0) || (planFragmentIds[0] != 0));
 
@@ -501,7 +501,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
         if (HOST_TRACE_ENABLED) {
             LOG.trace("Retrieving VoltTable:" + tableId);
         }
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "serializeTable", 376,  "tableId =  " + tableId); // Add LX
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "serializeTable", 376,  "tableId =  " + tableId); // Add LX
         // Clear is destructive, do it before the native call
         m_nextDeserializer.clear();
         final int errorCode = nativeSerializeTable(pointer, tableId, m_nextDeserializer.buffer(),
@@ -519,7 +519,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
         long undoToken,
         LoadTableCaller caller) throws EEException
     {
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "loadTable", 390,  "Loading table with id = " + tableId);// Add LX
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "loadTable", 390,  "Loading table with id = " + tableId);// Add LX
         if (HOST_TRACE_ENABLED) {
             LOG.trace("loading table id=" + tableId + "...");
         }
@@ -1087,7 +1087,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
     @Override
     public byte[] executeTask(TaskType taskType, ByteBuffer task) throws EEException {
         try {
-            org.voltdb.VLog.GLog("ExecutionEngineJNI", "executeTask", 645, "Executing task with type = " + taskType); // Add LX
+            // org.voltdb.VLog.GLog("ExecutionEngineJNI", "executeTask", 645, "Executing task with type = " + taskType); // Add LX
             assert(m_psetBuffer.limit() >= 8);
             m_psetBuffer.putLong(0, taskType.taskId);
 
@@ -1103,7 +1103,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
 
     @Override
     public ByteBuffer getParamBufferForExecuteTask(int requiredCapacity) {
-        org.voltdb.VLog.GLog("ExecutionEngineJNI", "getParamBufferForExecuteTask", 668, "requiredCapacity = " + requiredCapacity); // Add LX
+        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "getParamBufferForExecuteTask", 668, "requiredCapacity = " + requiredCapacity); // Add LX
         clearPsetAndEnsureCapacity(8 + requiredCapacity);
         m_psetBuffer.position(8);
         return m_psetBuffer;

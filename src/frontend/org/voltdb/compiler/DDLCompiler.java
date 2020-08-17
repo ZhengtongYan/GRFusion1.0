@@ -939,7 +939,6 @@ public class DDLCompiler {
                             throw m_compiler.new VoltCompilerException(msg);
                     }
                     graphView.setIsreplicated(false);
-                    System.out.println("ddlCompiler:941:graph not replicated any more");
                 }
             }
         }
@@ -1724,6 +1723,32 @@ public class DDLCompiler {
          
     }
 
+    private String parserVertexOrEdgePredicate(Database db, String pred) throws VoltCompilerException {
+        VoltXMLElement xmlquery = null;
+        try {
+            xmlquery = m_hsql.getXMLCompiledStatement(pred);
+        }
+        catch (HSQLParseException e) {
+            e.printStackTrace();
+        }
+        assert(xmlquery != null);
+        
+        ParsedSelectStmt stmt = null;
+        try {
+            stmt = (ParsedSelectStmt) AbstractParsedStmt.parse(null, pred, xmlquery, null, db, null);
+        }
+        catch (Exception e) {
+            throw m_compiler.new VoltCompilerException(e.getMessage());
+        }
+        assert(stmt != null);
+        AbstractExpression where = stmt.getSingleTableFilterExpression();
+        if (where != null) {
+            String hex = Encoder.hexEncode(where.toJSONString());
+            return hex;
+        }
+        return null;
+    }
+
     // Add LX
     private void addGraphToCatalog(Database db, VoltXMLElement node) throws VoltCompilerException {
         assert node.name.equals("graph");
@@ -1751,69 +1776,68 @@ public class DDLCompiler {
 
         // LX FEAT4 add them in catalog to support select g2g
         String subGraphVertexPredicate = node.attributes.get("subGraphVertexPredicate");
+        String subGraphVertexPredicate2 = node.attributes.get("subGraphVertexPredicate2");
         String subGraphEdgePredicate = node.attributes.get("subGraphEdgePredicate");
         String chosenVertexlabel = node.attributes.get("chosenVertexLabel");
         String chosenEdgelabel = node.attributes.get("chosenEdgeLabel");
         String fromWhichTable = node.attributes.get("fromWhichTable");
+        String graphPredicate = node.attributes.get("graphPredicate");
+        String joinVEPredicate = node.attributes.get("joinVEPredicate");
 
         graph.setFromwhichtable(fromWhichTable);
 
-        // need to convert the predicate (where clause) part to abstract expression
-        if (subGraphVertexPredicate != null || subGraphEdgePredicate != null) {
-            VoltXMLElement xmlquery = null;
-            try {
-                if (subGraphVertexPredicate != null)
-                    xmlquery = m_hsql.getXMLCompiledStatement(subGraphVertexPredicate);
-                else
-                    xmlquery = m_hsql.getXMLCompiledStatement(subGraphEdgePredicate);
-            }
-            catch (HSQLParseException e) {
-                e.printStackTrace();
-            }
-            assert(xmlquery != null);
-            
-            ParsedSelectStmt stmt = null;
-            try {
-                if (subGraphVertexPredicate != null)
-                    stmt = (ParsedSelectStmt) AbstractParsedStmt.parse(null, subGraphVertexPredicate, xmlquery, null, db, null);
-                else
-                    stmt = (ParsedSelectStmt) AbstractParsedStmt.parse(null, subGraphEdgePredicate, xmlquery, null, db, null);
-            }
-            catch (Exception e) {
-                throw m_compiler.new VoltCompilerException(e.getMessage());
-            }
-            assert(stmt != null);
-            AbstractExpression where = stmt.getSingleTableFilterExpression();
-            if (where != null) {
-                // System.out.println("DDLCompiler:1776:" + where.toJSONString());
-                String hex = Encoder.hexEncode(where.toJSONString());
-
-                if (subGraphVertexPredicate != null) {
-                    graph.setSubgraphvertexpredicate(hex);
-                    graph.setChosenvertexlabel(chosenVertexlabel);
-                    graph.setSubgraphedgepredicate("");
-                    graph.setChosenedgelabel("");
-                }
-                else {
-                    graph.setSubgraphvertexpredicate("");
-                    graph.setChosenvertexlabel("");
-                    graph.setSubgraphedgepredicate(hex);
-                    graph.setChosenedgelabel(chosenEdgelabel);
-                }
+        if (subGraphVertexPredicate != null) {
+            String vHex = parserVertexOrEdgePredicate(db, subGraphVertexPredicate);
+            if (vHex != null) {
+                graph.setSubgraphvertexpredicate(vHex);
+                graph.setChosenvertexlabel(chosenVertexlabel);
             }
             else {
-                graph.setSubgraphvertexpredicate("");
-                graph.setChosenvertexlabel("");
-                graph.setSubgraphedgepredicate("");
-                graph.setChosenedgelabel("");
+                System.out.println("Error: vertex not null but cannot convert to hexString");
             }
         }
         else {
             graph.setSubgraphvertexpredicate("");
             graph.setChosenvertexlabel("");
+        }
+
+        if (subGraphVertexPredicate2 != null) {
+            String vHex = parserVertexOrEdgePredicate(db, subGraphVertexPredicate2);
+            if (vHex != null) {
+                graph.setSubgraphvertexpredicatesec(vHex);
+            }
+            else {
+                System.out.println("Error: vertex not null but cannot convert to hexString");
+            }
+        }
+        else {
+            graph.setSubgraphvertexpredicatesec("");
+        }            
+
+        if (subGraphEdgePredicate != null) {
+            String eHex = parserVertexOrEdgePredicate(db, subGraphEdgePredicate);
+            if (eHex != null) {
+                graph.setSubgraphedgepredicate(eHex);
+                graph.setChosenedgelabel(chosenEdgelabel);
+            }
+            else {
+                System.out.println("Error: edge not null but cannot convert to hexString");
+            }
+        }
+        else {
             graph.setSubgraphedgepredicate("");
             graph.setChosenedgelabel("");
-        }    
+        }   
+
+        if (graphPredicate != null)
+            graph.setGraphpredicate(graphPredicate);
+        else
+            graph.setGraphpredicate("");
+
+        if (joinVEPredicate != null)
+            graph.setJoinvepredicate(joinVEPredicate);
+        else
+            graph.setJoinvepredicate("");
 
         String oldGraphName = node.attributes.get("oldGraphName");
         graph.setOldgraphname(oldGraphName);

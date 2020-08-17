@@ -463,7 +463,7 @@ public abstract class ProcedureCompiler {
             String msg = "Partition parameter must be a String or Number for procedure: " + procedure.getClassname();
             throw compiler.new VoltCompilerException(msg);
         }
-System.out.println("ProcedureCompiler:466:..............partition");
+
         VoltType columnType = VoltType.get((byte)procedure.getPartitioncolumn().getType());
         VoltType paramType = VoltType.typeFromClass(partitionType);
         if ( ! columnType.canExactlyRepresentAnyValueOf(paramType)) {
@@ -929,7 +929,6 @@ System.out.println("ProcedureCompiler:466:..............partition");
         for (Table table : tables) {
             if (table.getTypeName().equalsIgnoreCase(tableName)) {
                 CatalogMap<Column> columns = table.getColumns();
-                System.out.println("ProcedureCompiler:932:..............partition");
                 Column partitionColumn = table.getPartitioncolumn();
                 if (partitionColumn == null) {
                     String msg = String.format("Procedure %s references table %s which has no partition column (may be replicated).",

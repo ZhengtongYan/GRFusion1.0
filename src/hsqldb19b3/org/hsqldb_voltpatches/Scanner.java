@@ -111,7 +111,9 @@ public class Scanner {
         '_',
         '|',
         '{',
-        '}'
+        '}',
+        '[', // added by LX
+        ']'  // added by LX
     };
     final static String[] multi = new String[] {
         "??(",
@@ -827,7 +829,7 @@ public class Scanner {
 
         char start = sqlString.charAt(currentPosition);
 
-        if (!Character.isLetter(start)) {
+        if (!Character.isLetter(start)){// && start != '[') {
             token.tokenString = Character.toString(start);
             token.tokenType   = Tokens.X_UNKNOWN_TOKEN;
             token.isMalformed = true;
@@ -1296,6 +1298,27 @@ public class Scanner {
 
                 return;
 
+            case '[':
+                token.tokenString = Tokens.T_OPENSQUAREBRACKET;
+                token.tokenType   = Tokens.OPENSQUAREBRACKET;
+
+                currentPosition++;
+
+                token.isDelimiter = true;
+
+                return;
+
+            case ']':
+                token.tokenString = Tokens.T_CLOSESQUAREBRACKET;
+                token.tokenType   = Tokens.CLOSESQUAREBRACKET;
+
+                currentPosition++;
+
+                token.isDelimiter = true;
+
+                return;
+            
+
             case ',' :
                 token.tokenString = Tokens.T_COMMA;
                 token.tokenType   = Tokens.COMMA;
@@ -1671,7 +1694,6 @@ public class Scanner {
                     /** @todo 1.9.0 - review message malformed character set identifier */
                     token.tokenType   = Tokens.X_MALFORMED_STRING;
                     token.isMalformed = true;
-                    // System.out.println("scanner:1674:is it malformed?");
                     return;
                 }
 

@@ -125,7 +125,6 @@ SET (VOLTDB_SRC
   catalog/functionparameter.cpp
   catalog/graphview.cpp
   catalog/graphviewinfo.cpp
-  catalog/subgraph.cpp
   catalog/vertexlabel.cpp
   catalog/edgelabel.cpp
   catalog/index.cpp

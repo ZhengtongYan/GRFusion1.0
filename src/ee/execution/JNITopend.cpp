@@ -410,7 +410,7 @@ std::string JNITopend::planForFragmentId(int64_t fragmentId) {
     // return jbyteArrayToStdString(m_jniEnv, jni_frame, jbuf); // Comment by LX
     // Added by LX
     string plan = jbyteArrayToStdString(m_jniEnv, jni_frame, jbuf);
-    LogManager::GLog("JNITopend", "planForFragmentId", 1408, plan);
+    // LogManager::GLog("JNITopend", "planForFragmentId", 1408, plan);
     return plan;
     // End LX
 }

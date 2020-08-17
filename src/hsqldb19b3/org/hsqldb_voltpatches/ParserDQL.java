@@ -978,8 +978,11 @@ public class ParserDQL extends ParserBase {
             read();
         }
 
+        // this is used to create the graph topology table
+        // comment them for now
         // LX FEAT4 Fix the format to be:
         // select Graph(V.Label.*, E.*) into newGraph from oldGraph
+        /*
         if (token.tokenType == Tokens.GRAPH) {
             // System.out.println("parserDQL:984");
             read();
@@ -1025,7 +1028,8 @@ public class ParserDQL extends ParserBase {
 
             // return select; // the rest of the query are taken care of later
         }
-// System.out.println("parserDQL:1028:" + select.isGraph2Graph);
+        */
+
         // while (true) {
         while (!select.isGraph2Graph) { // LX FEAT4
             Expression e = XreadValueExpression();
@@ -1040,7 +1044,7 @@ public class ParserDQL extends ParserBase {
                         isDelimitedIdentifier()));
                 read();
             }
-// System.out.println("parserDQL:1043:");
+
             select.addSelectColumnExpression(e);
 
             if (token.tokenType == Tokens.FROM) {
@@ -1122,6 +1126,12 @@ public class ParserDQL extends ParserBase {
     // LX FEAT4
     void XreadGraphReferences(QuerySpecification select) {
         RangeVariable graphVar1 = readGraph(select);
+
+        // if we have multiple vertex alias, skip the aliases
+        // e.g. From GV.Vertexes V1 V2, GV.Edges E
+        while (token.tokenType != Tokens.COMMA)
+            read();
+
         if (readIfThis(Tokens.COMMA)) {
             RangeVariable graphVar2 = readGraph(select);
             if (graphVar1.getGraph() != graphVar2.getGraph())
@@ -3206,7 +3216,6 @@ public class ParserDQL extends ParserBase {
                 read();
             } else if (token.tokenType == Tokens.UNKNOWN) {
                 unknown = true;
-
                 read();
             } else {
                 throw unexpectedToken();
@@ -4567,7 +4576,7 @@ public class ParserDQL extends ParserBase {
             }
             vertexLabels.add(vertexLabel);
             edgeLabels.add(edgeLabel); // LX FEAT3
-            //org.voltdb.VLog.GLog("ParserDQL", "readColumnOrFunctionExpression", 4012, 
+            // org.voltdb.VLog.GLog("ParserDQL", "readColumnOrFunctionExpression", 4012, 
             //      "column = " + column.getColumnName() + " object " + ((ExpressionColumn)column).getObjectName());
             // End LX
             return column;

@@ -1758,7 +1758,7 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
 
     // Added by LX
     //handle the graph views
-    LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1104, "process catalog additions (graph views)");
+    // LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1104, "process catalog additions (graph views)");
     // iterate over all of the graph views in the new catalog
     for (LabeledGraphView labeledGraphView: m_database->graphViews()){
         // get the catalog's table object
@@ -1801,15 +1801,18 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             }
             string pathsTableName = "TEMPPATHS";
 
-            LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1128, "before calling gcd.init");
+            // LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1128, "before calling gcd.init");
             //TODO: pTable is not used as we assume one path table schema. The parameter may allow varying the path schema according to the view definition in the future
             Table* pTable = NULL;
 
             const string& subGraphVertexPredicate = catalogGraphView->subGraphVertexPredicate();
+            const string& subGraphVertexPredicate2 = catalogGraphView->subGraphVertexPredicateSec();
             const string& subGraphEdgePredicate = catalogGraphView->subGraphEdgePredicate();
             std::string chosenVertexLabel = catalogGraphView->chosenVertexLabel();
             std::string chosenEdgeLabel = catalogGraphView->chosenEdgeLabel();
             std::string fromWhichTable = catalogGraphView->fromWhichTable();
+            std::string graphPredicate = catalogGraphView->graphPredicate();
+            std::string joinVEPredicate = catalogGraphView->joinVEPredicate();
 
             bool isVpred;
             if (fromWhichTable.compare("V") == 0) 
@@ -1817,12 +1820,16 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             else
                 isVpred = false;
 
+            stringstream output;
+            output << graphPredicate << ", " << fromWhichTable << endl;
+            LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1823, output.str());
+
             std::string oldGraphName = catalogGraphView->oldGraphName();
             if (oldGraphName != "") {
                 // cout << "VoltDBEngine:1811:old graph is " << oldGraphName << endl;
                 GraphViewCatalogDelegate* oldgcd = getGraphViewDelegate(oldGraphName);
                 GraphView* oldGraphView = oldgcd->getGraphView();
-                gcd->initSubgraph(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVertexPredicate, subGraphEdgePredicate, oldGraphView, chosenVertexLabel, chosenEdgeLabel, isVpred);
+                gcd->initSubgraph(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVertexPredicate, subGraphVertexPredicate2, subGraphEdgePredicate, graphPredicate, joinVEPredicate, oldGraphView, chosenVertexLabel, chosenEdgeLabel, isVpred);
             }
             else {
                 gcd->init(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable); // LX FEAT2    

@@ -140,7 +140,7 @@ AbstractExpression::buildExpressionTree(PlannerDomValue obj)
 
     if (exp)
         exp->initParamShortCircuits();
-    LogManager::GLog("AbstractExpression", "buildExpressionTree", 152, exp->debug(true)); // Add LX
+    // LogManager::GLog("AbstractExpression", "buildExpressionTree", 152, exp->debug(true)); // Add LX
     return exp;
 }
 

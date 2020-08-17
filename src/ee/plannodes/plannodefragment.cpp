@@ -81,7 +81,6 @@ PlanNodeFragment* PlanNodeFragment::createFromCatalog(const char* value) {
     //cout << "DEBUG PlanNodeFragment::createFromCatalog: value == " << value << endl;
 
     try {
-        // std::cout << "PlanNodeFragment:84" << endl;
         return fromJSONObject(PlannerDomRoot(value)()).release();
     } catch (UnexpectedEEException& ue) {
         ue.appendContextToMessage(string("\ncreateFromCatalog:\n").append(value));
@@ -98,7 +97,6 @@ std::unique_ptr<PlanNodeFragment> PlanNodeFragment::fromJSONObject(PlannerDomVal
     }
     // read and construct plannodes from json object
     if (obj.hasNonNullKey("PLAN_NODES_LISTS")) {
-        // std::cout << "PlanNodeFragment:101" << endl;
         if (!obj.hasNonNullKey("EXECUTE_LISTS")) {
             throwFatalException("Failed to construct plan fragment. Missing EXECUTE_LISTS key");
         }
@@ -118,10 +116,8 @@ std::unique_ptr<PlanNodeFragment> PlanNodeFragment::fromJSONObject(PlannerDomVal
             }
         }
     } else {
-        // std::cout << "PlanNodeFragment:121" << endl;
         retval->nodeListFromJSONObject(obj.valueForKey("PLAN_NODES"), obj.valueForKey("EXECUTE_LIST"), 0);
     }
-    // std::cout << "PlanNodeFragment:122" << endl;
     return retval;
 }
 
@@ -131,10 +127,8 @@ void PlanNodeFragment::nodeListFromJSONObject(PlannerDomValue const& planNodesLi
     // NODE_LIST
     std::vector<AbstractPlanNode*> planNodes;
     for (int i = 0; i < planNodesList.arrayLen(); i++) {
-        std::cout << i << endl;
         AbstractPlanNode *node = AbstractPlanNode::fromJSONObject(planNodesList.valueAtIndex(i)).release();
         vassert(node);
-        std::cout << node->getPlanNodeId() << endl;
         vassert(m_idToNodeMap.find(node->getPlanNodeId()) == m_idToNodeMap.end());
         m_idToNodeMap.emplace(node->getPlanNodeId(), node);
         planNodes.emplace_back(node);

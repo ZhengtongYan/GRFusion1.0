@@ -232,7 +232,6 @@ std::unique_ptr<AbstractPlanNode> AbstractPlanNode::fromJSONObject(PlannerDomVal
     string typeString = obj.valueForKey("PLAN_NODE_TYPE").asStr();
     std::unique_ptr<AbstractPlanNode> node(
         plannodeutil::getEmptyPlanNode(stringToPlanNode(typeString)));
-    std::cout << typeString << endl;
     node->m_planNodeId = obj.valueForKey("ID").asInt();
 
     if (obj.hasKey("INLINE_NODES")) {

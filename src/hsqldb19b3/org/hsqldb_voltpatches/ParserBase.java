@@ -217,7 +217,7 @@ public class ParserBase {
 
         if (token.isMalformed) {
             int errorCode = -1;
-
+            org.hsqldb_voltpatches.HSQLLog.GLog("ParserBase", 220, "");
             switch (token.tokenType) {
 
                 case Tokens.X_MALFORMED_BINARY_STRING :
@@ -258,7 +258,7 @@ public class ParserBase {
 
         if (isRecording) {
             Token dup = token.duplicate();
-
+org.hsqldb_voltpatches.HSQLLog.GLog("ParserBase", 261, "");
             dup.position = scanner.getTokenPosition();
 
             recordedStatement.add(dup);

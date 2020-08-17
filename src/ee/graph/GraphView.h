@@ -151,7 +151,21 @@ public:
 
 protected:
 	void fillGraphFromRelationalTables();
-	void fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
+	void fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
+	AbstractExpression* getPredicateFromWhere(const string& pred);
+	Vertex* createAndAddVertex(unsigned vid, char* tupleData) ;
+	Edge* createEdge(unsigned eid, char* tupleData, unsigned fromId, unsigned toId);
+	void fillGraphByIntersection(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView);
+	void filterGraphVertexFromVertex(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView);
+	void filterGraphVertexFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void filterGraphEdgeFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void filterGraphEdgeFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void fillGraphByUnion(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView);
+	void filterEndVertexPredicateFromEdge(Table* input_table, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView);
+	void filterEndVertexPredicateFromVertex(Table* input_vtable, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView);
+	void filterEndVertexEdgePredicateFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* vpred2, AbstractExpression* epred, GraphView* oldGraphView);
+	void filterEndVertexEdgePredicateFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* vpred2, AbstractExpression* epred, GraphView* oldGraphView);
+
 	void constructPathSchema(); //constucts m_pathColumnNames and m_pathSchema
 	void constructPathTempTable();
 	void constructGraphSchema(); // LX FEAT4

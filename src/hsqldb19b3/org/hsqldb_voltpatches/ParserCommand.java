@@ -121,7 +121,7 @@ public class ParserCommand extends ParserDDL {
         if (token.tokenType == Tokens.X_STARTPARSE) {
             read();
         }
-// System.out.println("ParserCommand:119：" + token.tokenType);
+        org.hsqldb_voltpatches.HSQLLog.GLog("ParserCommand", 124, Integer.toString(token.tokenType));
         switch (token.tokenType) {
 
             // DQL

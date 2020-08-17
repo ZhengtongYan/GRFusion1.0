@@ -25,9 +25,12 @@ public class GraphView implements SchemaObject {
     protected int type;
 	
     private String subGraphVertexPredicate;
+    private String subGraphVertexPredicate2;
     private String subGraphEdgePredicate;
     private String chosenVertexLabel; // for feat4. The label in the predicate
     private String chosenEdgeLabel;
+    private String graphPredicate; // e.g. v1<->v2 in e, v=e.from, v=e.to
+    private String joinVEPredicate; // either AND or OR
     private String oldGraphName;
     private String fromWhichTable; // just a hack
 
@@ -460,12 +463,15 @@ public class GraphView implements SchemaObject {
         graphxml.attributes.put("isdirected", String.valueOf(isDirected));        
         graphxml.attributes.put("DDL", statement);
         // LX FEAT4: stores the predicate to select the subgraph
-        graphxml.attributes.put("subGraphVertexPredicate", subGraphVertexPredicate); 
+        graphxml.attributes.put("subGraphVertexPredicate", subGraphVertexPredicate);
+        graphxml.attributes.put("subGraphVertexPredicate2", subGraphVertexPredicate2); 
         graphxml.attributes.put("subGraphEdgePredicate", subGraphEdgePredicate); 
         graphxml.attributes.put("chosenVertexLabel", chosenVertexLabel);
         graphxml.attributes.put("chosenEdgeLabel", chosenEdgeLabel);
         graphxml.attributes.put("oldGraphName", oldGraphName);
         graphxml.attributes.put("fromWhichTable", fromWhichTable);
+        graphxml.attributes.put("graphPredicate", graphPredicate);
+        graphxml.attributes.put("joinVEPredicate", joinVEPredicate);
         
         // LX FEAT2        
         for (int i = 0; i < VLabelList.size(); i++){
@@ -565,6 +571,10 @@ public class GraphView implements SchemaObject {
         subGraphVertexPredicate = pred;
     }
 
+    public void setSubgraphVertexPredicate2(String pred) {
+        subGraphVertexPredicate2 = pred;
+    }
+
     public void setSubgraphEdgePredicate(String pred) {
         subGraphEdgePredicate = pred;
     }
@@ -585,6 +595,13 @@ public class GraphView implements SchemaObject {
         oldGraphName = name;
     }
 
+    public void setGraphPredicate(String pred) {
+        graphPredicate = pred;
+    }
+
+    public void setJoinVEPredicate(String pred)  {
+        joinVEPredicate = pred;
+    }
     // LX FEAT3
     public void addStartVertexLabel(String elabel, String vlabel) {
         EStartVertexLabelList.add(elabel, vlabel);

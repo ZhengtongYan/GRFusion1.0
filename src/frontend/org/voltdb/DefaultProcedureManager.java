@@ -116,7 +116,6 @@ public class DefaultProcedureManager {
             }
 
             // get the partition column
-            System.out.println("DefaultProcedureManager:119:..............partition");
             final Column partitioncolumn = table.getPartitioncolumn();
             // this check is an accommodation for some tests that don't flesh out a catalog
             if (partitioncolumn == null) {
@@ -171,7 +170,6 @@ public class DefaultProcedureManager {
         String[] parts = name.split("\\.");
         String action = parts[1];
         Table table = defaultProc.getPartitiontable();
-        System.out.println("DefaultProcedureManager:173:..............partition");
         Column partitionColumn = defaultProc.getPartitioncolumn();
 
         final CatalogMap<Constraint> constraints = table.getConstraints();

@@ -122,7 +122,7 @@ public class AdHoc extends AdHocNTBase {
             if (rejectionExplanation != null) {
                 return makeQuickResponse(ClientResponse.GRACEFUL_FAILURE, rejectionExplanation);
             }
-
+            org.voltdb.VLog.GLog("AdHoc", "runDDLBatch", 125, stmt);
             final String ddlToken = SQLLexer.extractDDLToken(stmt);
             // System.out.println("AdHoc:126:" + ddlToken);
             // make sure not to mix drop and create in the same batch for the

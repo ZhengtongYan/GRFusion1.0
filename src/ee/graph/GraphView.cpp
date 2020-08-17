@@ -1331,112 +1331,173 @@ void GraphView::fillGraphFromRelationalTables()
 
 }
 
-void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphEPredicate, GraphView* oldGraphView, std::string vlabelName, std::string elabelName, bool useV)
+Vertex* GraphView::createAndAddVertex(unsigned vid, char* tupleData) 
 {
+	Vertex *newVertex = NULL;
+	newVertex = new Vertex();
+	newVertex->setGraphView(this);
+	newVertex->setId(vid);
+	newVertex->setTupleData(tupleData);
+	this->addVertex(vid, newVertex);
+	return newVertex;
+}
 
+Edge* GraphView::createEdge(unsigned eid, char* tupleData, unsigned fromId, unsigned toId)
+{
+	Edge* newEdge = NULL;
+	newEdge = new Edge();
+	newEdge->setGraphView(this);
+	newEdge->setId(eid);
+	newEdge->setTupleData(tupleData);
+	newEdge->setStartVertexId(fromId);
+	newEdge->setEndVertexId(toId);
+	return newEdge;
+}
 
-	this->m_vertexes.clear();
-	this->m_edges.clear();
-
-	// LX FEAT4
-	// start from the oldGraphView, check vertex by vertex, or edge by edge
-	// filter by the subgraphPredicate
-
-	// first check the predicate is about vertex or edge
-    std::string curLabel = "";
-    Table* input_table = NULL;
-    bool isV;
-    AbstractExpression* predicate = NULL;
-    if (subGraphVPredicate.size() != 0) {
-    	curLabel = vlabelName;
-    	input_table = oldGraphView->getVertexTableFromLabel(curLabel);
-    	isV = true;
-
-    	vassert(subGraphVPredicate.length() % 2 == 0);
-	    int bufferLength = (int)subGraphVPredicate.size() / 2 + 1;
-	    boost::shared_array<char> buffer(new char[bufferLength]);
-	    catalog::Catalog::hexDecodeString(subGraphVPredicate, buffer.get());
-
-	    PlannerDomRoot domRoot(buffer.get());
-	    if (domRoot.isNull()) {
-	        return ;
-	    }
-	    PlannerDomValue expr = domRoot();
-
-    	predicate = AbstractExpression::buildExpressionTree(expr);
-    }
-    else {
-    	curLabel = elabelName;
-    	input_table = oldGraphView->getEdgeTableFromLabel(curLabel);
-    	isV = false;
-
-    	vassert(subGraphEPredicate.length() % 2 == 0);
-	    int bufferLength = (int)subGraphEPredicate.size() / 2 + 1;
-	    boost::shared_array<char> buffer(new char[bufferLength]);
-	    catalog::Catalog::hexDecodeString(subGraphEPredicate, buffer.get());
-
-	    PlannerDomRoot domRoot(buffer.get());
-	    if (domRoot.isNull()) {
-	        return ;
-	    }
-	    PlannerDomValue expr = domRoot();
-
-    	predicate = AbstractExpression::buildExpressionTree(expr);
-    }		
-    
-
-    int limit = CountingPostfilter::NO_LIMIT;
+void GraphView::filterGraphVertexFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView) 
+{
+	int limit = CountingPostfilter::NO_LIMIT;
     int offset = CountingPostfilter::NO_OFFSET;
     CountingPostfilter postfilter(predicate, limit, offset);
 
+	// predicate is about vertices and we want to start from vertices
+	// get all the vertices from the old graph
+	Vertex* curVertex;
+	unsigned curVertexId;
+	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
 
+	// traverse all the vertices and get their tuple data
+	for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+	{
 
-    if (!useV && !isV) {
-    	// predicate is about edges and we want to start from edges
-    	// cout << "GraphView:1407: edge predicate starts from edges" << endl;
-    	// std::string curLabel = labelName;
-    	// Table* input_table = oldGraphView->getEdgeTableFromLabel(curLabel);
-    	
-    	// get all the edges from the old graph
-    	Edge* curEdge;
-    	unsigned curEdgeId, from, to;
-    	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+		curVertexId = it->first;
+		curVertex = it->second;
+		TableTuple* tuple = new TableTuple(curVertex->getTupleData(), input_table->schema());
 
-    	// traverse all the edges and get their tuple data
-		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
-		{
+		//check if the tuple satisfy the predicate
+		if (postfilter.eval(tuple, NULL)) {
+			createAndAddVertex(curVertexId, curVertex->getTupleData());
+		}
+	}
 
-			curEdgeId = it->first;
-			curEdge = it->second;
-			TableTuple* tuple = new TableTuple(curEdge->getTupleData(), input_table->schema());
+	// has to scan oldGraphView edges again to add edges if both end nodes are selected
+	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+	Edge *curEdge;
+	unsigned curEdgeId;
+	for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+	{
+		curEdgeId = it->first;
+		curEdge = it->second;
+		unsigned from = curEdge->getStartVertexId();
+		unsigned to = curEdge->getEndVertexId();
+		if ((this->hasVertex(from)) && (this->hasVertex(to))){
+			Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
 
-			//check if the tuple satisfy the predicate
+			Vertex* vFrom = newEdge->getStartVertex();
+			Vertex* vTo = newEdge->getEndVertex();
+			vFrom->addOutEdge(newEdge);
+			vTo->addInEdge(newEdge);
+			this->addEdge(curEdgeId, newEdge);
+		}
+	}
+}
+
+void GraphView::filterGraphVertexFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter(predicate, limit, offset);
+
+    // predicate is about vertices and we want to start from edges
+	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+	Edge *curEdge;
+	unsigned curEdgeId, from, to;
+	Vertex* vFrom;
+	Vertex* vTo;
+	for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+	{
+		curEdgeId = it->first;
+		curEdge = it->second;
+		vFrom = curEdge->getStartVertex();
+		vTo = curEdge->getEndVertex();
+		TableTuple* fromtuple = new TableTuple(vFrom->getTupleData(), input_table->schema());
+		TableTuple* totuple = new TableTuple(vTo->getTupleData(), input_table->schema());
+		if (postfilter.eval(fromtuple, NULL) && postfilter.eval(totuple, NULL)) {
+			// only if both nodes satisfy the predicate, they as well as the edge are added
+			from = curEdge->getStartVertexId();
+			to = curEdge->getEndVertexId();
+			Edge *newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
+    		
+			// add these two vertices to new graph
+			Vertex* vNewFrom = createAndAddVertex(from, vFrom->getTupleData());
+			Vertex* vNewTo = createAndAddVertex(to, vTo->getTupleData());
+
+			//update the endpoint vertexes in and out lists
+			vNewFrom = newEdge->getStartVertex();
+			vNewTo = newEdge->getEndVertex();
+			vNewFrom->addOutEdge(newEdge);
+			vNewTo->addInEdge(newEdge);
+
+			if(!this->isDirected())
+			{
+				vNewTo->addOutEdge(newEdge);
+				vNewFrom->addInEdge(newEdge);
+			}
+			this->addEdge(curEdgeId, newEdge);
+		}
+		else if (postfilter.eval(fromtuple, NULL) ){
+			from = curEdge->getStartVertexId();
+			createAndAddVertex(from, vFrom->getTupleData());
+		}
+		else if (postfilter.eval(totuple, NULL)) {
+			to = curEdge->getEndVertexId();
+			createAndAddVertex(to, vTo->getTupleData());
+		}
+	}
+}
+
+void GraphView::filterGraphEdgeFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter(predicate, limit, offset);
+	// predicate is about edges and we want to start from vertices
+	// get all the vertices from the old graph
+	Vertex* curVertex;
+	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+
+	// traverse all the vertices
+	for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+	{
+		curVertex = it->second;
+
+		std::vector<unsigned> edgeIds;
+
+		// get the edges from this vertex's adjacency list
+		if (oldGraphView->isDirected()) {
+			// has to scan both inedges and out edges
+			edgeIds = curVertex->getAllOutEdges();
+			vector<unsigned> another = curVertex->getAllInEdges();
+			edgeIds.insert(edgeIds.end(), another.begin(), another.end() );
+		}
+		else {
+			// only needs to scan inedges list or outedges list
+			edgeIds = curVertex->getAllOutEdges();
+		}
+
+		unsigned from, to;
+		// iterate all related edges (all edges are visited twice)
+		for (unsigned edgeId: edgeIds) {
+			Edge *edge = oldGraphView->getEdge(edgeId);
+			TableTuple* tuple = new TableTuple(edge->getTupleData(), input_table->schema());
 			if (postfilter.eval(tuple, NULL)) {
-				Edge *newEdge = NULL;
-				Vertex* vFrom = NULL;
-				Vertex* vTo = NULL;
-	    		newEdge = new Edge();
-				newEdge->setGraphView(this);
-				newEdge->setId(curEdgeId);
-				newEdge->setTupleData(curEdge->getTupleData());
-
-				from = curEdge->getStartVertexId();
-				to = curEdge->getEndVertexId();
-
+				from = edge->getStartVertexId();
+				to = edge->getEndVertexId();
+				Edge *newEdge = createEdge(edgeId, edge->getTupleData(), from, to);
+	    		
 				// add these two vertices to new graph
-				vFrom = new Vertex();
-				vFrom->setGraphView(this);
-				vFrom->setId(from);
-				vFrom->setTupleData(oldGraphView->getVertex(from)->getTupleData()); 
-				vTo = new Vertex();
-				vTo->setGraphView(this);
-				vTo->setId(to);
-				vTo->setTupleData(oldGraphView->getVertex(to)->getTupleData()); 
-				this->addVertex(from, vFrom);
-				this->addVertex(to, vTo);
-
-				newEdge->setStartVertexId(from);
-				newEdge->setEndVertexId(to);
+				Vertex* vFrom = createAndAddVertex(from, oldGraphView->getVertex(from)->getTupleData());
+				Vertex* vTo = createAndAddVertex(to, oldGraphView->getVertex(to)->getTupleData());
 
 				//update the endpoint vertexes in and out lists
 				vFrom = newEdge->getStartVertex();
@@ -1449,31 +1510,88 @@ void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicat
 					vTo->addOutEdge(newEdge);
 					vFrom->addInEdge(newEdge);
 				}
-				this->addEdge(curEdgeId, newEdge);
+				this->addEdge(edgeId, newEdge);
 			}
+		}				
+	}
+}
+
+void GraphView::filterGraphEdgeFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter(predicate, limit, offset);
+	// predicate is about edges and we want to start from edges
+	// get all the edges from the old graph
+	Edge* curEdge;
+	unsigned curEdgeId, from, to;
+	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+
+	// traverse all the edges and get their tuple data
+	for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+	{
+
+		curEdgeId = it->first;
+		curEdge = it->second;
+		TableTuple* tuple = new TableTuple(curEdge->getTupleData(), input_table->schema());
+
+		//check if the tuple satisfy the predicate
+		if (postfilter.eval(tuple, NULL)) {
+			from = curEdge->getStartVertexId();
+			to = curEdge->getEndVertexId();
+			Edge *newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
+    		
+			// add these two vertices to new graph
+			Vertex* vFrom = createAndAddVertex(from, oldGraphView->getVertex(from)->getTupleData());
+			Vertex* vTo = createAndAddVertex(to, oldGraphView->getVertex(to)->getTupleData());
+
+			//update the endpoint vertexes in and out lists
+			// vFrom = newEdge->getStartVertex();
+			// vTo = newEdge->getEndVertex();
+			vFrom->addOutEdge(newEdge);
+			vTo->addInEdge(newEdge);
+
+			if(!this->isDirected())
+			{
+				vTo->addOutEdge(newEdge);
+				vFrom->addInEdge(newEdge);
+			}
+			this->addEdge(curEdgeId, newEdge);
 		}
-    }
-    else if (useV && !isV){
-    	// predicate is about edges and we want to start from vertices
-    	// cout << "GraphView:1468: edge predicate starts from vertices" << endl;
-    	// std::string curLabel = labelName;
-    	// vector<std::string> allEdgeLabels = oldGraphView->getEdgeLabels();
-    	// Table* input_table = oldGraphView->getEdgeTableFromLabel(curLabel);
+	}
+}
 
-		// get all the vertices from the old graph
+void GraphView::fillGraphByIntersection(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    
+
+    if (useV) {
+    	// vertices must satisfy the vertex predicate
+    	// the attached edges must satisfy the edge predicate
+    	// first scan adds the intersected vertices
+    	// second scan adds the edges if both end nodes are selected
+    	CountingPostfilter postfilterV(vpred, limit, offset);
+    	CountingPostfilter postfilterE(epred, limit, offset);
     	Vertex* curVertex;
-    	// unsigned curVertexId;
-    	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+		unsigned curVertexId;
+		std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
 
-    	// traverse all the vertices
 		for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
 		{
-			// curVertexId = it->first;
+
+			curVertexId = it->first;
 			curVertex = it->second;
+			TableTuple* tupleV = new TableTuple(curVertex->getTupleData(), input_vtable->schema());
 
+			//check if the tuple satisfy the predicate
+			if (!postfilterV.eval(tupleV, NULL)) 
+				continue;
+			
+			// then check the attached edges
+			// TODO: each edge is checked twice, optimize later to remember who have been checked
 			std::vector<unsigned> edgeIds;
-
-			// get the edges from this vertex's adjacency list
 			if (oldGraphView->isDirected()) {
 				// has to scan both inedges and out edges
 				edgeIds = curVertex->getAllOutEdges();
@@ -1481,83 +1599,16 @@ void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicat
 				edgeIds.insert(edgeIds.end(), another.begin(), another.end() );
 			}
 			else {
-				// only needs to scan inedges list or outedges list
 				edgeIds = curVertex->getAllOutEdges();
 			}
-
-			unsigned from, to;
-			// iterate all related edges (all edges are visited twice)
 			for (unsigned edgeId: edgeIds) {
 				Edge *edge = oldGraphView->getEdge(edgeId);
-				TableTuple* tuple = new TableTuple(edge->getTupleData(), input_table->schema());
-				if (postfilter.eval(tuple, NULL)) {
-					Edge *newEdge = NULL;
-					Vertex* vFrom = NULL;
-					Vertex* vTo = NULL;
-		    		newEdge = new Edge();
-					newEdge->setGraphView(this);
-					newEdge->setId(edgeId);
-					newEdge->setTupleData(edge->getTupleData());
-
-					from = edge->getStartVertexId();
-					to = edge->getEndVertexId();
-
-					// add these two vertices to new graph
-					vFrom = new Vertex();
-					vFrom->setGraphView(this);
-					vFrom->setId(from);
-					vFrom->setTupleData(oldGraphView->getVertex(from)->getTupleData()); 
-					vTo = new Vertex();
-					vTo->setGraphView(this);
-					vTo->setId(to);
-					vTo->setTupleData(oldGraphView->getVertex(to)->getTupleData()); 
-					this->addVertex(from, vFrom);
-					this->addVertex(to, vTo);
-
-					newEdge->setStartVertexId(from);
-					newEdge->setEndVertexId(to);
-
-					//update the endpoint vertexes in and out lists
-					vFrom = newEdge->getStartVertex();
-					vTo = newEdge->getEndVertex();
-					vFrom->addOutEdge(newEdge);
-					vTo->addInEdge(newEdge);
-
-					if(!this->isDirected())
-					{
-						vTo->addOutEdge(newEdge);
-						vFrom->addInEdge(newEdge);
-					}
-					this->addEdge(edgeId, newEdge);
+				TableTuple* tupleE = new TableTuple(edge->getTupleData(), input_etable->schema());
+				if (postfilterE.eval(tupleE, NULL)) {
+					
+					createAndAddVertex(curVertexId, curVertex->getTupleData());
 				}
-			}				
-		}
-    }
-    else if (useV && isV) {
-    	// predicate is about vertices and we want to start from vertices
-    	// cout << "GraphView:1549: vertex predicate starts from vertices" << endl;
-    	// get all the vertices from the old graph
-    	Vertex* curVertex;
-    	unsigned curVertexId;
-    	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
-
-    	// traverse all the vertices and get their tuple data
-		for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
-		{
-
-			curVertexId = it->first;
-			curVertex = it->second;
-			TableTuple* tuple = new TableTuple(curVertex->getTupleData(), input_table->schema());
-
-			//check if the tuple satisfy the predicate
-			if (postfilter.eval(tuple, NULL)) {
-				Vertex *newVertex = NULL;
-	    		newVertex = new Vertex();
-				newVertex->setGraphView(this);
-				newVertex->setId(curVertexId);
-				newVertex->setTupleData(curVertex->getTupleData());
-				this->addVertex(curVertexId, newVertex);
-			}
+			}			
 		}
 
 		// has to scan oldGraphView edges again to add edges if both end nodes are selected
@@ -1571,13 +1622,7 @@ void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicat
 			unsigned from = curEdge->getStartVertexId();
 			unsigned to = curEdge->getEndVertexId();
 			if ((this->hasVertex(from)) && (this->hasVertex(to))){
-				Edge* newEdge = NULL;
-				newEdge = new Edge();
-				newEdge->setGraphView(this);
-				newEdge->setId(curEdgeId);
-				newEdge->setTupleData(curEdge->getTupleData());
-				newEdge->setStartVertexId(from);
-				newEdge->setEndVertexId(to);
+				Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
 
 				Vertex* vFrom = newEdge->getStartVertex();
 				Vertex* vTo = newEdge->getEndVertex();
@@ -1587,65 +1632,498 @@ void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicat
 			}
 		}
     }
-    else if (!useV && isV) {
-    	// predicate is about vertices and we want to start from edges
-    	// cout << "GraphView:1603: vertex predicate starts from edges" << endl;
-    	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
-		Edge *curEdge;
-		unsigned curEdgeId, from, to;
-		Vertex* vFrom;
-		Vertex* vTo;
+    else {
+    	// edges must satisfy the edge predicate
+    	// the end nodes must satisfy the vertex predicate
+    	
+    	
+    	Edge *curEdge;
+		unsigned curEdgeId;
+		std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+
+		// traverse all the edges and get their tuple data
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+			CountingPostfilter postfilterE(epred, limit, offset);
+	    	curEdgeId = it->first;
+			curEdge = it->second;
+			TableTuple* tupleE = new TableTuple(curEdge->getTupleData(), input_etable->schema());
+			cout << "GraphView:1648:" << tupleE->debug(input_etable->name()).c_str() << endl;
+			//check if the tuple satisfy the predicate
+			if (!postfilterE.eval(tupleE, NULL)) 
+				continue;
+			cout << "GraphView:1652: vertex pred passed" << endl;
+			Vertex* vFrom = curEdge->getStartVertex();
+			TableTuple* tupleV1 = new TableTuple(vFrom->getTupleData(), input_vtable->schema());
+
+			CountingPostfilter postfilterV(vpred, limit, offset);
+			if (postfilterV.eval(tupleV1, NULL)) {
+				createAndAddVertex(vFrom->getId(), vFrom->getTupleData());
+			}
+			Vertex* vTo = curEdge->getEndVertex();
+			TableTuple* tupleV = new TableTuple(vTo->getTupleData(), input_vtable->schema());
+			if (postfilterV.eval(tupleV, NULL)) {
+				cout << "GraphView:1661: edge pred passed" << endl;
+				createAndAddVertex(vTo->getId(), vTo->getTupleData());
+			}
+		}
+
+		// has to scan oldGraphView edges again to add edges if both end nodes are selected
 		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
 		{
 			curEdgeId = it->first;
 			curEdge = it->second;
-			vFrom = curEdge->getStartVertex();
-			vTo = curEdge->getEndVertex();
-			TableTuple* fromtuple = new TableTuple(vFrom->getTupleData(), input_table->schema());
-			TableTuple* totuple = new TableTuple(vTo->getTupleData(), input_table->schema());
-			if (postfilter.eval(fromtuple, NULL) && postfilter.eval(totuple, NULL)) {
-				// only if both nodes satisfy the predicate, they as well as the edge are added
-				Edge *newEdge = NULL;
-				Vertex* vNewFrom = NULL;
-				Vertex* vNewTo = NULL;
-	    		newEdge = new Edge();
-				newEdge->setGraphView(this);
-				newEdge->setId(curEdgeId);
-				newEdge->setTupleData(curEdge->getTupleData());
+			unsigned from = curEdge->getStartVertexId();
+			unsigned to = curEdge->getEndVertexId();
+			if ((this->hasVertex(from)) && (this->hasVertex(to))){
+				Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
 
-				from = curEdge->getStartVertexId();
-				to = curEdge->getEndVertexId();
-
-				// add these two vertices to new graph
-				vNewFrom = new Vertex();
-				vNewFrom->setGraphView(this);
-				vNewFrom->setId(from);
-				vNewFrom->setTupleData(vFrom->getTupleData()); 
-				vNewTo = new Vertex();
-				vNewTo->setGraphView(this);
-				vNewTo->setId(to);
-				vNewTo->setTupleData(vTo->getTupleData()); 
-				this->addVertex(from, vNewFrom);
-				this->addVertex(to, vNewTo);
-
-				newEdge->setStartVertexId(from);
-				newEdge->setEndVertexId(to);
-
-				//update the endpoint vertexes in and out lists
-				vNewFrom = newEdge->getStartVertex();
-				vNewTo = newEdge->getEndVertex();
-				vNewFrom->addOutEdge(newEdge);
-				vNewTo->addInEdge(newEdge);
-
-				if(!this->isDirected())
-				{
-					vNewTo->addOutEdge(newEdge);
-					vNewFrom->addInEdge(newEdge);
-				}
+				Vertex* vFrom = newEdge->getStartVertex();
+				Vertex* vTo = newEdge->getEndVertex();
+				vFrom->addOutEdge(newEdge);
+				vTo->addInEdge(newEdge);
 				this->addEdge(curEdgeId, newEdge);
 			}
 		}
     }
+}
+
+void GraphView::fillGraphByUnion(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilterV(vpred, limit, offset);
+    CountingPostfilter postfilterE(epred, limit, offset);
+
+    if (useV) {
+    	// vertices must satisfy the vertex predicate
+    	// the attached edges must satisfy the edge predicate
+    	// first scan adds the intersected vertices
+    	// second scan adds the edges if both end nodes are selected
+    	Vertex* curVertex;
+		unsigned curVertexId;
+		std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+
+		for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+		{
+
+			curVertexId = it->first;
+			curVertex = it->second;
+			TableTuple* tupleV = new TableTuple(curVertex->getTupleData(), input_vtable->schema());
+
+			//check if the tuple satisfy the predicate
+			if (postfilterV.eval(tupleV, NULL)) {
+				createAndAddVertex(curVertexId, curVertex->getTupleData());
+				continue;
+			}
+			// then check the attached edges
+			// TODO: each edge is checked twice, optimize later to remember who have been checked
+			std::vector<unsigned> edgeIds;
+			if (oldGraphView->isDirected()) {
+				// has to scan both inedges and out edges
+				edgeIds = curVertex->getAllOutEdges();
+				vector<unsigned> another = curVertex->getAllInEdges();
+				edgeIds.insert(edgeIds.end(), another.begin(), another.end() );
+			}
+			else {
+				edgeIds = curVertex->getAllOutEdges();
+			}
+			for (unsigned edgeId: edgeIds) {
+				Edge *edge = oldGraphView->getEdge(edgeId);
+				TableTuple* tupleE = new TableTuple(edge->getTupleData(), input_etable->schema());
+				if (postfilterE.eval(tupleE, NULL)) {
+					createAndAddVertex(curVertexId, curVertex->getTupleData());
+					// it doesn't matter whether we add the edge now or later
+				}
+			}			
+		}
+
+		// has to scan oldGraphView edges again to add edges if both end nodes are selected
+		std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+		Edge *curEdge;
+		unsigned curEdgeId;
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+			curEdgeId = it->first;
+			curEdge = it->second;
+			unsigned from = curEdge->getStartVertexId();
+			unsigned to = curEdge->getEndVertexId();
+			if ((this->hasVertex(from)) && (this->hasVertex(to))){
+				Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
+
+				Vertex* vFrom = newEdge->getStartVertex();
+				Vertex* vTo = newEdge->getEndVertex();
+				vFrom->addOutEdge(newEdge);
+				vTo->addInEdge(newEdge);
+				this->addEdge(curEdgeId, newEdge);
+			}
+		}
+    }
+    else {
+    	// edges must satisfy the edge predicate
+    	// the end nodes must satisfy the vertex predicate
+    	Edge* curEdge;
+		unsigned curEdgeId;
+		std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+
+		// traverse all the edges and get their tuple data
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+
+	    	curEdgeId = it->first;
+			curEdge = it->second;
+			TableTuple* tupleE = new TableTuple(curEdge->getTupleData(), input_etable->schema());
+
+			//check if the tuple satisfy the predicate
+			if (postfilterE.eval(tupleE, NULL)) {
+				Vertex* vFrom = curEdge->getStartVertex();
+				createAndAddVertex(vFrom->getId(), vFrom->getTupleData());
+				Vertex* vTo = curEdge->getEndVertex();
+				createAndAddVertex(vTo->getId(), vTo->getTupleData());
+				continue;
+			}
+			Vertex* vFrom = curEdge->getStartVertex();
+			TableTuple* tupleV1 = new TableTuple(vFrom->getTupleData(), input_vtable->schema());
+			if (postfilterV.eval(tupleV1, NULL)) {
+				createAndAddVertex(vFrom->getId(), vFrom->getTupleData());
+			}
+			Vertex* vTo = curEdge->getEndVertex();
+			TableTuple* tupleVe = new TableTuple(vTo->getTupleData(), input_vtable->schema());
+			if (postfilterV.eval(tupleVe, NULL)) {
+				createAndAddVertex(vTo->getId(), vTo->getTupleData());
+			}
+		}
+
+		// has to scan oldGraphView edges again to add edges if both end nodes are selected
+		for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+		{
+			curEdgeId = it->first;
+			curEdge = it->second;
+			unsigned from = curEdge->getStartVertexId();
+			unsigned to = curEdge->getEndVertexId();
+			if ((this->hasVertex(from)) && (this->hasVertex(to))){
+				Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), from, to);
+
+				Vertex* vFrom = newEdge->getStartVertex();
+				Vertex* vTo = newEdge->getEndVertex();
+				vFrom->addOutEdge(newEdge);
+				vTo->addInEdge(newEdge);
+				this->addEdge(curEdgeId, newEdge);
+			}
+		}
+    }
+}
+
+void GraphView::filterEndVertexPredicateFromVertex(Table* input_table, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter1(vpred, limit, offset);
+    CountingPostfilter postfilter2(vpred2, limit, offset);
+
+    // get all the vertices from the old graph
+	Vertex* curVertex;
+	unsigned curVertexId;
+	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+
+	// traverse all the vertices and get their tuple data
+	for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+	{
+		curVertexId = it->first;
+		curVertex = it->second;
+		TableTuple* tuple1 = new TableTuple(curVertex->getTupleData(), input_table->schema());
+		if (!postfilter1.eval(tuple1, NULL))
+			continue;
+
+		std::vector<unsigned> edgeIds;
+		if (oldGraphView->isDirected()) {
+			edgeIds = curVertex->getAllOutEdges();
+			vector<unsigned> another = curVertex->getAllInEdges();
+			edgeIds.insert(edgeIds.end(), another.begin(), another.end() );
+		}
+		else {
+			edgeIds = curVertex->getAllOutEdges();
+		}
+
+		unsigned from, to;
+		Edge* edge;
+		for (unsigned edgeId: edgeIds) {
+			edge = oldGraphView->getEdge(edgeId);
+			from = edge->getStartVertexId();
+			to = edge->getEndVertexId();
+			TableTuple* tuple2;
+			if (curVertexId == from) {
+				tuple2 = new TableTuple(this->getVertex(to)->getTupleData(), input_table->schema());
+			}
+			else {
+				tuple2 = new TableTuple(this->getVertex(from)->getTupleData(), input_table->schema());
+			}
+			if (!postfilter2.eval(tuple2, NULL)) {
+				Edge* newEdge = createEdge(edgeId, edge->getTupleData(), from, to);
+				Vertex* newFrom = createAndAddVertex(from, this->getVertex(from)->getTupleData());
+				Vertex* newTo = createAndAddVertex(to, this->getVertex(to)->getTupleData());
+				newFrom->addOutEdge(newEdge);
+				newTo->addInEdge(newEdge);
+
+				this->addEdge(edgeId, newEdge);
+			}
+		}
+	}
+}
+
+void GraphView::filterEndVertexPredicateFromEdge(Table* input_table, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter1(vpred, limit, offset);
+    CountingPostfilter postfilter2(vpred2, limit, offset);
+
+    // get all the edges from the old graph
+	Edge* curEdge;
+	unsigned curEdgeId;
+	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+
+	// traverse all the edges 
+	for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+	{
+		curEdgeId = it->first;
+		curEdge = it->second;
+		Vertex* vFrom = curEdge->getStartVertex();
+		Vertex* vTo = curEdge->getEndVertex();
+		cout << curEdgeId << ", " << vFrom->getId() << ", " << vTo->getId() << endl;
+		TableTuple* tuple1 = new TableTuple(vFrom->getTupleData(), input_table->schema());
+		TableTuple* tuple2 = new TableTuple(vTo->getTupleData(), input_table->schema());
+		if ((postfilter1.eval(tuple1, NULL) && postfilter2.eval(tuple2, NULL)) || (postfilter1.eval(tuple2, NULL) && postfilter2.eval(tuple1, NULL))) {
+			Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), curEdge->getStartVertexId(), curEdge->getEndVertexId());
+			Vertex* newFrom = createAndAddVertex(vFrom->getId(), vFrom->getTupleData());
+			Vertex* newTo = createAndAddVertex(vTo->getId(), vTo->getTupleData());
+			newFrom->addOutEdge(newEdge);
+			newTo->addInEdge(newEdge);
+
+			this->addEdge(curEdgeId, newEdge);
+		}
+	}
+}
+
+void GraphView::filterEndVertexEdgePredicateFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* vpred2, AbstractExpression* epred, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter1(vpred, limit, offset);
+    CountingPostfilter postfilter2(vpred2, limit, offset);
+    CountingPostfilter postfilterE(epred, limit, offset);
+
+    // get all the vertices from the old graph
+	Vertex* curVertex;
+	unsigned curVertexId;
+	std::map<unsigned, Vertex*> allVertices = oldGraphView->getVertexMap();
+
+	// traverse all the vertices and get their tuple data
+	for (std::map<unsigned, Vertex*>::iterator it = allVertices.begin(); it != allVertices.end(); ++it )
+	{
+		curVertexId = it->first;
+		curVertex = it->second;
+		TableTuple* tuple1 = new TableTuple(curVertex->getTupleData(), input_vtable->schema());
+		if (!postfilter1.eval(tuple1, NULL))
+			continue;
+
+		std::vector<unsigned> edgeIds;
+		if (oldGraphView->isDirected()) {
+			edgeIds = curVertex->getAllOutEdges();
+			vector<unsigned> another = curVertex->getAllInEdges();
+			edgeIds.insert(edgeIds.end(), another.begin(), another.end() );
+		}
+		else {
+			edgeIds = curVertex->getAllOutEdges();
+		}
+
+		unsigned from, to;
+		Edge* edge;
+		for (unsigned edgeId: edgeIds) {
+			edge = oldGraphView->getEdge(edgeId);
+			TableTuple* tupleE = new TableTuple(edge->getTupleData(), input_etable->schema());
+			if (!postfilterE.eval(tupleE, NULL)) 
+				continue;
+			
+			from = edge->getStartVertexId();
+			to = edge->getEndVertexId();
+			TableTuple* tuple2;
+			if (curVertexId == from) {
+				tuple2 = new TableTuple(this->getVertex(to)->getTupleData(), input_vtable->schema());
+			}
+			else {
+				tuple2 = new TableTuple(this->getVertex(from)->getTupleData(), input_vtable->schema());
+			}
+			if (postfilter2.eval(tuple2, NULL)) {
+				Edge* newEdge = createEdge(edgeId, edge->getTupleData(), from, to);
+				Vertex* newFrom = createAndAddVertex(from, this->getVertex(from)->getTupleData());
+				Vertex* newTo = createAndAddVertex(to, this->getVertex(to)->getTupleData());
+				newFrom->addOutEdge(newEdge);
+				newTo->addInEdge(newEdge);
+
+				this->addEdge(edgeId, newEdge);
+			}
+		}
+	}
+}
+
+void GraphView::filterEndVertexEdgePredicateFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* vpred2, AbstractExpression* epred, GraphView* oldGraphView)
+{
+	int limit = CountingPostfilter::NO_LIMIT;
+    int offset = CountingPostfilter::NO_OFFSET;
+    CountingPostfilter postfilter1(vpred, limit, offset);
+    CountingPostfilter postfilter2(vpred2, limit, offset);
+    CountingPostfilter postfilterE(epred, limit, offset);
+
+    // get all the edges from the old graph
+	Edge* curEdge;
+	unsigned curEdgeId;
+	std::map<unsigned, Edge*> allEdges = oldGraphView->getEdgeMap();
+
+	// traverse all the edges 
+	for (std::map<unsigned, Edge*>::iterator it = allEdges.begin(); it != allEdges.end(); ++it )
+	{
+		curEdgeId = it->first;
+		curEdge = it->second;
+		Vertex* vFrom = curEdge->getStartVertex();
+		Vertex* vTo = curEdge->getEndVertex();
+		TableTuple* tuple1 = new TableTuple(vFrom->getTupleData(), input_vtable->schema());
+		TableTuple* tuple2 = new TableTuple(vTo->getTupleData(), input_vtable->schema());
+		TableTuple* tuple3 = new TableTuple(curEdge->getTupleData(), input_etable->schema());
+		if (postfilter1.eval(tuple1, NULL) && postfilter2.eval(tuple2, NULL) && postfilterE.eval(tuple3, NULL)) {
+			Edge* newEdge = createEdge(curEdgeId, curEdge->getTupleData(), curEdge->getStartVertexId(), curEdge->getEndVertexId());
+			Vertex* newFrom = createAndAddVertex(vFrom->getId(), vFrom->getTupleData());
+			Vertex* newTo = createAndAddVertex(vTo->getId(), vTo->getTupleData());
+			newFrom->addOutEdge(newEdge);
+			newTo->addInEdge(newEdge);
+
+			this->addEdge(curEdgeId, newEdge);
+		}
+	}
+}
+
+AbstractExpression* GraphView::getPredicateFromWhere(const string& pred) 
+{
+	AbstractExpression* predicate = NULL;
+	vassert(pred.length() % 2 == 0);
+    int bufferLength = (int)pred.size() / 2 + 1;
+    boost::shared_array<char> buffer(new char[bufferLength]);
+    catalog::Catalog::hexDecodeString(pred, buffer.get());
+
+    PlannerDomRoot domRoot(buffer.get());
+    if (domRoot.isNull()) {
+        return NULL;
+    }
+    PlannerDomValue expr = domRoot();
+
+	predicate = AbstractExpression::buildExpressionTree(expr);
+	return predicate;
+}
+
+void GraphView::fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphView, std::string vlabelName, std::string elabelName, bool useV)
+{
+	// stringstream output;
+	// output << graphPredicate << ", " << joinVEPredicate << ", " << useV << endl;
+	// LogManager::GLog("GraphView", "full subgraph", 2016, output.str());
+	this->m_vertexes.clear();
+	this->m_edges.clear();
+
+	// LX FEAT4
+	// start from the oldGraphView, check vertex by vertex, or edge by edge
+	// filter by the subgraphPredicate
+
+	// first check the predicate is about vertex or edge
+    std::string curLabel = "";
+    Table* input_vtable = NULL;
+    Table* input_etable = NULL;
+    bool isV = false;
+    bool isV2 = false;
+    bool isE = false;
+    AbstractExpression* vpred = NULL;
+    AbstractExpression* vpred2 = NULL;
+    AbstractExpression* epred = NULL;
+    if (subGraphVPredicate.size() != 0) {
+    	curLabel = vlabelName;
+    	input_vtable = oldGraphView->getVertexTableFromLabel(curLabel);
+    	isV = true;
+    	vpred = getPredicateFromWhere(subGraphVPredicate);
+    	cout << "GraphView:2045:" << input_vtable->name();
+    }
+    if (subGraphVPredicate2.size() != 0) {
+    	// then the previous predicate cannot be null be default
+    	isV2 = true;
+    	vpred2 = getPredicateFromWhere(subGraphVPredicate2);
+    }
+    if (subGraphEPredicate.size() != 0) {
+    	curLabel = elabelName;
+    	input_etable = oldGraphView->getEdgeTableFromLabel(curLabel);
+    	isE = true;
+    	epred = getPredicateFromWhere(subGraphEPredicate);
+    	cout << "GraphView:2045:" << input_etable->name();
+    }		
+    stringstream output;
+    output << "check:" << isV << ", " << isV2 << ", " << isE << ", " << useV << endl;;
+    LogManager::GLog("GraphView", "full subGraph", 2052, output.str()); 
+    // only vertex or edge predicate
+    if (isV && !isE) {
+    	// only vertex predicate
+    	if (isV2) {
+    		if (graphPredicate.compare("V1<->V2 IN E") == 0) {
+    			// for now only support constraints on end nodes of an edge
+    			if (useV) {
+    				LogManager::GLog("GraphView", "fillSubGraph", 2059, "2 vertex pred, V1<->V2 IN E, traverse vertex");
+    				filterEndVertexPredicateFromVertex(input_vtable, vpred, vpred2, oldGraphView);
+    			}
+    			else {
+    				LogManager::GLog("GraphView", "fillSubGraph", 2063, "2 vertex pred, V1<->V2 IN E, traverse edge");
+    				filterEndVertexPredicateFromEdge(input_vtable, vpred, vpred2, oldGraphView);
+    			}
+    		}
+    	}
+    	else if (useV) {
+    		LogManager::GLog("GraphView", "fillSubGraph", 2069, "1 vertex pred, traverse vertex");
+    		filterGraphVertexFromVertex(input_vtable, vpred, oldGraphView);
+    	}
+    	else {
+    		LogManager::GLog("GraphView", "fillSubGraph", 2073, "1 vertex pred, traverse edge");
+    		filterGraphVertexFromEdge(input_vtable, vpred, oldGraphView);
+    	}
+    }
+    else if (!isV && isE) {
+    	// only edge predicate
+    	if (useV) {
+    		LogManager::GLog("GraphView", "fillSubGraph", 2080, "1 edge pred, traverse vertex");
+    		filterGraphEdgeFromVertex(input_etable, epred, oldGraphView);
+    	}
+    	else {
+    		LogManager::GLog("GraphView", "fillSubGraph", 2084, "1 edge pred, traverse edge");
+    		filterGraphEdgeFromEdge(input_etable, epred, oldGraphView);
+    	}
+    }
+    else if (isV && isE) {
+    	// both vertex and edge predicates
+    	if (graphPredicate.length() == 0) {
+    		if (joinVEPredicate.compare("AND") == 0) {
+    			LogManager::GLog("GraphView", "fillSubGraph", 2092, "vertex AND edge pred");
+	    		fillGraphByIntersection(vpred, epred, input_vtable, input_etable, useV, oldGraphView);
+    		}
+	    	else if (joinVEPredicate.compare("OR") == 0) {
+	    		LogManager::GLog("GraphView", "fillSubGraph", 2096, "vertex OR edge pred");
+	    		fillGraphByUnion(vpred, epred, input_vtable, input_etable, useV, oldGraphView);
+	    	}
+    	}
+	    else if (graphPredicate.compare("V1<->V2=E") == 0) {
+	    	if (useV) {
+	    		LogManager::GLog("GraphView", "fillSubGraph", 2102, "vertex, edge pred, V1<->V2=E, traverse vertex");
+	    		filterEndVertexEdgePredicateFromVertex(input_vtable, input_etable, vpred, vpred2, epred, oldGraphView);
+	    	}
+	    	else {
+	    		LogManager::GLog("GraphView", "fillSubGraph", 2106, "vertex, edge pred, V1<->V2=E, traverse edge");
+	    		filterEndVertexEdgePredicateFromEdge(input_vtable, input_etable, vpred, vpred2, epred, oldGraphView);
+	    	}
+	    }
+    }
+    // we don't need a else stmt to catch remaining cases
 	    
 }
 
