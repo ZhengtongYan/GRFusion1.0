@@ -25,7 +25,7 @@ package org.hsqldb_voltpatches;
  */
 public class HSQLLog {
     // Add LX
-    public static boolean GDebug = true;
+    public static boolean GDebug = false;
     public static void GLog(String className, int lineNo, String message)
     {
         if(HSQLLog.GDebug)

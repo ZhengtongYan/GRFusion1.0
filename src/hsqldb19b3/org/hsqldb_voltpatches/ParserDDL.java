@@ -365,6 +365,7 @@ public class ParserDDL extends ParserRoutine {
             while (token.tokenType != Tokens.OPENSQUAREBRACKET) 
                 read();
             vertexPredicate = getLastPartAndCurrent(pos1);
+            org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 368, "vertexPredicate is: " + vertexPredicate);
         }
 
         // if there are two vertex pred
@@ -374,7 +375,7 @@ public class ParserDDL extends ParserRoutine {
             if (token.tokenType == Tokens.OPENSQUAREBRACKET) {
                 read();
                 joinVertexVertexPredicate = token.tokenString.substring(0, token.tokenString.length() - 1);
-                org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 374, joinVertexVertexPredicate);
+                org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 374, "joinVertexVertexPredicate is: " + joinVertexVertexPredicate);
             }
             read();
             if (token.tokenType != Tokens.OPENSQUAREBRACKET) {

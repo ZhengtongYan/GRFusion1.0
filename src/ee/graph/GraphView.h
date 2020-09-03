@@ -156,13 +156,32 @@ protected:
 	Vertex* createAndAddVertex(unsigned vid, char* tupleData) ;
 	Edge* createEdge(unsigned eid, char* tupleData, unsigned fromId, unsigned toId);
 	void fillGraphByIntersection(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView);
-	void filterGraphVertexFromVertex(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView);
-	void filterGraphVertexFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectOnlyBoundVerticesFromVertex(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView);
+	void filterGraphVertexFromVertexTable(Table* input_table, int labelIdx, AbstractExpression* predicate, GraphView* oldGraphView) ;
+	void selectOnlyBoundVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectOnlyFreeVerticesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView) ;
+	void selectOnlyFreeVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectFreeBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectFreeBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectFreeIntersectBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectFreeIntersectBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectBoundEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectBoundEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectFreeEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectFreeEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void selectFreeBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectFreeBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectFreeIntersectBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectFreeIntersectBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+
 	void filterGraphEdgeFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
 	void filterGraphEdgeFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
+	void filterGraphEdgeFromEdgeTable(Table* input_table, int labelIdx, AbstractExpression* predicate, GraphView* oldGraphView);
 	void fillGraphByUnion(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView);
 	void filterEndVertexPredicateFromEdge(Table* input_table, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView);
 	void filterEndVertexPredicateFromVertex(Table* input_vtable, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView);
+	void filterEndVertexPredicateFromVertex1(Table* input_table, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView);
+	void filterEndVertexPredicateFromVertex2(Table* input_table, AbstractExpression* vpred, AbstractExpression* vpred2, GraphView* oldGraphView);
 	void filterEndVertexEdgePredicateFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* vpred2, AbstractExpression* epred, GraphView* oldGraphView);
 	void filterEndVertexEdgePredicateFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* vpred2, AbstractExpression* epred, GraphView* oldGraphView);
 

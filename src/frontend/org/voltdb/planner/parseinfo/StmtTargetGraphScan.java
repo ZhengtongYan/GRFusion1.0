@@ -6,7 +6,7 @@ import java.util.List;
 import org.voltcore.utils.Pair;
 import org.voltdb.catalog.Column;
 import org.voltdb.catalog.GraphView;
-import org.voltdb.catalog.SubGraph; // LX FEAT4
+//import org.voltdb.catalog.SubGraph; // LX FEAT4
 import org.voltdb.catalog.Index;
 import org.voltdb.catalog.Table;
 import org.voltdb.expressions.TupleValueExpression;
