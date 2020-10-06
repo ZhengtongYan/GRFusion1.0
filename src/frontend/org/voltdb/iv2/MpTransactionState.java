@@ -109,8 +109,9 @@ public class MpTransactionState extends TransactionState
     //the remote dependency which is built with the old partition master.
     final Map<Long, Long> m_masterMapForFragmentRestart = Maps.newHashMap();
 
-    //The timeout value for fragment response in minute. default: 5 min
-    private static long PULL_TIMEOUT = Long.valueOf(System.getProperty("MP_TXN_RESPONSE_TIMEOUT", "5")) * 60L;
+    //The timeout value for fragment response in minute. default: 50 min
+    private static long PULL_TIMEOUT = Long.valueOf(System.getProperty("MP_TXN_RESPONSE_TIMEOUT", "50")) * 60L;// modified by LX
+    // private static long PULL_TIMEOUT = Long.valueOf(System.getProperty("MP_TXN_RESPONSE_TIMEOUT", "5")) * 60L;
 
     MpTransactionState(Mailbox mailbox,
                        TransactionInfoBaseMessage notice,

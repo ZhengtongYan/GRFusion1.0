@@ -173,13 +173,13 @@ GraphView* GraphViewFactory::createGraphView(const std::string &graphViewName, c
 	return vw;
 }
 
-GraphView* GraphViewFactory::createSubGraphView(const std::string &graphViewName, const bool isDirected, vector<std::string> vLabels,
+GraphView* GraphViewFactory::createSubGraphView(const std::string &graphViewName, const bool isDirected, string filterHint, bool postfilter, vector<std::string> vLabels,
 			  vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, 
 			  vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, 
 			  TupleSchema* vSchema, TupleSchema* eSchema,
 			  vector<std::string> vertexColumnNames, vector<std::string> edgeColumnNames,
 			  vector<int> columnIdsInVertexTable, vector<int> columnIdsInEdgeTable,
-	          voltdb::CatalogId databaseId, char *signature, const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate , std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)
+	          voltdb::CatalogId databaseId, char *signature, const string& subGraphVPredicate, const string& subGraphEPredicate , int inputGraphSize, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV)
 {
 	GraphView* vw = new GraphView();
 	vw->m_name = graphViewName;
@@ -321,7 +321,7 @@ GraphView* GraphViewFactory::createSubGraphView(const std::string &graphViewName
 	vw->m_databaseId = databaseId;
 	::memcpy(&(vw->m_signature), signature, 20);
 
-	vw->fillSubGraphFromRelationalTables(subGraphVPredicate, subGraphVPredicate2, subGraphEPredicate, graphPredicate, joinVEPredicate, oldGraphName, vlabelName, elabelName, isV);
+	vw->fillSubGraphFromRelationalTables(filterHint, postfilter, subGraphVPredicate, subGraphEPredicate, inputGraphSize, joinVEPredicate, oldGraphName, vlabelName, elabelName, isV);
 
 	return vw;
 }

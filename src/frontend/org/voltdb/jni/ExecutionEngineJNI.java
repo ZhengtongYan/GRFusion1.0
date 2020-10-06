@@ -157,15 +157,15 @@ public class ExecutionEngineJNI extends ExecutionEngine {
             final int defaultDrBufferSize,
             final int tempTableMemory,
             final HashinatorConfig hashinatorConfig,
-            final boolean isLowestSiteId,
-            InitiatorMailbox mailbox// Add LX
+            final boolean isLowestSiteId//,
+            // InitiatorMailbox mailbox// Add LX
             )
     {
         // base class loads the volt shared library.
         super(siteId, partitionId);
         // Add LX
         // org.voltdb.VLog.GLog("ExecutionEngineJNI", "Constructor", 125, "initialize the native Engine object.");
-        m_mailbox = mailbox;
+        // m_mailbox = mailbox;
         // End LX
         //exceptionBuffer.order(ByteOrder.nativeOrder());
         LOG.trace("Creating Execution Engine on clusterIndex=" + clusterIndex

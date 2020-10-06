@@ -48,20 +48,24 @@ Edge* Vertex::getOutEdge(int index)
 
 void Vertex::addOutEdge(Edge* edge)
 {
+	// LX: maybe there is no need to check this. Too expensive
+	// but need to be verified
 	//add it if it does not exist
-	if(std::find(this->m_outEdgeIds.begin(), this->m_outEdgeIds.end(), edge->getId()) == this->m_outEdgeIds.end()) 
-	{
+	// if(std::find(this->m_outEdgeIds.begin(), this->m_outEdgeIds.end(), edge->getId()) == this->m_outEdgeIds.end()) 
+	// {
 		this->m_outEdgeIds.push_back(edge->getId());
-	}
+	// }
 }
 	
 void Vertex::addInEdge(Edge* edge)
 {
+	// LX: maybe there is no need to check this. Too expensive
+	// but need to be verified
 	//add it if it does not exist
-	if(std::find(this->m_inEdgeIds.begin(), this->m_inEdgeIds.end(), edge->getId()) == this->m_inEdgeIds.end()) 
-	{
+	// if(std::find(this->m_inEdgeIds.begin(), this->m_inEdgeIds.end(), edge->getId()) == this->m_inEdgeIds.end()) 
+	// {
 		this->m_inEdgeIds.push_back(edge->getId());
-	}
+	// }
 }
 
 Edge* Vertex::getInEdge(int index)

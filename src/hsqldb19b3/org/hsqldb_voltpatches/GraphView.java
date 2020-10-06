@@ -14,6 +14,7 @@ import org.hsqldb_voltpatches.rights.Grantee;
 import org.hsqldb_voltpatches.types.CharacterType;
 import org.hsqldb_voltpatches.types.NumberType;
 import org.hsqldb_voltpatches.types.Type;
+import org.hsqldb_voltpatches.HSQLLog; // LX
 
 public class GraphView implements SchemaObject {
 
@@ -24,15 +25,18 @@ public class GraphView implements SchemaObject {
     protected boolean isDirected;
     protected int type;
 	
+    private String filterHint;
+    private boolean postfilter;
     private String subGraphVertexPredicate;
-    private String subGraphVertexPredicate2;
+    // private String subGraphVertexPredicate2;
     private String subGraphEdgePredicate;
     private String chosenVertexLabel; // for feat4. The label in the predicate
     private String chosenEdgeLabel;
-    private String graphPredicate; // e.g. v1<->v2 in e, v=e.from, v=e.to
+    // private String graphPredicate; // e.g. v1<->v2 in e, v=e.from, v=e.to
     private String joinVEPredicate; // either AND or OR
     private String oldGraphName;
     private String fromWhichTable; // just a hack
+    private int inputGraphSize; // to better control the size of input
 
     HashMappedList VSubQueryList;// map label to vquery index LX FEAT2
     HashMappedList ESubQueryList; // LX FEAT3
@@ -463,15 +467,18 @@ public class GraphView implements SchemaObject {
         graphxml.attributes.put("isdirected", String.valueOf(isDirected));        
         graphxml.attributes.put("DDL", statement);
         // LX FEAT4: stores the predicate to select the subgraph
+        graphxml.attributes.put("filterHint", filterHint);
+        graphxml.attributes.put("postfilter", String.valueOf(postfilter));
         graphxml.attributes.put("subGraphVertexPredicate", subGraphVertexPredicate);
-        graphxml.attributes.put("subGraphVertexPredicate2", subGraphVertexPredicate2); 
+        // graphxml.attributes.put("subGraphVertexPredicate2", subGraphVertexPredicate2); 
         graphxml.attributes.put("subGraphEdgePredicate", subGraphEdgePredicate); 
         graphxml.attributes.put("chosenVertexLabel", chosenVertexLabel);
         graphxml.attributes.put("chosenEdgeLabel", chosenEdgeLabel);
         graphxml.attributes.put("oldGraphName", oldGraphName);
         graphxml.attributes.put("fromWhichTable", fromWhichTable);
-        graphxml.attributes.put("graphPredicate", graphPredicate);
+        // graphxml.attributes.put("graphPredicate", graphPredicate);
         graphxml.attributes.put("joinVEPredicate", joinVEPredicate);
+        graphxml.attributes.put("inputGraphSize", String.valueOf(inputGraphSize));
         
         // LX FEAT2        
         for (int i = 0; i < VLabelList.size(); i++){
@@ -567,13 +574,23 @@ public class GraphView implements SchemaObject {
         return graphxml;
     }
 
+    public void setFilterHint(String hint) {
+        filterHint = hint;
+        org.hsqldb_voltpatches.HSQLLog.GLog("GraphView", 577, filterHint);
+    }
+
+    public void setGAlast(boolean p) {
+        postfilter = p;
+        org.hsqldb_voltpatches.HSQLLog.GLog("GraphView", 582, String.valueOf(p));
+    }
+
     public void setSubgraphVertexPredicate(String pred) {
         subGraphVertexPredicate = pred;
     }
 
-    public void setSubgraphVertexPredicate2(String pred) {
-        subGraphVertexPredicate2 = pred;
-    }
+    // public void setSubgraphVertexPredicate2(String pred) {
+    //     subGraphVertexPredicate2 = pred;
+    // }
 
     public void setSubgraphEdgePredicate(String pred) {
         subGraphEdgePredicate = pred;
@@ -595,8 +612,12 @@ public class GraphView implements SchemaObject {
         oldGraphName = name;
     }
 
-    public void setGraphPredicate(String pred) {
-        graphPredicate = pred;
+    // public void setGraphPredicate(String pred) {
+    //     graphPredicate = pred;
+    // }
+
+    public void setInputGraphSize(int size) {
+        inputGraphSize = size;
     }
 
     public void setJoinVEPredicate(String pred)  {

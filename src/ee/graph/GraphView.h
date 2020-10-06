@@ -5,6 +5,7 @@
 #include <string>
 #include <ctime>
 #include <sys/time.h>
+#include <tuple>
 //#include <chrono>
 #include "storage/table.h"
 #include "storage/temptable.h"
@@ -66,6 +67,7 @@ public:
 	int numOfVertexes();
 	Vertex* getVertex(unsigned id); // LX FEAT2
 	bool hasVertex(unsigned id);
+	int getVertexLabelNum();
 	TableTuple* getVertexTuple(unsigned id); // LX FEAT2
 	Table* getVertexTableFromLabel(string vlabel); // LX FEAT2
 	Table* getVertexTableById(unsigned id); // LX FEAT2
@@ -84,6 +86,7 @@ public:
 	int numOfEdges();
 	Edge* getEdge(unsigned id); // LX FEAT2
 	bool hasEdge(unsigned id);
+	int getEdgeLabelNum() ;
 	TableTuple* getEdgeTuple(unsigned id);  // LX FEAT2
 	TableTuple* getEdgeTuple(char* data);
 	Table* getEdgeTableFromLabel(string elabel); // LX FEAT3
@@ -150,29 +153,50 @@ public:
 	void SubGraphLoop(unsigned startVertexId, int length); // LX FEAT2
 
 protected:
+	typedef pair<unsigned, unsigned> endNodesPair;
+	typedef tuple<unsigned, unsigned, unsigned> triple;
+
 	void fillGraphFromRelationalTables();
-	void fillSubGraphFromRelationalTables(const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
+	void fillSubGraphFromRelationalTables(string filterHint, bool postfilter, const string& subGraphVPredicate, const string& subGraphEPredicate, int inputGraphSize, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
 	AbstractExpression* getPredicateFromWhere(const string& pred);
 	Vertex* createAndAddVertex(unsigned vid, char* tupleData) ;
 	Edge* createEdge(unsigned eid, char* tupleData, unsigned fromId, unsigned toId);
 	void fillGraphByIntersection(AbstractExpression* vpred, AbstractExpression* epred, Table* input_vtable, Table* input_etable, bool useV, GraphView* oldGraphView);
-	void selectOnlyBoundVerticesFromVertex(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView);
+	void selectOnlyBoundVerticesFromVertex(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int limit);
 	void filterGraphVertexFromVertexTable(Table* input_table, int labelIdx, AbstractExpression* predicate, GraphView* oldGraphView) ;
-	void selectOnlyBoundVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
-	void selectOnlyFreeVerticesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView) ;
-	void selectOnlyFreeVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
-	void selectFreeBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectFreeBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectFreeIntersectBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectFreeIntersectBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectBoundEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
-	void selectBoundEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
-	void selectFreeEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
-	void selectFreeEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
-	void selectFreeBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectFreeBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectFreeIntersectBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
-	void selectFreeIntersectBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView);
+	void selectOnlyBoundVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectOnlyFreeVerticesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim) ;
+	void selectOnlyFreeVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectFreeBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeIntersectBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeIntersectBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectBoundEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectBoundEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectFreeEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectFreeEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectFreeBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeIntersectBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeIntersectBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+
+	void checkVertexConstructTime(GraphView* oldGraphView, int vLimit);
+	void checkVertexAndEdgeConstructTime(GraphView* oldGraphView, int eLimit);
+	void checkEdgeConstructTime(GraphView* oldGraphView, int eLimit);
+	void selectBoundVerticesFromVThenVC(Table* input_vtable, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void selectVCThenBoundVerticesFromV(Table* input_vtable, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void selectBoundVerticesFromEThenVC(Table* input_vtable, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void selectVCThenBoundVerticesFromE(Table* input_vtable, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void preFilterToPostFilterFromV(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void preFilterToPostFilterFromE(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void preFilterToPostFilterFromV2(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void preFilterToPostFilterFromE2(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void postFilterToPreFilterFromV(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	void postFilterToPreFilterFromE(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int lim);
+	std::vector<triple> triangleCounting(std::map<unsigned, Edge*> allEdges, std::map<unsigned, Vertex*>allVertices, GraphView *oldGraphView);
+	void triangleCountingFirst(Table* input_table, AbstractExpression* pred, GraphView* oldGraphView, int lim);
+	void triangleCountingLast(Table* input_table, AbstractExpression* pred, GraphView* oldGraphView, int lim);
+	void addTriangleToGraph(Edge *e1, Edge *e2, Edge *e3) ;
 
 	void filterGraphEdgeFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);
 	void filterGraphEdgeFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView);

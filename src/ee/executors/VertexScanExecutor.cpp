@@ -230,6 +230,10 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
             LogManager::GLog("VertexScanExecutor", "p_execute", 206, "2");
             temp_tuple = m_tmpOutputTable->tempTuple();
         }
+
+        bool oneVertexLabel = false;
+        if (graphView->getVertexLabelNum() == 1)
+            oneVertexLabel = true;
         
         while (postfilter.isUnderLimit() && iterator.next(tuple))
         {
@@ -257,7 +261,10 @@ bool VertexScanExecutor::p_execute(const NValueArray &params) {
 
                     VOLT_TRACE("inline projection...");
                     //get the vertex id
-                    vertexId = ValuePeeker::peekInteger(tuple.getNValue(0)) * 10 + labelIdx;
+                    if (oneVertexLabel)
+                        vertexId = ValuePeeker::peekInteger(tuple.getNValue(0));
+                    else
+                        vertexId = ValuePeeker::peekInteger(tuple.getNValue(0)) * 10 + labelIdx;
                     if (!graphView->hasVertex(vertexId))
                         continue;
                     

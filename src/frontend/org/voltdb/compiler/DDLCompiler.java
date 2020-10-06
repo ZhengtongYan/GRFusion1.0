@@ -1775,16 +1775,27 @@ public class DDLCompiler {
         annotation.ddl = node.attributes.get("DDL");
 
         // LX FEAT4 add them in catalog to support select g2g
+        String filterHint = node.attributes.get("filterHint");
+        boolean postfilter = Boolean.parseBoolean(node.attributes.get("postfilter"));
         String subGraphVertexPredicate = node.attributes.get("subGraphVertexPredicate");
-        String subGraphVertexPredicate2 = node.attributes.get("subGraphVertexPredicate2");
+        // String subGraphVertexPredicate2 = node.attributes.get("subGraphVertexPredicate2");
         String subGraphEdgePredicate = node.attributes.get("subGraphEdgePredicate");
         String chosenVertexlabel = node.attributes.get("chosenVertexLabel");
         String chosenEdgelabel = node.attributes.get("chosenEdgeLabel");
         String fromWhichTable = node.attributes.get("fromWhichTable");
-        String graphPredicate = node.attributes.get("graphPredicate");
+        // String graphPredicate = node.attributes.get("graphPredicate");
         String joinVEPredicate = node.attributes.get("joinVEPredicate");
+        int inputGraphSize = Integer.parseInt(node.attributes.get("inputGraphSize"));
 
-        graph.setFromwhichtable(fromWhichTable);
+        if (fromWhichTable != null) {
+            graph.setFromwhichtable(fromWhichTable);
+            graph.setInputgraphsize(inputGraphSize);    
+        }
+
+        if (filterHint != null) {
+            graph.setPostfilter(postfilter);
+            graph.setFilterhint(filterHint);
+        }
 
         if (subGraphVertexPredicate != null) {
             String vHex = parserVertexOrEdgePredicate(db, subGraphVertexPredicate);
@@ -1801,18 +1812,18 @@ public class DDLCompiler {
             graph.setChosenvertexlabel("");
         }
 
-        if (subGraphVertexPredicate2 != null) {
-            String vHex = parserVertexOrEdgePredicate(db, subGraphVertexPredicate2);
-            if (vHex != null) {
-                graph.setSubgraphvertexpredicatesec(vHex);
-            }
-            else {
-                System.out.println("Error: vertex not null but cannot convert to hexString");
-            }
-        }
-        else {
-            graph.setSubgraphvertexpredicatesec("");
-        }            
+        // if (subGraphVertexPredicate2 != null) {
+        //     String vHex = parserVertexOrEdgePredicate(db, subGraphVertexPredicate2);
+        //     if (vHex != null) {
+        //         graph.setSubgraphvertexpredicatesec(vHex);
+        //     }
+        //     else {
+        //         System.out.println("Error: vertex not null but cannot convert to hexString");
+        //     }
+        // }
+        // else {
+        //     graph.setSubgraphvertexpredicatesec("");
+        // }            
 
         if (subGraphEdgePredicate != null) {
             String eHex = parserVertexOrEdgePredicate(db, subGraphEdgePredicate);
@@ -1829,10 +1840,10 @@ public class DDLCompiler {
             graph.setChosenedgelabel("");
         }   
 
-        if (graphPredicate != null)
-            graph.setGraphpredicate(graphPredicate);
-        else
-            graph.setGraphpredicate("");
+        // if (graphPredicate != null)
+        //     graph.setGraphpredicate(graphPredicate);
+        // else
+        //     graph.setGraphpredicate("");
 
         if (joinVEPredicate != null)
             graph.setJoinvepredicate(joinVEPredicate);

@@ -197,13 +197,14 @@ begin GraphView                              "A graph view in the database"
   EdgeLabel* edgeLabels                      "The set of labels and tables of the edge"
   bool isDirected                            "Is the graph view directed?"
   bool isreplicated                          "Is the graph view replicated?"
+  string filterHint                          "the graph algorithm given when selecting subgraph"
+  bool postfilter                            "whether this hint is pre-filter or post-filter"
+  int inputGraphSize
   string subGraphVertexPredicate             "The predicate to select graph if it is a subgraph"
-  string subGraphVertexPredicateSec          "The predicate to select graph if it is a subgraph"
   string subGraphEdgePredicate               "The predicate to select graph if it is a subgraph"
   string chosenVertexLabel
   string chosenEdgeLabel
   string fromWhichTable                      "To specify whether to use vertex or edge table for traversing"
-  string graphPredicate                      "Any special predicate of how edge and vertex are related"
   string joinVEPredicate                     "How to combine the edge results with vertex results, AND or OR"
   string oldGraphName                        "The name of the graph view that to select from"
   int estimatedvertexescount                 "A rough estimate of the number of vertexes in the graph view; used for planning"

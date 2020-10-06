@@ -1053,9 +1053,9 @@ int VoltDBEngine::loadNextDependency(Table* destination) {
 // -------------------------------------------------
 // Request Data Functions
 // -------------------------------------------------
-int VoltDBEngine::invokeRequestData(Table* destination, long destinationHsId) {
-    return m_topend->invokeRequestData(destination, &m_stringPool, destinationHsId);
-}
+// int VoltDBEngine::invokeRequestData(Table* destination, long destinationHsId) {
+//     return m_topend->invokeRequestData(destination, &m_stringPool, destinationHsId);
+// }
 //End LX
 
 // -------------------------------------------------
@@ -1806,13 +1806,14 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             Table* pTable = NULL;
 
             const string& subGraphVertexPredicate = catalogGraphView->subGraphVertexPredicate();
-            const string& subGraphVertexPredicate2 = catalogGraphView->subGraphVertexPredicateSec();
+            // const string& subGraphVertexPredicate2 = catalogGraphView->subGraphVertexPredicateSec();
             const string& subGraphEdgePredicate = catalogGraphView->subGraphEdgePredicate();
             std::string chosenVertexLabel = catalogGraphView->chosenVertexLabel();
             std::string chosenEdgeLabel = catalogGraphView->chosenEdgeLabel();
             std::string fromWhichTable = catalogGraphView->fromWhichTable();
-            std::string graphPredicate = catalogGraphView->graphPredicate();
+            // std::string graphPredicate = catalogGraphView->graphPredicate();
             std::string joinVEPredicate = catalogGraphView->joinVEPredicate();
+            int inputGraphSize = catalogGraphView->inputGraphSize();
 
             bool isVpred;
             if (fromWhichTable.compare("V") == 0) 
@@ -1820,16 +1821,12 @@ bool VoltDBEngine::processCatalogAdditions(int64_t timestamp, bool updateReplica
             else
                 isVpred = false;
 
-            stringstream output;
-            output << graphPredicate << ", " << fromWhichTable << endl;
-            LogManager::GLog("VoltDBEngine", "processCatalogAdditions", 1823, output.str());
-
             std::string oldGraphName = catalogGraphView->oldGraphName();
             if (oldGraphName != "") {
                 // cout << "VoltDBEngine:1811:old graph is " << oldGraphName << endl;
                 GraphViewCatalogDelegate* oldgcd = getGraphViewDelegate(oldGraphName);
                 GraphView* oldGraphView = oldgcd->getGraphView();
-                gcd->initSubgraph(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVertexPredicate, subGraphVertexPredicate2, subGraphEdgePredicate, graphPredicate, joinVEPredicate, oldGraphView, chosenVertexLabel, chosenEdgeLabel, isVpred);
+                gcd->initSubgraph(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable, subGraphVertexPredicate, subGraphEdgePredicate, inputGraphSize, joinVEPredicate, oldGraphView, chosenVertexLabel, chosenEdgeLabel, isVpred);
             }
             else {
                 gcd->init(*m_database, *catalogGraphView, vLabels, vTables, eLabels, eTables, startVLabels, endVLabels, pTable); // LX FEAT2    

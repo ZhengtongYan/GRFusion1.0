@@ -815,8 +815,8 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
                         defaultDrBufferSize,
                         tempTableMaxSize,
                         hashinatorConfig,
-                        m_isLowestSiteId,
-                        m_initiatorMailbox // Add LX
+                        m_isLowestSiteId//,
+                        // m_initiatorMailbox // Add LX
                         );
             }
             else if (m_backend == BackendTarget.NATIVE_EE_SPY_JNI){
@@ -833,8 +833,8 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
                         defaultDrBufferSize,
                         tempTableMaxSize,
                         hashinatorConfig,
-                        m_isLowestSiteId,
-                        m_initiatorMailbox // Add LX
+                        m_isLowestSiteId//,
+                        // m_initiatorMailbox // Add LX
                         );
                 eeTemp = (ExecutionEngine) spyMethod.invoke(null, internalEE);
             }

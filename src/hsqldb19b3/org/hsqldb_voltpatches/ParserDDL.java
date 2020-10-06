@@ -292,36 +292,38 @@ public class ParserDDL extends ParserRoutine {
     // LX FEAT4
     private StatementSchema compileCreateSubgraph(int type) {
 
+        // e.g. SELECT Graph(v.label.*, e.label.*) v(input_size) INTO ngv FROM ogv.vertexes v, ogv.edges e
+        //      WHERE pred(v.label.attr) AND/OR pred(e.label.attr)
         StringBuilder vbr = new StringBuilder("SELECT ");
-        StringBuilder vbr2 = new StringBuilder("SELECT ");
         StringBuilder ebr = new StringBuilder("SELECT ");
         vbr.append(token.namePrePrefix + "." + token.namePrefix + "." + token.tokenString + " FROM ");
         String chosenVLabel = token.namePrefix;
+        String vertexTabAlias = token.namePrePrefix;
         read();
-
-        readThis(Tokens.COMMA);
-        
-        boolean hasSecondVertex = false;
-        if (token.tokenType != Tokens.COMMA) {
-            // if there is a second vertex alias
-            vbr2.append(token.namePrePrefix + "." + token.namePrefix + "." + token.tokenString + " FROM ");
-            hasSecondVertex = true;
-            read();
-        }
 
         readThis(Tokens.COMMA);
         ebr.append(token.namePrePrefix + "." + token.namePrefix + "." + token.tokenString + " FROM ");
         String chosenELabel = token.namePrefix;
+        String edgeTabAlias = token.namePrePrefix;
         read();
         readThis(Tokens.CLOSEBRACKET);
+        
+        // TODO: LX this is just a hack 
+        // indicate vertex plan or edge plan
+        // as well as the size of the input graph
+        int inputSize = 0;
+        String useVorE = null;
+        if (!readIfThis(Tokens.INTO)) {
+            useVorE = (token.tokenString).toUpperCase();
+            read();
+            readThis(Tokens.OPENBRACKET);
+            inputSize = Integer.parseInt(token.tokenString);
+            read();
+            readThis(Tokens.CLOSEBRACKET);
 
-        // TODO: this is just a hack
-        // which is used to indicate whether to use vertex-based traverse or edge-based
-        // this is up to the user to decide when typing input
-        String useVorE = (token.tokenString).toUpperCase();
-        read();
-
-        readThis(Tokens.INTO);
+            readThis(Tokens.INTO);
+        }
+            
 
         HsqlName schema = readNewSchemaObjectNameNoCheck(SchemaObject.GRAPHVIEW);
         schema.setSchemaIfNull(session.getCurrentSchemaHsqlName());
@@ -335,91 +337,93 @@ public class ParserDDL extends ParserRoutine {
         XreadFromClause(selectSubgraph);
         selectSubgraph.resolveReferences(session);
 
-        GraphView oldGraph = selectSubgraph.rangeVariables[0].rangeGraph;
+        GraphView oldGraph = selectSubgraph.rangeVariables[0].getGraph();
         // make a duplicate of the old Graph
         GraphView graph = new GraphView(database, schema, type, oldGraph);
         graph.setSQL(sqls);
 
         // get the vertex/edge table names and alias
         // vertex table can have at most two aliases
+        // we assume this format: FROM ogv.vertexes v, ogv.edges e
         String partsql = getLastPartAndCurrent(position);
-        String[] partsqlarr = partsql.split("[, ]+");
-        if (! hasSecondVertex) {
-            vbr.append(partsqlarr[1] + " " + partsqlarr[2]);
-            ebr.append(partsqlarr[3] + " " + partsqlarr[4]);
-        }
-        else {
-            // two vertex table alias
-            vbr.append(partsqlarr[1] + " " + partsqlarr[2]);
-            vbr2.append(partsqlarr[1] + " " + partsqlarr[3]);
-            ebr.append(partsqlarr[4] + " " + partsqlarr[5]);
+        String[] partsqlarr = partsql.split("[, ]+"); 
+        vbr.append(partsqlarr[1] + " " + partsqlarr[2]);
+        ebr.append(partsqlarr[3] + " " + partsqlarr[4]);
+                
+        // assume vertex predicate first, then edge predicate
+        // assume only AND and OR to combine predicates
+        String vertexPredicate = null;
+        // String joinVertexVertexPredicate = null;
+        // String vertexPredicate2 = null;
+        String joinVertexEdgePredicate = null;
+        String edgePredicate = null;
+        // String graphPredicate = null; 
+        
+        // HINT(): GA-first or GA-last
+        // By default we set it as GA-last
+        boolean gaLast = true;
+        boolean seenWhere = false;
+        boolean queryEnd = false;
+        while (! queryEnd) {
+            switch (token.tokenType) {
+                case Tokens.WHERE:
+                    seenWhere = true;
+                    // get the predicates for vertex 
+                    readThis(Tokens.WHERE);
+
+                    int pos1 = getPosition();
+                    int currentPos = pos1;
+                    String currentPred = null;
+                    while (token.tokenType != Tokens.SEMICOLON && token.namePrePrefix.equals(vertexTabAlias)) {
+                        read();
+                        while (token.tokenType != Tokens.SEMICOLON && token.tokenType != Tokens.AND && token.tokenType != Tokens.OR) {
+                            // currentPred = token.tokenString;    
+                            read();
+                        }
+                        currentPos = getPosition();
+                        if (token.tokenType == Tokens.AND || token.tokenType == Tokens.OR) {
+                            currentPred = token.tokenString;    
+                            read();
+                        }
+                    }
+                    if (currentPos != pos1) {
+                        vertexPredicate = getBetweenTwoParts(pos1, currentPos);
+                        joinVertexEdgePredicate = currentPred;
+                    }
+                    org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 381, vertexPredicate );
+                    // get the predicates for edge
+                    int pos2 = getPosition();
+                    currentPos = pos2;
+                    while (token.tokenType != Tokens.SEMICOLON && token.namePrePrefix.equals(edgeTabAlias)) {
+                        read();
+                        while (token.tokenType != Tokens.SEMICOLON ) {
+                            read();
+                        }
+                        currentPos = getPosition();
+                    }
+                    if (currentPos != pos2) {
+                        edgePredicate = getLastPartAndCurrent(pos2);    
+                    }
+                    org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 397, edgePredicate );
+                    break;
+                case Tokens.HINT:
+                    if (seenWhere)
+                        gaLast = true;
+                    else
+                        gaLast = false;
+                    graph.setGAlast(gaLast);
+                    readThis(Tokens.HINT);
+                    readThis(Tokens.OPENBRACKET);
+                    graph.setFilterHint(token.tokenString);
+                    read();
+                    readThis(Tokens.CLOSEBRACKET);
+                    break;
+                default:
+                    queryEnd = true;
+                    break;
+            }
         }
             
-
-        // get the predicates for vertex 
-        readThis(Tokens.WHERE);
-        String vertexPredicate = null;
-        if (token.tokenType != Tokens.OPENSQUAREBRACKET) {
-            // there is vertex predicate
-            int pos1 = getPosition();
-            while (token.tokenType != Tokens.OPENSQUAREBRACKET) 
-                read();
-            vertexPredicate = getLastPartAndCurrent(pos1);
-            org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 368, "vertexPredicate is: " + vertexPredicate);
-        }
-
-        // if there are two vertex pred
-        String joinVertexVertexPredicate = null;
-        String vertexPredicate2 = null;
-        if (hasSecondVertex) {
-            if (token.tokenType == Tokens.OPENSQUAREBRACKET) {
-                read();
-                joinVertexVertexPredicate = token.tokenString.substring(0, token.tokenString.length() - 1);
-                org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 374, "joinVertexVertexPredicate is: " + joinVertexVertexPredicate);
-            }
-            read();
-            if (token.tokenType != Tokens.OPENSQUAREBRACKET) {
-                // there is vertex predicate
-                int pos15 = getPosition();
-                while (token.tokenType != Tokens.OPENSQUAREBRACKET) 
-                    read();
-                vertexPredicate2 = getLastPartAndCurrent(pos15);
-            }
-        }
-        
-        // get the operation to combine vertex and edge: AND or OR
-        String joinVertexEdgePredicate = null;
-        if (token.tokenType == Tokens.OPENSQUAREBRACKET) {
-            // we need to combine vertex predicate with edge predicate
-            read();
-            joinVertexEdgePredicate = token.tokenString.substring(0, token.tokenString.length() - 1);
-            org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 393, joinVertexEdgePredicate);
-        }
-        read();
-
-        // get the predicates for edge
-        String edgePredicate = null;
-        if (token.tokenType != Tokens.OPENSQUAREBRACKET) {
-            // there is edge predicate
-            int pos2 = getPosition();
-            while (token.tokenType != Tokens.OPENSQUAREBRACKET)
-                read();
-            edgePredicate = getLastPartAndCurrent(pos2);
-        }
-
-        // this suggests that a graph constraint inside the brackets
-        // e.g. v1<->v2 in e; v=e.from; v=e.to
-        String graphPredicate = null; 
-        if (token.tokenType == Tokens.OPENSQUAREBRACKET) {
-            readThis(Tokens.OPENSQUAREBRACKET);
-            readThis(Tokens.CLOSESQUAREBRACKET);
-            int pos3 = getPosition();
-            while ( token.tokenType != Tokens.SEMICOLON) {
-                read();
-            }
-            graphPredicate = getLastPartAndCurrent(pos3);
-        }
-        org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 417, "graphPredicate is " + graphPredicate);
 
         if (vertexPredicate != null) {
             vbr.append(" WHERE ");
@@ -427,27 +431,20 @@ public class ParserDDL extends ParserRoutine {
             graph.setSubgraphVertexPredicate(vbr.toString());
             graph.setChosenVertexLabel(chosenVLabel.toUpperCase());
         }
-        if (vertexPredicate2 != null) {
-            vbr2.append(" WHERE ");
-            vbr2.append(vertexPredicate2);
-            graph.setSubgraphVertexPredicate2(vbr2.toString());
-        }
         if (edgePredicate != null) {
             ebr.append(" WHERE ");
             ebr.append(edgePredicate);
             graph.setSubgraphEdgePredicate(ebr.toString());
             graph.setChosenEdgeLabel(chosenELabel);
         }
-        if (graphPredicate != null)
-            graph.setGraphPredicate(graphPredicate.toUpperCase());
         if (joinVertexEdgePredicate != null)
             graph.setJoinVEPredicate(joinVertexEdgePredicate.toUpperCase());
 
 
         graph.setFromWhichTable(useVorE);
-        org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 438, vertexPredicate );
-        org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 439, vertexPredicate2 );
-        org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 440, edgePredicate );
+        graph.setInputGraphSize(inputSize);
+        org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 440, vbr.toString() );
+        org.hsqldb_voltpatches.HSQLLog.GLog("ParserDDL", 441, ebr.toString() );
 
         graph.setOldGraphName(oldGraph.getName().name);
 

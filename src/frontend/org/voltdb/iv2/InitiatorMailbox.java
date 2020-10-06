@@ -58,8 +58,8 @@ import org.voltdb.messaging.Iv2RepairLogResponseMessage;
 import org.voltdb.messaging.MigratePartitionLeaderMessage;
 import org.voltdb.messaging.RejoinMessage;
 import org.voltdb.messaging.RepairLogTruncationMessage;
-import org.voltdb.messaging.RequestDataMessage;// Add LX
-import org.voltdb.messaging.RequestDataResponseMessage; // Add LX
+// import org.voltdb.messaging.RequestDataMessage;// Add LX
+// import org.voltdb.messaging.RequestDataResponseMessage; // Add LX
 
 import com.google_voltpatches.common.base.Supplier;
 
@@ -128,27 +128,27 @@ public class InitiatorMailbox implements Mailbox
 
     // Add LX
     // the cluster node that requested for data is blocked until data arrives
-    public void waitSem() throws InterruptedException {
-        m_sem.acquire();
-    }
+    // public void waitSem() throws InterruptedException {
+    //     m_sem.acquire();
+    // }
 
-    // the cluster node that requested for data is ready to retrieve data
-    public void signalSem() {
-        m_sem.release();
-    }
+    // // the cluster node that requested for data is ready to retrieve data
+    // public void signalSem() {
+    //     m_sem.release();
+    // }
 
-    // returns the semaphore of this cluster node
-    public void setReady() {
-        m_ready = true;
-    }
+    // // returns the semaphore of this cluster node
+    // public void setReady() {
+    //     m_ready = true;
+    // }
 
-    public ArrayList<VoltTable> getRequestData() {
-        return m_requestData;
-    }
+    // public ArrayList<VoltTable> getRequestData() {
+    //     return m_requestData;
+    // }
 
-    public void setRequestData(ArrayList<VoltTable> tables) {
-        m_requestData = tables;
-    }
+    // public void setRequestData(ArrayList<VoltTable> tables) {
+    //     m_requestData = tables;
+    // }
     // End LX
 
     synchronized public void setLeaderState(long maxSeenTxnId)
@@ -230,8 +230,8 @@ public class InitiatorMailbox implements Mailbox
         m_repairLog = repairLog;
         m_joinProducer = joinProducer;
         // Add LX
-        m_sem = new Semaphore(0);
-        m_ready = false;
+        // m_sem = new Semaphore(0);
+        // m_ready = false;
         // End LX
 
         m_masterLeaderCache = new LeaderCache(m_messenger.getZK(),
@@ -417,18 +417,18 @@ public class InitiatorMailbox implements Mailbox
             return;
         }
         // Add LX
-        else if (message instanceof RequestDataMessage) {
-            handleRequestDataMessage((RequestDataMessage)message);
-            return;
-        }
-        else if (message instanceof RequestDataResponseMessage) {
-            if (m_ready) {
-                return;
-            }
+        // else if (message instanceof RequestDataMessage) {
+        //     handleRequestDataMessage((RequestDataMessage)message);
+        //     return;
+        // }
+        // else if (message instanceof RequestDataResponseMessage) {
+        //     if (m_ready) {
+        //         return;
+        //     }
 
-            handleRequestDataResponseMessage((RequestDataResponseMessage)message);
-            return;
-        }
+        //     handleRequestDataResponseMessage((RequestDataResponseMessage)message);
+        //     return;
+        // }
         // End LX
 
         if (canDeliver) {
@@ -613,96 +613,96 @@ public class InitiatorMailbox implements Mailbox
     /*
      * Handles RequestDataMessage
      */
-    public void handleRequestDataMessage(RequestDataMessage message)
-    {
-        // if the message is sent from node 0 to node 1,
-        // send the message from node 1 to node 2
-        //    CoreUtils.getSiteIdFromHSId(hsId)
-        if ((message.getDestinationSiteId()>>32) == 1) {
-            RequestDataMessage send =
-                new RequestDataMessage(message.getDestinationSiteId(), (2L<<32), message);
+    // public void handleRequestDataMessage(RequestDataMessage message)
+    // {
+    //     // if the message is sent from node 0 to node 1,
+    //     // send the message from node 1 to node 2
+    //     //    CoreUtils.getSiteIdFromHSId(hsId)
+    //     if ((message.getDestinationSiteId()>>32) == 1) {
+    //         RequestDataMessage send =
+    //             new RequestDataMessage(message.getDestinationSiteId(), (2L<<32), message);
 
-            send.setRequestDestinations(message.getRequestDestinations());
+    //         send.setRequestDestinations(message.getRequestDestinations());
 
-            send.pushRequestDestination(message.getDestinationSiteId());
+    //         send.pushRequestDestination(message.getDestinationSiteId());
 
-            send.setSender(message.getSender());
+    //         send.setSender(message.getSender());
 
-            send(send.getDestinationSiteId(), send);
+    //         send(send.getDestinationSiteId(), send);
 
-//System.out.println("Init: request data from:"
-        //+ (message.getInitiatorHSId()>>32) + " to: " + (message.getDestinationSiteId()>>32));
-            return;
-        }
+    //         //System.out.println("Init: request data from:"
+    //         //+ (message.getInitiatorHSId()>>32) + " to: " + (message.getDestinationSiteId()>>32));
+    //         return;
+    //     }
 
-        RequestDataResponseMessage response =
-            new RequestDataResponseMessage(message, message.getInitiatorHSId());
+    //     RequestDataResponseMessage response =
+    //         new RequestDataResponseMessage(message, message.getInitiatorHSId());
 
-        response.setRequestDestinations(message.getRequestDestinations());
+    //     response.setRequestDestinations(message.getRequestDestinations());
 
-        response.setSender(message.getSender());
+    //     response.setSender(message.getSender());
 
-        send(response.getDestinationSiteId(), response);
+    //     send(response.getDestinationSiteId(), response);
 
-//System.out.println("Init: request data from:"
-        //+ (message.getInitiatorHSId()>>32) + " to: " + (message.getDestinationSiteId()>>32));
-    }
+    //     //System.out.println("Init: request data from:"
+    //     //+ (message.getInitiatorHSId()>>32) + " to: " + (message.getDestinationSiteId()>>32));
+    // }
     // End LX
 
     // Add LX
     /*
      * Handles RequestDataResponseMessage
      */
-    public void handleRequestDataResponseMessage(RequestDataResponseMessage message)
-    {
-        // if the messages need to return sequentially,
-        // then pop the destination Id and send the response message to the destination
-        if (message.getRequestDestinations().size() >= 1) {
-            RequestDataResponseMessage response =
-                new RequestDataResponseMessage(message.getRequestDestination(), message.popRequestDestination(), message);
+    // public void handleRequestDataResponseMessage(RequestDataResponseMessage message)
+    // {
+    //     // if the messages need to return sequentially,
+    //     // then pop the destination Id and send the response message to the destination
+    //     if (message.getRequestDestinations().size() >= 1) {
+    //         RequestDataResponseMessage response =
+    //             new RequestDataResponseMessage(message.getRequestDestination(), message.popRequestDestination(), message);
 
-            //    set response destination
-            response.setRequestDestinations(message.getRequestDestinations());
+    //         //    set response destination
+    //         response.setRequestDestinations(message.getRequestDestinations());
 
-            //    add data to the message
-            ArrayList<VoltTable> oldTables = message.getRequestDatas();
+    //         //    add data to the message
+    //         ArrayList<VoltTable> oldTables = message.getRequestDatas();
 
-            for (int i=0; i<oldTables.size(); i++) {
-                response.pushRequestData(oldTables.get(i));
-            }
+    //         for (int i=0; i<oldTables.size(); i++) {
+    //             response.pushRequestData(oldTables.get(i));
+    //         }
 
-            //msaber: commenting the hard coded testing lines by Chris
-            /*
-            VoltTable table = new VoltTable(
-                    new VoltTable.ColumnInfo("name",VoltType.STRING),
-                    new VoltTable.ColumnInfo("age",VoltType.INTEGER));
-
-            if (message.getRequestDestinations().size() == 1)
-                table.addRow(new Object[] {"James", (25 + (response.getDestinationSiteId()>>32))});
-            else if (message.getRequestDestinations().size() == 0)
-                table.addRow(new Object[] {"Kate", (25 + (response.getDestinationSiteId()>>32))});
-
-            response.pushRequestData(table);
-             */
+    //         //msaber: commenting the hard coded testing lines by Chris
             
-            response.setSender(message.getSender());
+    //         VoltTable table = new VoltTable(
+    //                 new VoltTable.ColumnInfo("name",VoltType.STRING),
+    //                 new VoltTable.ColumnInfo("age",VoltType.INTEGER));
 
-            send(response.getDestinationSiteId(), response);
+    //         if (message.getRequestDestinations().size() == 1)
+    //             table.addRow(new Object[] {"James", (25 + (response.getDestinationSiteId()>>32))});
+    //         else if (message.getRequestDestinations().size() == 0)
+    //             table.addRow(new Object[] {"Kate", (25 + (response.getDestinationSiteId()>>32))});
 
-            if (message.getRequestDestinations().isEmpty()) {
-                InitiatorMailbox sender = message.getSender();
-                sender.setRequestData(response.getRequestDatas());
-                sender.setReady();
-                sender.signalSem();
-            }
+    //         response.pushRequestData(table);
+             
+            
+    //         response.setSender(message.getSender());
+
+    //         send(response.getDestinationSiteId(), response);
+
+    //         if (message.getRequestDestinations().isEmpty()) {
+    //             InitiatorMailbox sender = message.getSender();
+    //             sender.setRequestData(response.getRequestDatas());
+    //             sender.setReady();
+    //             sender.signalSem();
+    //         }
 
 
-//System.out.println("Init: request data response from:"
-        //+ (message.getExecutorSiteId()>>32) + " to: " + (response.getDestinationSiteId()>>32));
+    //         //System.out.println("Init: request data response from:"
+    //         //+ (message.getExecutorSiteId()>>32) + " to: " + (response.getDestinationSiteId()>>32));
 
-            return;
-        }
-    }
+    //         return;
+    //     }
+    // }
     // End LX
     // Mark this site as eligible to be removed
     private void updateServiceState() {
@@ -834,62 +834,62 @@ public class InitiatorMailbox implements Mailbox
      * @param destinationId Host id of the node that holds the data
      * @return VoltTable serialized in bytes
      */
-    public byte[] requestData(long destinationId) throws InterruptedException {
-        output = null;
+    // public byte[] requestData(long destinationId) throws InterruptedException {
+    //     output = null;
 
-        long src = m_hsId;
-        long dest = destinationId << 32;
+    //     long src = m_hsId;
+    //     long dest = destinationId << 32;
 
-        //    create message
-        RequestDataMessage req = new RequestDataMessage(src,dest,482934<<32,547089402<<32,false,false);
+    //     //    create message
+    //     RequestDataMessage req = new RequestDataMessage(src,dest,482934<<32,547089402<<32,false,false);
 
-        //    set returning destination
-        ArrayList<Long> destList = new ArrayList<Long>();
-        destList.add(src);
-        req.setRequestDestinations(destList);
+    //     //    set returning destination
+    //     ArrayList<Long> destList = new ArrayList<Long>();
+    //     destList.add(src);
+    //     req.setRequestDestinations(destList);
 
-        req.setSender(this);
+    //     req.setSender(this);
 
-        //    send message
-        send(req.getDestinationSiteId(), req);
+    //     //    send message
+    //     send(req.getDestinationSiteId(), req);
 
-        //System.out.println("sending");
+    //     //System.out.println("sending");
 
-        m_sem.acquire();
+    //     m_sem.acquire();
 
-        //System.out.println("waiting for final message");
+    //     //System.out.println("waiting for final message");
 
-        if (m_requestData.size() == 0)
-            return output;
+    //     if (m_requestData.size() == 0)
+    //         return output;
 
-        VoltTable outTable = new VoltTable(m_requestData.get(0).getTableSchema());
+    //     VoltTable outTable = new VoltTable(m_requestData.get(0).getTableSchema());
 
-        for (int i=0; i<m_requestData.size(); i++) {
-            VoltTable table = m_requestData.get(i);
+    //     for (int i=0; i<m_requestData.size(); i++) {
+    //         VoltTable table = m_requestData.get(i);
 
-            for (int j=0; j<table.getRowCount(); j++) {
-                VoltTableRow row = table.fetchRow(j);
-                outTable.add(row);
-            }
-        }
+    //         for (int j=0; j<table.getRowCount(); j++) {
+    //             VoltTableRow row = table.fetchRow(j);
+    //             outTable.add(row);
+    //         }
+    //     }
 
-        //System.out.println(outTable.toFormattedString());
+    //     //System.out.println(outTable.toFormattedString());
 
-        ByteBuffer bb = outTable.getBuffer();
-        ByteBuffer clone = ByteBuffer.allocate(bb.capacity());
-        bb.rewind();
-        clone.put(bb);
-        bb.rewind();
-        clone.flip();
+    //     ByteBuffer bb = outTable.getBuffer();
+    //     ByteBuffer clone = ByteBuffer.allocate(bb.capacity());
+    //     bb.rewind();
+    //     clone.put(bb);
+    //     bb.rewind();
+    //     clone.flip();
 
-        byte[] ba = clone.array();
-        int length = ba.length;
+    //     byte[] ba = clone.array();
+    //     int length = ba.length;
 
-        output = new byte[length];
-        System.arraycopy(ba, 0, output, 0, ba.length);
+    //     output = new byte[length];
+    //     System.arraycopy(ba, 0, output, 0, ba.length);
 
-        return output;
-    }
+    //     return output;
+    // }
     // End LX
 
     // The new partition leader is notified by previous partition leader

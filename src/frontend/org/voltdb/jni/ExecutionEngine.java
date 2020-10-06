@@ -204,7 +204,7 @@ public abstract class ExecutionEngine implements FastDeserializer.Deserializatio
     public long m_currMemoryInBytes = 0;
     public long m_peakMemoryInBytes = 0;
 
-    protected InitiatorMailbox m_mailbox; // Add LX
+    // protected InitiatorMailbox m_mailbox; // Add LX
 
     protected UserDefinedFunctionManager m_functionManager = new UserDefinedFunctionManager();
 
@@ -616,9 +616,9 @@ public abstract class ExecutionEngine implements FastDeserializer.Deserializatio
      * @return VoltTable serialized in bytes
      */
 
-    public byte[] requestData(long destinationId) throws InterruptedException {
-        return m_mailbox.requestData(destinationId);
-    }
+    // public byte[] requestData(long destinationId) throws InterruptedException {
+    //     return m_mailbox.requestData(destinationId);
+    // }
     // End LX
 
     /*

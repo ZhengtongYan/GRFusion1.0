@@ -39,7 +39,7 @@ public:
 
 	    // void init(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, Table* vTable, Table* eTable, Table* pTable); 
 	    void init(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable); // LX FEAT2
-	    void initSubgraph(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV); // LX FEAT4
+	    void initSubgraph(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphEPredicate, int inputGraphSize, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV); // LX FEAT4
 
 
 
@@ -98,7 +98,7 @@ public:
 	    //                                  Table* vTable, Table* eTable, Table* pTable);
 	    void preprocessGraphView(catalog::GraphView const &catalogGraphView, vector<string>* columnNamesVertex, vector<int>* columnIdsInVertexTable, vector<string>* columnNamesEdge, vector<int>* columnIdsInEdgeTable);
 
-	    GraphView *constructSubGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphVPredicate2, const string& subGraphEPredicate, std::string graphPredicate, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
+	    GraphView *constructSubGraphViewFromCatalog(catalog::Database const &catalogDatabase, catalog::GraphView const &catalogGraphView, vector<std::string> vLabels, vector<Table*> vTables, vector<std::string> eLabels, vector<Table*> eTables, vector<std::string> startVLabels, vector<std::string> endVLabels, Table* pTable, const string& subGraphVPredicate, const string& subGraphEPredicate, int inputGraphSize, std::string joinVEPredicate, GraphView* oldGraphName, std::string vlabelName, std::string elabelName, bool isV);
 
 	  	GraphView *constructGraphViewFromCatalog(catalog::Database const &catalogDatabase,
 	                                     catalog::GraphView const &catalogGraphView, vector<std::string> vLabels,

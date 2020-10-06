@@ -145,6 +145,10 @@ public class ParserBase {
         return scanner.getPart(position, scanner.getPosition());
     }
 
+    String getBetweenTwoParts(int leftPos, int rightPos) {
+        return scanner.getPart(leftPos, rightPos);
+    }
+
     String getStatement(int startPosition, short[] startTokens) {
 
         int semiPosition = 0;

@@ -57,8 +57,8 @@ public class VoltDbMessageFactory extends VoltMessageFactory
     final public static byte START_TASKS_ID = VOLTCORE_MESSAGE_ID_MAX + 31;
     final public static byte HASH_MISMATCH_MESSAGE_ID = VOLTCORE_MESSAGE_ID_MAX + 32;
     // Add LX
-    final public static byte REQUEST_DATA_ID = VOLTCORE_MESSAGE_ID_MAX + 33;
-    final public static byte REQUEST_DATA_RESPONSE_ID = VOLTCORE_MESSAGE_ID_MAX + 34;
+    // final public static byte REQUEST_DATA_ID = VOLTCORE_MESSAGE_ID_MAX + 33;
+    // final public static byte REQUEST_DATA_RESPONSE_ID = VOLTCORE_MESSAGE_ID_MAX + 34;
     // End LX
 
     /**
@@ -167,12 +167,12 @@ public class VoltDbMessageFactory extends VoltMessageFactory
             message = new HashMismatchMessage();
             break;
         // Add LX
-        case REQUEST_DATA_ID:
-            message = new RequestDataMessage();
-            break;
-        case REQUEST_DATA_RESPONSE_ID:
-            message = new RequestDataResponseMessage();
-            break;
+        // case REQUEST_DATA_ID:
+        //     message = new RequestDataMessage();
+        //     break;
+        // case REQUEST_DATA_RESPONSE_ID:
+        //     message = new RequestDataResponseMessage();
+        //     break;
         // End LX
         default:
             message = null;

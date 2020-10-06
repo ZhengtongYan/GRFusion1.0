@@ -201,6 +201,9 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 
 		unsigned edgeId;
 		int labelIdx = graphView->getIndexFromEdgeLabels(edgeLabel);
+		bool oneEdgeLabel = false;
+		if (graphView->getEdgeLabelNum() == 1)
+			oneEdgeLabel = true;
 
 		while (postfilter.isUnderLimit() && iterator.next(tuple))
 		{
@@ -221,8 +224,10 @@ bool EdgeScanExecutor::p_execute(const NValueArray &params)
 				if (projection_node != NULL)
 				{
 					VOLT_TRACE("inline projection...");
-
-					edgeId = ValuePeeker::peekInteger(tuple.getNValue(0)) * 10 + labelIdx;
+					if (oneEdgeLabel)
+						edgeId = ValuePeeker::peekInteger(tuple.getNValue(0));
+					else
+						edgeId = ValuePeeker::peekInteger(tuple.getNValue(0)) * 10 + labelIdx;
 					// cout << "EdgeScanExecutor:222:" << edgeId << endl;
 					if (!graphView->hasEdge(edgeId))
 						continue;
