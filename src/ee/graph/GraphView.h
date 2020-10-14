@@ -81,6 +81,7 @@ public:
 	string getVertexAttributeName(int vertexAttributeId);
 	std::map<unsigned, Vertex*> getVertexMap(); // LX FEAT7
 	int getIndexFromVertexLabels(string label);
+	unordered_map<unsigned, bool> getDisconnectedVertices();
 
 	// get all edge related
 	int numOfEdges();
@@ -165,10 +166,12 @@ protected:
 	void selectOnlyBoundVerticesFromVertex(Table* input_table, AbstractExpression* vpred, GraphView* oldGraphView, int limit);
 	void filterGraphVertexFromVertexTable(Table* input_table, int labelIdx, AbstractExpression* predicate, GraphView* oldGraphView) ;
 	void selectOnlyBoundVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
+	void selectOnlyBoundVerticesFromEdge2(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
 	void selectOnlyFreeVerticesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim) ;
 	void selectOnlyFreeVerticesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
 	void selectFreeBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectFreeBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeBoundVerticesFromEdge2(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectFreeIntersectBoundVerticesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectFreeIntersectBoundVerticesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectBoundEdgesFromVertex(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
@@ -177,6 +180,7 @@ protected:
 	void selectFreeEdgesFromEdge(Table* input_table, AbstractExpression* predicate, GraphView* oldGraphView, int lim);
 	void selectFreeBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectFreeBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
+	void selectFreeBoundEdgesFromEdge2(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectFreeIntersectBoundEdgesFromVertex(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 	void selectFreeIntersectBoundEdgesFromEdge(Table* input_vtable, Table* input_etable, AbstractExpression* vpred, AbstractExpression* epred, GraphView* oldGraphView, int lim);
 
@@ -215,6 +219,7 @@ protected:
 	void constructGraphTempTable(); // LX FEAT4
 
 	// vertex
+	unordered_map<unsigned, bool> m_disconnectedVertex; // use unordered_map because of its constant remove
 	std::vector<std::vector<Vertex*>> m_subgraphVertexList; // LX FEAT4
 	std::map<unsigned, Vertex* > m_vertexes; // LX FEAT2
 	std::vector<Table*> m_vertexTables; // LX FEAT2
