@@ -109,7 +109,7 @@ public class MpTransactionState extends TransactionState
     //the remote dependency which is built with the old partition master.
     final Map<Long, Long> m_masterMapForFragmentRestart = Maps.newHashMap();
 
-    //The timeout value for fragment response in minute. default: 50 min
+    //The timeout value for fragment response in minute. default: 5 min
     private static long PULL_TIMEOUT = Long.valueOf(System.getProperty("MP_TXN_RESPONSE_TIMEOUT", "50")) * 60L;// modified by LX
     // private static long PULL_TIMEOUT = Long.valueOf(System.getProperty("MP_TXN_RESPONSE_TIMEOUT", "5")) * 60L;
 
@@ -119,6 +119,7 @@ public class MpTransactionState extends TransactionState
                        long buddyHSId, boolean isRestart, boolean nPartTxn)
     {
         super(mailbox, notice);
+        org.voltdb.VLog.GLog("MpTransactionState", "MpTransactionState", 122, "");
         m_initiationMsg = (Iv2InitiateTaskMessage)notice;
         m_useHSIds.addAll(useHSIds);
         m_masterHSIds.putAll(partitionMasters);
@@ -304,6 +305,7 @@ public class MpTransactionState extends TransactionState
     @Override
     public void createAllParticipatingFragmentWork(FragmentTaskMessage task)
     {
+        org.voltdb.VLog.GLog("MpProcedureTask", "createAllParticipatingFragmentWork", 308, "");
         // Don't generate remote work or dependency tracking or anything if
         // there are no fragments to be done in this message
         // At some point maybe ProcedureRunner.slowPath() can get smarter
@@ -364,6 +366,7 @@ public class MpTransactionState extends TransactionState
     @Override
     public Map<Integer, List<VoltTable>> recursableRun(SiteProcedureConnection siteConnection)
     {
+        org.voltdb.VLog.GLog("MpTransactionState", "recursableRun", 369, "threadName = " + Thread.currentThread().getName());
         final VoltTrace.TraceEventBatch traceLog = VoltTrace.log(VoltTrace.Category.MPSITE);
 
         // if we're restarting this transaction, and we only have local work, add some dummy
@@ -469,7 +472,7 @@ public class MpTransactionState extends TransactionState
             }
         }
         m_localWork = null;
-
+        org.voltdb.VLog.GLog("MpTransactionState", "recursableRun", 475, "threadName = " + Thread.currentThread().getName());
         // Build results from the FragmentResponseMessage
         // This is similar to dependency tracking...maybe some
         // sane way to merge it

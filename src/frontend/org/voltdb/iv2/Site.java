@@ -774,7 +774,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
             m_ee = initializeEE();
         }
         m_ee.loadFunctions(m_context);
-
+        org.voltdb.VLog.GLog("site", "initialize", 777, "threadN" + Thread.currentThread().getName());
         m_snapshotter = new SnapshotSiteProcessor(m_pendingSiteTasks,
         m_snapshotPriority,
         new SnapshotSiteProcessor.IdlePredicate() {
@@ -803,6 +803,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
         try {
             // NATIVE_EE_JNI and NATIVE_EE_LARGE_JNI
             if (m_backend.isDefaultJNITarget) {
+                org.voltdb.VLog.GLog("site", "initializeEE", 806, "threadN:" + Thread.currentThread().getName());
                 eeTemp =
                     new ExecutionEngineJNI(
                         m_context.cluster.getRelativeIndex(),
@@ -872,6 +873,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
                             new Object[] { m_siteId, m_siteIndex }, ex);
             VoltDB.crashLocalVoltDB(ex.getMessage(), true, ex);
         }
+        org.voltdb.VLog.GLog("site", "initializeEE", 876, "threadN:" + Thread.currentThread().getName());
         return eeTemp;
     }
 
@@ -879,29 +881,37 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
     @Override
     public void run()
     {
-        if (m_partitionId == MpInitiator.MP_INIT_PID) {
-            Thread.currentThread().setName("MP Site - " + CoreUtils.hsIdToString(m_siteId));
-        }
-        else {
-            Thread.currentThread().setName("SP " + m_partitionId + " Site - " + CoreUtils.hsIdToString(m_siteId));
-        }
+        // LX bw-graph comment this for now. 
+        // Thread name is set in BaseInitiator.java
+        // if (m_partitionId == MpInitiator.MP_INIT_PID) {
+        //     Thread.currentThread().setName("MP Site - " + CoreUtils.hsIdToString(m_siteId));
+        // }
+        // else {
+        //     Thread.currentThread().setName("SP " + m_partitionId + " Site - " + CoreUtils.hsIdToString(m_siteId));
+        // }
+        org.voltdb.VLog.GLog("site", "run", 888, "threadName = " + Thread.currentThread().getName());
         if (m_coreBindIds != null) {
             PosixJNAAffinity.INSTANCE.setAffinity(m_coreBindIds);
         }
         initialize();
         m_startupConfig = null; // release the serializableCatalog.
         //Maintain a minimum ratio of task log (unrestricted) to live (restricted) transactions
+        org.voltdb.VLog.GLog("site", "run", 899, "threadName = " + Thread.currentThread().getName());
         final MinimumRatioMaintainer mrm = new MinimumRatioMaintainer(m_taskLogReplayRatio);
+        org.voltdb.VLog.GLog("site", "run", 901, "threadName = " + Thread.currentThread().getName());
         try {
             while (m_shouldContinue) {
                 if (m_runningState.isRunning()) {
                     // Normal operation blocks the site thread on the sitetasker queue.
+                    // org.voltdb.VLog.GLog("site", "run", 903, "SiteTaskerQueue is " + m_pendingSiteTasks.size() + " with threadName = " + Thread.currentThread().getName());
                     SiteTasker task = m_pendingSiteTasks.take();
                     if (task instanceof TransactionTask) {
                         m_currentTxnId = ((TransactionTask)task).getTxnId();
                         m_lastTxnTime = EstTime.currentTimeMillis();
                     }
+                    // org.voltdb.VLog.GLog("site", "run", 909, "threadName = " + Thread.currentThread().getName());
                     task.run(getSiteProcedureConnection());
+                    // org.voltdb.VLog.GLog("site", "run", 911, "threadName = " + Thread.currentThread().getName());
                 } else if (m_runningState.isReplaying()) {
                     // Rejoin operation poll and try to do some catchup work. Tasks
                     // are responsible for logging any rejoin work they might have.
@@ -975,6 +985,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
     ParticipantTransactionState global_replay_mpTxn = null;
     boolean replayFromTaskLog(MinimumRatioMaintainer mrm) throws IOException
     {
+        org.voltdb.VLog.GLog("site", "replayFromTaskLog", 978, "");
         // not yet time to catch-up.
         if (!m_runningState.isReplaying()) {
             return false;
@@ -1064,6 +1075,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
     }
 
     public static boolean allowInitiateTask(Iv2InitiateTaskMessage msg) {
+        org.voltdb.VLog.GLog("Site", "allowInitiateTask", 1068, "");
         final SystemProcedureCatalog.Config sysproc = SystemProcedureCatalog.listing.get(msg.getStoredProcedureName());
         // All durable sysprocs and non-sysprocs should not get filtered.
         return(sysproc == null || sysproc.isDurable());
@@ -1768,6 +1780,7 @@ public class Site implements Runnable, SiteProcedureConnection, SiteSnapshotConn
         //so export data for the old generation is pushed to Java.
         //No need to quiesce as there is no rolling of generation OLD datasources will be polled and pushed until there is no more data.
         //m_ee.quiesce(m_lastCommittedSpHandle);
+        org.voltdb.VLog.GLog("site", "updateCatalog", 1778, "mpi not going here");
         m_ee.updateCatalog(m_context.m_genId, requiresNewExportGeneration, diffCmds);
 
         m_tickProducer.changeTickInterval(newCluster.getGlobalflushinterval());

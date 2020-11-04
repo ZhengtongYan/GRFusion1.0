@@ -1006,7 +1006,7 @@ public class DDLCompiler {
             }
             // End LX
         }
-
+        org.voltdb.VLog.GLog("DDLCompiler", "compileToCatalog", 1009, "create procedure goes here?");
         fillTrackerFromXML();
         handlePartitions(db);
         handleTTL(db);

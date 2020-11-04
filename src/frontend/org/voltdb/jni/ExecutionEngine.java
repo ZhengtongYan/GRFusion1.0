@@ -659,6 +659,7 @@ public abstract class ExecutionEngine implements FastDeserializer.Deserializatio
 
     /** Pass the catalog to the engine */
     public void loadCatalog(long timestamp, String serializedCatalog) {
+        org.voltdb.VLog.GLog("ExecutionEngine", "loadCatalog", 662, "threadN:" + Thread.currentThread().getName());
         try {
             setupProcedure(null);
             m_fragmentContext = FragmentContext.CATALOG_LOAD;
@@ -667,12 +668,14 @@ public abstract class ExecutionEngine implements FastDeserializer.Deserializatio
         finally {
             m_fragmentContext = FragmentContext.UNKNOWN;
         }
+        org.voltdb.VLog.GLog("ExecutionEngine", "loadCatalog", 671, "threadN:" + Thread.currentThread().getName());
     }
 
     protected abstract void coreLoadCatalog(final long timestamp, final byte[] catalogBytes) throws EEException;
 
     /** Pass diffs to apply to the EE's catalog to update it */
     public final void updateCatalog(final long timestamp, final boolean isStreamUpdate, final String diffCommands) throws EEException {
+        org.voltdb.VLog.GLog("ExecutionEngine", "updateCatalog", 676, "");
         try {
             setupProcedure(null);
             m_fragmentContext = FragmentContext.CATALOG_UPDATE;

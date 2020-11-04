@@ -181,7 +181,7 @@ public abstract class StatementCompiler {
         // determine the type of the query
         QueryType qtype = QueryType.getFromSQL(stmt);
 
-        catalogStmt.setReadonly(qtype.isReadOnly());
+        // catalogStmt.setReadonly(qtype.isReadOnly());
         catalogStmt.setQuerytype(qtype.getValue());
 
         // might be null if not cacheable
@@ -195,6 +195,12 @@ public abstract class StatementCompiler {
         String sql = catalogStmt.getSqltext();
         String stmtName = catalogStmt.getTypeName();
         String procName = catalogStmt.getParent().getTypeName();
+        // LX bw-graph
+        if(procName.startsWith("txn"))
+            catalogStmt.setReadonly(true);
+        else
+            catalogStmt.setReadonly(qtype.isReadOnly());
+        org.voltdb.VLog.GLog("StatementCompiler", "compileStatementAndUpdateCatalog", 198, name+"-"+sql+"-"+stmtName+"-"+procName);
         TrivialCostModel costModel = new TrivialCostModel();
 
         CompiledPlan plan = null;

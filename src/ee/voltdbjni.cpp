@@ -340,6 +340,7 @@ SHAREDLIB_JNIEXPORT jint JNICALL Java_org_voltdb_jni_ExecutionEngine_nativeIniti
         // initialization is separated from constructor so that constructor
         // never fails.
         VOLT_DEBUG("calling initialize...");
+        
         engine->initialize(clusterIndex,
                            siteId,
                            partitionId,
@@ -391,6 +392,7 @@ SHAREDLIB_JNIEXPORT jint JNICALL Java_org_voltdb_jni_ExecutionEngine_nativeLoadC
 
         if (success) {
             VOLT_DEBUG("loadCatalog succeeded");
+            LogManager::GLog("VoltDBJNI", "...", 395, "loadCatalog succeeded");
             return org_voltdb_jni_ExecutionEngine_ERRORCODE_SUCCESS;
         }
     } catch (const SerializableEEException &e) {
@@ -434,6 +436,7 @@ Java_org_voltdb_jni_ExecutionEngine_nativeUpdateCatalog(
     env->ReleaseByteArrayElements(catalog_diffs, utf_chars, JNI_ABORT);
     VOLT_DEBUG("calling loadCatalog...");
     try {
+        LogManager::GLog("VoltDBJNI", "....", 437, "");
         bool success = engine->updateCatalog( timestamp, streamChanges, str);
 
         if (success) {

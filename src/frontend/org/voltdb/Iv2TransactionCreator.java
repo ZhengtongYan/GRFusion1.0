@@ -91,6 +91,8 @@ public class Iv2TransactionCreator implements TransactionCreator
         };
 
         AuthUser admin = m_ci.getCatalogContext().authSystem.getInternalAdminUser();
+        org.voltdb.VLog.GLog("Iv2TransactionCreator", "dispatch", 94, "before dispatch?");
+
         return m_ci.getDispatcher().dispatch(invocation, handler, connection, admin, bypass, false);
     }
 

@@ -65,6 +65,7 @@ public class MpTransactionTaskQueue extends TransactionTaskQueue
 
     synchronized void updateCatalog(String diffCmds, CatalogContext context)
     {
+        org.voltdb.VLog.GLog("MpTransactionTaskQueue", "updateCatalog", 68, "");
         m_sitePool.updateCatalog(diffCmds, context);
     }
 
@@ -90,6 +91,7 @@ public class MpTransactionTaskQueue extends TransactionTaskQueue
     @Override
     synchronized void offer(TransactionTask task)
     {
+        org.voltdb.VLog.GLog("MpTransactionTaskQueue", "offer", 94, "task enqueue TxnTaskQueue");
         Iv2Trace.logTransactionTaskQueueOffer(task);
         m_backlog.addLast(task);
         taskQueueOffer();

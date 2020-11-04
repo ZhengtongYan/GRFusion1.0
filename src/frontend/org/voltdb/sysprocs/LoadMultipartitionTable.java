@@ -259,6 +259,7 @@ public class LoadMultipartitionTable extends VoltSystemProcedure
      */
     long executeSQL(boolean isFinal) throws VoltAbortException {
         long count = 0;
+        org.voltdb.VLog.GLog("LoadMultipartitionTable", "executeSQL", 262, "threadId = " + Thread.currentThread().getId());
         VoltTable[] results = voltExecuteSQL(isFinal);
         for (VoltTable result : results) {
             long dmlUpdated = result.asScalarLong();

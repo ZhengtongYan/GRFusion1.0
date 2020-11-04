@@ -1205,7 +1205,7 @@ public class VoltCompiler {
      * Once the DDL file is over, take all of the extra classes found and add them to the jar.
      */
     private void addExtraClasses(final InMemoryJarfile jarOutput) throws VoltCompilerException {
-
+        org.voltdb.VLog.GLog("VoltCompiler", "addExtraClasses", 1208, "create proc goes here?");
         List<String> addedClasses = new ArrayList<>();
 
         for (String className : m_addedClasses) {
@@ -1247,6 +1247,7 @@ public class VoltCompiler {
             Collection<Class<?>> classDependencies, DdlProceduresToLoad whichProcs,
             CatalogMap<Procedure> prevProcsIfAny, InMemoryJarfile jarOutput) throws VoltCompilerException {
         // build a cache of previous SQL stmts
+        org.voltdb.VLog.GLog("voltCompiler", "compileProcedures", 1250, "here?");
         m_previousCatalogStmts.clear();
         if (prevProcsIfAny != null) {
             for (Procedure prevProc : prevProcsIfAny) {

@@ -523,7 +523,7 @@ public final class InvocationDispatcher {
         }
         // If you're going to copy and paste something, CnP the pattern
         // up above.  -rtb.
-
+        org.voltdb.VLog.GLog("InvocationDispatcher", "dispatch", 526, procName);
         int[] partitions = null;
         do {
             try {
@@ -544,7 +544,7 @@ public final class InvocationDispatcher {
                 return new ClientResponseImpl(ClientResponseImpl.GRACEFUL_FAILURE, new VoltTable[0],
                         "Unable to execute " + task.getProcName() + " with parameters " + task.getParams());
             }
-
+            org.voltdb.VLog.GLog("InvocationDispatcher", "dispatch", 547, Boolean.toString(catProc.getReadonly()));
             CreateTransactionResult result = createTransaction(handler.connectionId(), task, catProc.getReadonly(),
                     catProc.getSinglepartition(), catProc.getEverysite(), partitions, task.getSerializedSize(),
                     nowNanos);
@@ -1147,6 +1147,7 @@ public final class InvocationDispatcher {
                 consoleLog.info("Snapshot taken successfully");
                 task.setParams();
                 dispatch(task, alternateHandler, alternateAdapter, user, bypass, false);
+                org.voltdb.VLog.GLog("InvocationDispatcher", "handleResponse", 1150, "after dispatch?");
             }
         };
 
@@ -1306,6 +1307,7 @@ public final class InvocationDispatcher {
                 }
                 m_catalogContext.set(VoltDB.instance().getCatalogContext());
                 dispatch(task, alternateHandler, alternateAdapter, user, bypass, false);
+                org.voltdb.VLog.GLog("InvocationDispatcher", "useSnapshotCatalogToRestoreSnapshotSchema", 1310, "after dispatch?");
             }
         }, CoreUtils.SAMETHREADEXECUTOR);
         catalogUpdateTask.setClientHandle(alternateAdapter.registerCallback(catalogUpdateCallback));

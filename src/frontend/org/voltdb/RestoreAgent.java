@@ -1272,6 +1272,8 @@ SnapshotCompletionInterest, Promotable
         spi.setClientHandle(m_restoreAdapter.registerCallback(m_clientAdapterCallback));
         // admin mode invocation as per third parameter
         ClientResponseImpl cr = m_initiator.dispatch(spi, m_restoreAdapter, true, OverrideCheck.INVOCATION);
+        org.voltdb.VLog.GLog("RestoreAgent", "initSnapshotWork", 1275, "after dispatch?");
+
         if (cr != null) {
             m_clientAdapterCallback.handleResponse(cr);
         }

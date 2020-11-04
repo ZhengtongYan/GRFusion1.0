@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
+import java.util.LinkedList; // LX bw-graph
+import java.util.concurrent.LinkedTransferQueue; // LX bw-graph
 
 import org.voltcore.logging.VoltLogger;
 import org.voltcore.utils.CoreUtils;
@@ -51,23 +53,31 @@ class MpRoSitePool {
         final private CatalogContext m_catalogContext;
         final private LoadedProcedureSet m_loadedProcedures;
         final private Thread m_siteThread;
+        final private LinkedTransferQueue<SiteTasker> m_graphTxnQueue; // LX bw-graph
 
         MpRoSiteContext(long siteId, BackendTarget backend,
                 CatalogContext context, int partitionId,
                 InitiatorMailbox initiatorMailbox,
-                ThreadFactory threadFactory)
+                ThreadFactory threadFactory, 
+                LinkedTransferQueue<SiteTasker> graphTxnQueue)
         {
+            m_graphTxnQueue = graphTxnQueue;  // LX bw-graph
             m_catalogContext = context;
             m_queue = new SiteTaskerQueue(partitionId);
             // IZZY: Just need something non-null for now
             m_queue.setStarvationTracker(new StarvationTracker(siteId));
             m_queue.setupQueueDepthTracker(siteId);
-            m_site = new MpRoSite(m_queue, siteId, backend, m_catalogContext, partitionId);
+            m_site = new MpRoSite(m_queue, siteId, backend, m_catalogContext, partitionId, m_graphTxnQueue); // LX bw-graph
             m_loadedProcedures = new LoadedProcedureSet(m_site);
             m_loadedProcedures.loadProcedures(m_catalogContext);
             m_site.setLoadedProcedures(m_loadedProcedures);
             m_siteThread = threadFactory.newThread(m_site);
             m_siteThread.start();
+        }
+
+        // LX bw-graph
+        boolean addGraph(SiteTasker task) {
+            return m_graphTxnQueue.offer(task);
         }
 
         boolean offer(SiteTasker task) {
@@ -112,14 +122,17 @@ class MpRoSitePool {
     private CatalogContext m_catalogContext;
     private ThreadFactory m_poolThreadFactory;
     private volatile boolean m_shuttingDown = false;
+    private LinkedTransferQueue<SiteTasker> m_graphTxnQueue; // LX bw-graph
 
     MpRoSitePool(
             long siteId,
             BackendTarget backend,
             CatalogContext context,
             int partitionId,
-            InitiatorMailbox initiatorMailbox)
+            InitiatorMailbox initiatorMailbox, 
+            LinkedTransferQueue<SiteTasker> graphTxnQueue) // LX bw-graph
     {
+        m_graphTxnQueue = graphTxnQueue;
         m_siteId = siteId;
         m_backend = backend;
         m_catalogContext = context;
@@ -138,7 +151,8 @@ class MpRoSitePool {
                     m_catalogContext,
                     m_partitionId,
                     m_initiatorMailbox,
-                    m_poolThreadFactory);
+                    m_poolThreadFactory, 
+                    m_graphTxnQueue); // LX bw-graph
             m_idleSites.push(site);
             m_allSites.add(site);
         }
@@ -217,6 +231,9 @@ class MpRoSitePool {
             return false;
         }
         MpRoSiteContext site;
+        // LX bw-graph
+        if (((MpProcedureTask)task).m_procName.startsWith("txn"))
+            m_graphTxnQueue.offer(task);
         // Repair case
         if (m_busySites.containsKey(txnId)) {
             site = m_busySites.get(txnId);
@@ -228,7 +245,8 @@ class MpRoSitePool {
                         m_catalogContext,
                         m_partitionId,
                         m_initiatorMailbox,
-                        m_poolThreadFactory);
+                        m_poolThreadFactory, 
+                        m_graphTxnQueue); // LX bw-graph
                 m_idleSites.push(newSite);
                 m_allSites.add(newSite);
             }
@@ -236,6 +254,8 @@ class MpRoSitePool {
             m_busySites.put(txnId, site);
         }
         site.offer(task);
+        
+        org.voltdb.VLog.GLog("MpRoSitePool", "doWork", 242, task.getTaskInfo() + "; threadName = " + Thread.currentThread().getName() + "; " + ((MpProcedureTask)task).m_procName);
         return true;
     }
 

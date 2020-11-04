@@ -719,7 +719,7 @@ public abstract class ProcedureCompiler {
                                     Database db,
                                     ProcedureDescriptor procedureDescriptor) throws VoltCompiler.VoltCompilerException {
         final String className = procedureDescriptor.m_className;
-
+        org.voltdb.VLog.GLog("ProcedureCompiler", "compileDDLProcedure", 722, className);
         if (className.indexOf('@') != -1) {
             throw compiler.new VoltCompilerException("User procedure names can't contain \"@\".");
         }

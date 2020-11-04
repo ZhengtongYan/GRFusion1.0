@@ -18,8 +18,10 @@
 package org.voltdb.iv2;
 
 import java.util.List;
+import java.util.LinkedList; // LX bw-graph
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedTransferQueue; // LX bw-graph
 
 import org.voltcore.logging.VoltLogger;
 import org.voltcore.utils.CoreUtils;
@@ -104,6 +106,8 @@ public class MpRoSite implements Runnable, SiteProcedureConnection
     //a place holder for current running transaction on this site
     //the transaction will be terminated upon node shutdown.
     private TransactionState m_txnState = null;
+
+    final LinkedTransferQueue<SiteTasker> m_graphTxnQueue; // LX bw-graph
 
     @Override
     public long getLatestUndoToken()
@@ -372,13 +376,15 @@ public class MpRoSite implements Runnable, SiteProcedureConnection
             long siteId,
             BackendTarget backend,
             CatalogContext context,
-            int partitionId)
+            int partitionId,
+            LinkedTransferQueue<SiteTasker> graphTxnQueue) // LX bw-graph
     {
         m_siteId = siteId;
         m_context = context;
         m_partitionId = partitionId;
         m_scheduler = scheduler;
         m_backend = backend;
+        m_graphTxnQueue = graphTxnQueue;
     }
 
     /** Update the loaded procedures. */
@@ -409,13 +415,67 @@ public class MpRoSite implements Runnable, SiteProcedureConnection
     public void run()
     {
         initialize();
+        
 
         try {
             while (m_shouldContinue) {
                 // Normal operation blocks the site thread on the sitetasker queue.
                 m_txnState = null;
+                
                 SiteTasker task = m_scheduler.take();
-                task.run(getSiteProcedureConnection());
+                if (((MpProcedureTask)task).m_procName.startsWith("txn")) {
+                    // LX: bw-graph enqueue this task
+                    // m_graphTxnQueue.add(task);
+                    if (m_graphTxnQueue.size() > 1 ) {
+                        Thread graphThread1 = new Thread(null,
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        SiteTasker task = m_graphTxnQueue.poll();
+                                        task.run(getSiteProcedureConnection()); 
+                                    } catch (Exception e) {
+                                        
+                                    }
+                                    
+                                }
+                            },
+                            "graphWorker1");
+                        Thread graphThread2 = new Thread(null,
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        SiteTasker task = m_graphTxnQueue.poll();
+                                        task.run(getSiteProcedureConnection()); 
+                                    } catch (Exception e) {
+                                        
+                                    }
+                                    
+                                }
+                            },
+                            "graphWorker2");
+                        graphThread1.start();
+                        graphThread2.start();
+                        graphThread1.join();
+                        graphThread2.join();
+                    }
+                    
+                    // execute some dummy run() method
+                    ((MpProcedureTask)task).dummyRun(getSiteProcedureConnection());
+                    
+                }
+                else {
+                    task.run(getSiteProcedureConnection());    
+                }
+                
+                // LX: if the queue reaches certain length
+                // create the same number of threads and make them run
+                org.voltdb.VLog.GLog("MpRoSite", "run", 418, "size = " + m_graphTxnQueue.size());
+                    
+                
+                org.voltdb.VLog.GLog("MpRoSite", "run", 418, task.getTaskInfo() + "; threadName = " + Thread.currentThread().getName() + "; " + ((MpProcedureTask)task).m_procName);
+                
             }
         }
         catch (OutOfMemoryError e)

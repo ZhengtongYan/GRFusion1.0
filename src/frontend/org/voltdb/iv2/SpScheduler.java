@@ -505,6 +505,7 @@ public class SpScheduler extends Scheduler implements SnapshotCompletionInterest
     // procedures only.
     private void handleIv2InitiateTaskMessage(Iv2InitiateTaskMessage message)
     {
+        org.voltdb.VLog.GLog("SpScheduler", "handleIv2InitiateTaskMessage", 508, "msg:" + message);
         if (!message.isSinglePartition()) {
             VoltDB.crashLocalVoltDB("SpScheduler.handleIv2InitiateTaskMessage " +
                     "should never receive multi-partition initiations. Invocation: " + message, true, null);

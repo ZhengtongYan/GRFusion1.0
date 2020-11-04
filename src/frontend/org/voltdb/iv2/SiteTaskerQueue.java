@@ -41,6 +41,7 @@ public class SiteTaskerQueue
 
     public boolean offer(SiteTasker task)
     {
+        // org.voltdb.VLog.GLog("SiteTaskerQueue", "offer", 44, "SiteTaskerQueue is " + m_tasks.size() + " with threadName = " + Thread.currentThread().getName());
         task.setQueueOfferTime();
         // update tracker before enqueue the task
         // prevent another thread from polling a task and decrementing

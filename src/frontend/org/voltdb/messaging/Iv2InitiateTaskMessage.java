@@ -124,6 +124,7 @@ public class Iv2InitiateTaskMessage extends TransactionInfoBaseMessage {
             boolean isForReplay)
     {
         super(initiatorHSId, coordinatorHSId, txnId, uniqueId, isReadOnly, isForReplay);
+        org.voltdb.VLog.GLog("Iv2InitiateTaskMessage", "constructor", 126, Boolean.toString(isSinglePartition));
 
         setTruncationHandle(truncationHandle);
         m_isSinglePartition = isSinglePartition;

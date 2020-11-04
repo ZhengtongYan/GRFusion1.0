@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.LinkedTransferQueue; // LX bw-graph
 
 import org.apache.zookeeper_voltpatches.KeeperException;
 import org.apache.zookeeper_voltpatches.ZooKeeper;
@@ -60,6 +61,7 @@ public class MpInitiator extends BaseInitiator<MpScheduler> implements Promotabl
     LeaderCache.Callback m_replicaRemovalHandler = new LeaderCache.Callback() {
         @Override
         public void run(ImmutableMap<Integer, LeaderCallBackInfo> cache) {
+            org.voltdb.VLog.GLog("MpInitiator", "run", 63, "");
             if (cache == null || cache.isEmpty()) {
                 return;
             }
@@ -91,7 +93,7 @@ public class MpInitiator extends BaseInitiator<MpScheduler> implements Promotabl
                 "MP",
                 agent,
                 StartAction.CREATE /* never for rejoin */);
-        // System.out.println("MpInitiator:94");
+        org.voltdb.VLog.GLog("MpInitiator", "MpInitiator", 95, "");
     }
 
     @Override
@@ -117,11 +119,13 @@ public class MpInitiator extends BaseInitiator<MpScheduler> implements Promotabl
         // System.out.println("MpInitiator:116.........");
         // Hacky
         MpScheduler sched = m_scheduler;
+        LinkedTransferQueue<SiteTasker> m_graphTxnQueue = new LinkedTransferQueue<SiteTasker>(); // LX bw-graph
         MpRoSitePool sitePool = new MpRoSitePool(m_initiatorMailbox.getHSId(),
                 backend,
                 catalogContext,
                 m_partitionId,
-                m_initiatorMailbox);
+                m_initiatorMailbox,
+                m_graphTxnQueue); // LX bw-graph
         sched.setMpRoSitePool(sitePool);
 
         // add ourselves to the ephemeral node list which BabySitters will watch for this
@@ -143,6 +147,7 @@ public class MpInitiator extends BaseInitiator<MpScheduler> implements Promotabl
     @Override
     public void acceptPromotion()
     {
+        org.voltdb.VLog.GLog("MpInitiator", "acceptPromotion", 147, "");
         try {
             long startTime = System.currentTimeMillis();
             Boolean success = false;

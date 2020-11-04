@@ -1535,7 +1535,7 @@ public class ClientInterface implements SnapshotDaemon.DaemonInitiator {
         }
 
         final ClientResponseImpl errResp = m_dispatcher.dispatch(task, handler, ccxn, user, null, false);
-
+        // org.voltdb.VLog.GLog("clientInterface", "handleRead", 1538, "after dispatch?");
         if (errResp != null) {
             final VoltTrace.TraceEventBatch traceLog = VoltTrace.log(VoltTrace.Category.CI);
             if (traceLog != null) {

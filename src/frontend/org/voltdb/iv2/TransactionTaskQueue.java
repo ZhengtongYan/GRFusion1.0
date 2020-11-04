@@ -240,6 +240,7 @@ public class TransactionTaskQueue
      */
     synchronized void offer(TransactionTask task)
     {
+        org.voltdb.VLog.GLog("TransactionTaskQueue", "offer", 243, "offered here");
         Iv2Trace.logTransactionTaskQueueOffer(task);
         TransactionState txnState = task.getTransactionState();
         if (!m_backlog.isEmpty()) {

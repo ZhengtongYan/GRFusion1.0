@@ -508,6 +508,7 @@ VoltDBIPC::~VoltDBIPC() {
 }
 
 bool VoltDBIPC::execute(struct ipc_command *cmd) {
+    LogManager::GLog("voltdbipc", "execute", 511, "");
     int8_t result = kErrorCode_None;
 
     if (staticDebugVerbose) {
@@ -663,6 +664,7 @@ int8_t VoltDBIPC::updateCatalog(struct ipc_command *cmd) {
     }
 
     try {
+        LogManager::GLog("voltdbipc", "updateCatalog", 666, "");
         if (m_engine->updateCatalog(ntohll(uc->timestamp), (uc->isStreamChange != 0), std::string(uc->data)) == true) {
             return kErrorCode_Success;
         }

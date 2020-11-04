@@ -98,6 +98,7 @@ public class MpScheduler extends Scheduler
     {
         super(partitionId, taskQueue);
         m_pendingTasks = new MpTransactionTaskQueue(m_tasks);
+        org.voltdb.VLog.GLog("MpScheduler", "MpScheduler", 101, m_pendingTasks.toString());
         m_buddyHSIds = ImmutableList.<Long>builder().addAll(buddyHSIds).build();
         m_iv2Masters = new ArrayList<Long>();
         m_partitionMasters = Maps.newHashMap();
@@ -121,6 +122,7 @@ public class MpScheduler extends Scheduler
 
     void updateCatalog(String diffCmds, CatalogContext context)
     {
+        org.voltdb.VLog.GLog("MpScheduler", "updateCatalog", 125, "");
         m_pendingTasks.updateCatalog(diffCmds, context);
     }
 
@@ -239,6 +241,7 @@ public class MpScheduler extends Scheduler
     @Override
     public void deliver(VoltMessage message)
     {
+        org.voltdb.VLog.GLog("MpScheduler", "deliver", 244, "threadName = " + Thread.currentThread().getName());
         if (message instanceof Iv2InitiateTaskMessage) {
             if (tmLog.isDebugEnabled()) {
                 // Protect against race in string conversion of VoltTable parameter on deliver and site threads
@@ -247,6 +250,7 @@ public class MpScheduler extends Scheduler
                 tmLog.debug(sb.toString());
             }
             handleIv2InitiateTaskMessage((Iv2InitiateTaskMessage)message);
+            org.voltdb.VLog.GLog("MpScheduler", "deliver", 251, "");
         }
         else {
             if (tmLog.isDebugEnabled()) {
@@ -254,18 +258,22 @@ public class MpScheduler extends Scheduler
             }
             if (message instanceof InitiateResponseMessage) {
                 handleInitiateResponseMessage((InitiateResponseMessage)message);
+                org.voltdb.VLog.GLog("MpScheduler", "deliver", 259, "");
             }
             else if (message instanceof FragmentResponseMessage) {
                 handleFragmentResponseMessage((FragmentResponseMessage)message);
+                org.voltdb.VLog.GLog("MpScheduler", "deliver", 263, "");
             }
             else if (message instanceof Iv2EndOfLogMessage) {
                 handleEOLMessage();
+                org.voltdb.VLog.GLog("MpScheduler", "deliver", 267, "");
             }
             else if (message instanceof DummyTransactionTaskMessage) {
                 // leave empty to ignore it on purpose
             }
             else if (message instanceof DumpMessage) {
                 handleDumpMessage((DumpMessage)message);
+                org.voltdb.VLog.GLog("MpScheduler", "deliver", 274, "");
             }
             else {
                 throw new RuntimeException("UNKNOWN MESSAGE TYPE, BOOM!");
@@ -280,6 +288,7 @@ public class MpScheduler extends Scheduler
     public void handleIv2InitiateTaskMessage(Iv2InitiateTaskMessage message)
     {
         final String procedureName = message.getStoredProcedureName();
+        org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessage", 284, procedureName);
         /*
          * If this is CL replay, use the txnid from the CL and use it to update the current txnid
          */
@@ -343,6 +352,7 @@ public class MpScheduler extends Scheduler
                 new EveryPartitionTask(m_mailbox, m_pendingTasks, sp,
                         m_iv2Masters);
             m_pendingTasks.offer(eptask);
+            org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessage", 355, m_pendingTasks.toString());
             return;
         }
         // Create a copy so we can overwrite the txnID so the InitiateResponse will be
@@ -372,6 +382,7 @@ public class MpScheduler extends Scheduler
                 task = instantiateNpProcedureTask(m_mailbox, procedureName,
                         m_pendingTasks, mp, involvedPartitionMasters,
                         m_buddyHSIds.get(m_nextBuddy), false, m_leaderId);
+                org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessage", 385, m_pendingTasks.toString());
             }
 
             // if cannot figure out the involved partitions, run it as an MP txn
@@ -387,6 +398,7 @@ public class MpScheduler extends Scheduler
             task = instantiateNpProcedureTask(m_mailbox, procedureName,
                     m_pendingTasks, mp, involvedPartitionMasters,
                     m_buddyHSIds.get(m_nextBuddy), false, m_leaderId);
+            org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessage", 401, m_pendingTasks.toString());
         }
 
 
@@ -399,6 +411,7 @@ public class MpScheduler extends Scheduler
         m_nextBuddy = (m_nextBuddy + 1) % m_buddyHSIds.size();
         m_outstandingTxns.put(task.m_txnState.txnId, task.m_txnState);
         m_pendingTasks.offer(task);
+        org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessage", 415, "txnId = " + (int)task.m_txnState.txnId + ", " +  m_pendingTasks.toString());
     }
 
     /**
@@ -473,6 +486,7 @@ public class MpScheduler extends Scheduler
                 task = instantiateNpProcedureTask(m_mailbox, procedureName,
                         m_pendingTasks, mp, involvedPartitionMasters,
                         m_buddyHSIds.get(m_nextBuddy), true, m_leaderId);
+                org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessageRepair", 490, m_pendingTasks.toString());
             }
 
             // if cannot figure out the involved partitions, run it as an MP txn
@@ -487,6 +501,7 @@ public class MpScheduler extends Scheduler
         m_nextBuddy = (m_nextBuddy + 1) % m_buddyHSIds.size();
         m_outstandingTxns.put(task.m_txnState.txnId, task.m_txnState);
         m_pendingTasks.offer(task);
+        org.voltdb.VLog.GLog("MpScheduler", "handleIv2InitiateTaskMessageRepair", 505, m_pendingTasks.toString());
         if (repairLogger.isDebugEnabled()) {
             repairLogger.debug("TXN repair:" + message );
         }

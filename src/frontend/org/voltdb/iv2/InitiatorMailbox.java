@@ -200,6 +200,7 @@ public class InitiatorMailbox implements Mailbox
         // From now on, the new leader is safe to accept new transactions. See ENG-11110.
         // Deliver here is to make sure it's the first message on the new leader.
         // On MP scheduler, this DummyTransactionTaskMessage will be ignored.
+        org.voltdb.VLog.GLog("InitiatorMailbox", "setLeaderStateInternal", 203, "before deliver?");
         deliver(new DummyTransactionTaskMessage());
     }
 
@@ -362,6 +363,7 @@ public class InitiatorMailbox implements Mailbox
                 @Override
                 void run() {
                     synchronized (InitiatorMailbox.this) {
+                        org.voltdb.VLog.GLog("InitiatorMailbox", "deliver", 366, "before deliverInternal");
                         deliverInternal(message);
                     }
                 }
@@ -372,6 +374,7 @@ public class InitiatorMailbox implements Mailbox
             m_scheduler.getQueue().offer(task);
         } else {
             synchronized (this) {
+                org.voltdb.VLog.GLog("InitiatorMailbox", "deliver", 377, "before deliverInternal");
                 deliverInternal(message);
             }
         }
@@ -381,6 +384,7 @@ public class InitiatorMailbox implements Mailbox
         assert(lockingVows());
         logRxMessage(message);
         boolean canDeliver = m_scheduler.sequenceForReplay(message);
+        org.voltdb.VLog.GLog("InitiatorMailbox", "deliverInternal", 384, "thread is " + Thread.currentThread().getName());
         if (message instanceof Iv2InitiateTaskMessage) {
             if (checkMisroutedIv2IntiateTaskMessage((Iv2InitiateTaskMessage)message)) {
                 return;
@@ -435,6 +439,7 @@ public class InitiatorMailbox implements Mailbox
             //For a message delivered to partition leaders, the message may not have the updated transaction id yet.
             //The scheduler of partition leader will advance the transaction id, update the message and add it to repair log.
             //so that the partition leader and replicas have the consistent items in their repair logs.
+            org.voltdb.VLog.GLog("InitiatorMailbox", "deliverInternal", 440, "before deliver?");
             m_scheduler.deliver(message);
         } else {
             m_repairLog.deliver(message);
@@ -445,6 +450,7 @@ public class InitiatorMailbox implements Mailbox
     // mark this site as non-leader. All the transactions (sp and mp) which are sent to partition leader will be
     // rerouted from this moment on until the transactions are correctly routed to new leader.
     private void initiateSPIMigrationIfRequested(Iv2InitiateTaskMessage msg) {
+        org.voltdb.VLog.GLog("InitiatorMailbox", "initiateSPIMigrationIfRequested", 449, "");
         if (!"@MigratePartitionLeader".equals(msg.getStoredProcedureName())) {
             return;
         }
@@ -458,6 +464,8 @@ public class InitiatorMailbox implements Mailbox
 
         RealVoltDB db = (RealVoltDB)VoltDB.instance();
         int hostId = Integer.parseInt(params[2].toString());
+        org.voltdb.VLog.GLog("InitiatorMailbox", "initiateSPIMigrationIfRequested", 465, "hostid = " + hostId);
+
         Long newLeaderHSId = db.getCartographer().getHSIDForPartitionHost(hostId, pid);
         if (newLeaderHSId == null || newLeaderHSId == m_hsId) {
             tmLog.warn(String.format("@MigratePartitionLeader the partition leader is already on the host %d or the host id is invalid.", hostId));
@@ -493,6 +501,7 @@ public class InitiatorMailbox implements Mailbox
     // After the MigratePartitionLeader has been requested, all the sp requests will be sent back to the sender
     // if these requests are intended for leader. Client interface will restart these transactions.
     private boolean checkMisroutedIv2IntiateTaskMessage(Iv2InitiateTaskMessage message) {
+        org.voltdb.VLog.GLog("InitiatorMailbox", "checkMisroutedIv2IntiateTaskMessage", 498, "");
         if (message.isForReplica()) {
             return false;
         }
@@ -509,6 +518,7 @@ public class InitiatorMailbox implements Mailbox
         InitiateResponseMessage response = new InitiateResponseMessage(message);
         response.setMisrouted(message.getStoredProcedureInvocation());
         response.m_sourceHSId = getHSId();
+        org.voltdb.VLog.GLog("InitiatorMailbox", "checkMisroutedFragmentTaskMessage", 519, "before deliver?");
         deliver(response);
         if (tmLog.isDebugEnabled()) {
             tmLog.debug("Sending message back on:" + CoreUtils.hsIdToString(m_hsId) + " isLeader:" + m_scheduler.isLeader() +
@@ -539,6 +549,7 @@ public class InitiatorMailbox implements Mailbox
             if (tmLog.isDebugEnabled()) {
                 tmLog.debug("misRoutedFragMsg on site:" + CoreUtils.hsIdToString(getHSId()) + "\n" + message);
             }
+            org.voltdb.VLog.GLog("InitiatorMailbox", "checkMisroutedFragmentTaskMessage", 550, "before deliver?");
             deliver(response);
             return true;
         }
@@ -736,6 +747,7 @@ public class InitiatorMailbox implements Mailbox
             if (m_messenger.canCompleteRepair(deadHostId)) {
                 // Make sure we are the last in the task queue when we know the ForeignHost is gone
                 req.disableDeadHostCheck();
+                org.voltdb.VLog.GLog("InitiatorMailbox", "handleLogRequest", 748, "before deliver?");
                 deliver(message);
             }
             else {
@@ -746,6 +758,7 @@ public class InitiatorMailbox implements Mailbox
                 Runnable retryRepair = new Runnable() {
                     @Override
                     public void run() {
+                        org.voltdb.VLog.GLog("InitiatorMailbox", "handleLogRequest", 759, "before deliver?");
                         InitiatorMailbox.this.deliver(message);
                     }
                 };
@@ -783,6 +796,7 @@ public class InitiatorMailbox implements Mailbox
 
     private void repairReplicasWithInternal(List<Long> needsRepair, VoltMessage repairWork) {
         assert(lockingVows());
+        org.voltdb.VLog.GLog("InitiatorMailbox", "repairReplicasWithInternal", 789, "");
         if (repairWork instanceof Iv2InitiateTaskMessage) {
             Iv2InitiateTaskMessage m = (Iv2InitiateTaskMessage)repairWork;
             Iv2InitiateTaskMessage work = new Iv2InitiateTaskMessage(m.getInitiatorHSId(), getHSId(), m);
@@ -792,6 +806,7 @@ public class InitiatorMailbox implements Mailbox
             // We need to get this into the repair log in case we've never seen it before.  Adding fragment
             // tasks to the repair log is safe; we'll never overwrite the first fragment if we've already seen it.
             ((FragmentTaskMessage)repairWork).setExecutedOnPreviousLeader(false);
+            org.voltdb.VLog.GLog("InitiatorMailbox", "repairReplicasWithInternal", 807, "before deliver?");
             m_repairLog.deliver(repairWork);
             m_scheduler.handleMessageRepair(needsRepair, repairWork);
         }

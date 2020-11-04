@@ -1356,6 +1356,8 @@ public class RealVoltDB implements VoltDBInterface, RestoreAgent.Callback, HostM
                 // System.out.println("RealVoltDB:1356:" + "Partitions on this host:" + m_config.m_recoveredPartitions);
                 for (Integer partition : partitions) {
                     m_iv2InitiatorStartingTxnIds.put(partition, TxnEgo.makeZero(partition).getTxnId());
+                    // LX add one logical partition
+                    // m_iv2InitiatorStartingTxnIds.put(partition+1, TxnEgo.makeZero(partition+1).getTxnId());
                 }
                 m_iv2Initiators = createIv2Initiators(
                         partitions,
@@ -1666,6 +1668,7 @@ public class RealVoltDB implements VoltDBInterface, RestoreAgent.Callback, HostM
                 createSecondaryConnections(m_rejoining);
             }
 
+            // LX: disable this sanity check for now
             if (!m_joining && (m_cartographer.getPartitionCount()) != m_configuredNumberOfPartitions) {
                 for (Map.Entry<Integer, ImmutableList<Long>> entry :
                     getSiteTrackerForSnapshot().m_partitionsToSitesImmutable.entrySet()) {
@@ -2309,6 +2312,12 @@ public class RealVoltDB implements VoltDBInterface, RestoreAgent.Callback, HostM
             initiators.put(partition, initiator);
             partitionsToSitesAtStartupForExportInit.add(
                     Pair.of(partition, CoreUtils.getSiteIdFromHSId(initiator.getInitiatorHSId())));
+            // LX try to add one more partition "logically"
+            // Initiator initiator1 = new SpInitiator(m_messenger, partition+1, getStatsAgent(),
+            //         m_snapshotCompletionMonitor, startAction);
+            // initiators.put(partition+1, initiator1);
+            // partitionsToSitesAtStartupForExportInit.add(
+            //         Pair.of(partition+1, CoreUtils.getSiteIdFromHSId(initiator1.getInitiatorHSId())));
         }
         if (StartAction.JOIN.equals(startAction)) {
             TransactionTaskQueue.initBarrier(m_nodeSettings.getLocalSitesCount());
@@ -4747,6 +4756,8 @@ public class RealVoltDB implements VoltDBInterface, RestoreAgent.Callback, HostM
     private boolean isLowestSiteId(Initiator initiator) {
         // The initiator map is sorted, the initiator that has the lowest local
         // partition ID gets to create the MP DR gateway
+        // LX bw-graph make all sp to be lowest site
+        // return true;
         return initiator.getPartitionId() == m_iv2Initiators.firstKey();
     }
 

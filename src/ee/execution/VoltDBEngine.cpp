@@ -727,6 +727,7 @@ UniqueTempTableResult VoltDBEngine::executePlanFragment(
     try {
         // Launch the target plan through its top-most executor list.
         executorVector->setupContext(m_executorContext);
+        LogManager::GLog("VoltDBEngine", "executePlanFragment", 730, "here?");
         result = m_executorContext->executeExecutors(0);
     } catch (const SerializableEEException &e) {
         m_executorContext->resetExecutionMetadata(executorVector);
@@ -1084,7 +1085,7 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
     std::stringstream params;
     //params << "catalogPayload = " << catalogPayload;
     params << "catalogPayload = " << "omitted by msaber for simplicity";
-    LogManager::GLog("VoltDBEngine", "loadCatalog", 610, params.str());
+    LogManager::GLog("VoltDBEngine", "loadCatalog", 1087, "partitionID = " + std::to_string(m_partitionId));
     // End LX
     vassert(m_executorContext != NULL);
     ExecutorContext* executorContext = ExecutorContext::getExecutorContext();
@@ -1093,7 +1094,7 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
         // It is the thread-hopping VoltDBEngine's responsibility to re-establish the EC for each new thread it runs on.
         m_executorContext->bindToThread();
     }
-
+    LogManager::GLog("VoltDBEngine", "loadCatalog", 1096, "partitionID = " + std::to_string(m_partitionId));
     VOLT_DEBUG("Loading catalog...%d", m_partitionId);
     if (m_partitionId == 16383) {
         // Don't allocate tables on the MP thread because the last SP thread will do that
@@ -1101,13 +1102,14 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
     }
     vassert(m_catalog != NULL);
     VOLT_DEBUG("Loading catalog on partition %d ...", m_partitionId);
-
+    LogManager::GLog("VoltDBEngine", "loadCatalog", 1104, "partitionID = " + std::to_string(m_partitionId));
     m_catalog->execute(catalogPayload);
 
     if (updateCatalogDatabaseReference() == false) {
+        LogManager::GLog("VoltDBEngine", "loadCatalog", 1108, "failed");
         return false;
     }
-
+    LogManager::GLog("VoltDBEngine", "loadCatalog", 1111, "partitionID = " + std::to_string(m_partitionId));
     // Set DR flag based on current catalog state
     catalog::Cluster* catalogCluster = m_catalog->clusters().get("cluster");
     m_executorContext->drStream()->m_enabled = catalogCluster->drProducerEnabled();
@@ -1117,37 +1119,40 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
         m_executorContext->drReplicatedStream()->setFlushInterval(catalogCluster->drFlushInterval());
     }
     s_exportFlushTimeout = catalogCluster->exportFlushInterval();
-
+    LogManager::GLog("VoltDBEngine", "loadCatalog", 1121, "partitionID = " + std::to_string(m_partitionId));
     VOLT_DEBUG("loading partitioned parts of catalog from partition %d", m_partitionId);
 
     //When loading catalog we do isStreamUpdate to true as we are starting fresh or rejoining/recovering.
     std::map<std::string, ExportTupleStream*> purgedStreams;
     if (processCatalogAdditions(timestamp, false, true, purgedStreams) == false) {
+        LogManager::GLog("VoltDBEngine", "loadCatalog", 1127, "failed");
         return false;
     }
-
+    LogManager::GLog("VoltDBEngine", "loadCatalog", 1130, "partitionID = " + std::to_string(m_partitionId));
     rebuildTableCollections();
 
-    if (SynchronizedThreadLock::countDownGlobalTxnStartCount(isLowestSite())) {
-        VOLT_TRACE("loading replicated parts of catalog from partition %d", m_partitionId);
+    // LX bw-graph comment this for now
+    // if (SynchronizedThreadLock::countDownGlobalTxnStartCount(isLowestSite())) {
+    //     VOLT_TRACE("loading replicated parts of catalog from partition %d", m_partitionId);
 
-        // load up all the tables, adding all tables
-        if (processReplicatedCatalogAdditions(timestamp, true, purgedStreams) == false) {
-            return false;
-        }
+    //     // load up all the tables, adding all tables
+    //     if (processReplicatedCatalogAdditions(timestamp, true, purgedStreams) == false) {
+    //         LogManager::GLog("VoltDBEngine", "loadCatalog", 1138, "failed");
+    //         return false;
+    //     }
 
-        rebuildReplicatedTableCollections();
+    //     rebuildReplicatedTableCollections();
 
-        // load up all the materialized views
-        // and limit delete statements.
-        //
-        // This must be done after loading all the tables.
-        VOLT_TRACE("loading replicated views from partition %d", m_partitionId);
-        initReplicatedMaterializedViewsAndLimitDeletePlans();
+    //     // load up all the materialized views
+    //     // and limit delete statements.
+    //     //
+    //     // This must be done after loading all the tables.
+    //     VOLT_TRACE("loading replicated views from partition %d", m_partitionId);
+    //     initReplicatedMaterializedViewsAndLimitDeletePlans();
 
-        // Assign the correct pool back to this thread
-        SynchronizedThreadLock::signalLowestSiteFinished();
-    }
+    //     // Assign the correct pool back to this thread
+    //     SynchronizedThreadLock::signalLowestSiteFinished();
+    // }
 
     VOLT_TRACE("loading partitioned views from partition %d", m_partitionId);
     // load up all the materialized views
@@ -1158,9 +1163,10 @@ bool VoltDBEngine::loadCatalog(const int64_t timestamp, const std::string &catal
 
     // Because Join views of partitioned tables could update the handler list of replicated tables we need to make
     // sure all partitions finish these updates before allowing other transactions to touch the replicated tables
-    if (SynchronizedThreadLock::countDownGlobalTxnStartCount(isLowestSite())) {
-        SynchronizedThreadLock::signalLowestSiteFinished();
-    }
+    // LX bw-graph comment this for now
+    // if (SynchronizedThreadLock::countDownGlobalTxnStartCount(isLowestSite())) {
+    //     SynchronizedThreadLock::signalLowestSiteFinished();
+    // }
     VOLT_TRACE("Loaded catalog from partition %d ...", m_partitionId);
     return true;
 }
@@ -1936,7 +1942,7 @@ void VoltDBEngine::attachTupleStream(
  * delete or modify the corresponding execution engine objects.
  */
 bool VoltDBEngine::updateCatalog(int64_t timestamp, bool isStreamUpdate, std::string const& catalogPayload) {
-
+    LogManager::GLog("VoltDBEngine", "updateCatalog", 1939, "what's up");
     // clean up execution plans when the tables underneath might change
     if (m_plans) {
         m_plans->clear();
@@ -1967,11 +1973,12 @@ bool VoltDBEngine::updateCatalog(int64_t timestamp, bool isStreamUpdate, std::st
 
     std::map<std::string, ExportTupleStream*> purgedStreams;
     processCatalogDeletes(timestamp, false, purgedStreams);
+    LogManager::GLog("VoltDBEngine", "updateCatalog", 1970, "before SynchronizedThreadLock");
     if (SynchronizedThreadLock::countDownGlobalTxnStartCount(isLowestSite())) {
         processReplicatedCatalogDeletes(timestamp, purgedStreams);
         SynchronizedThreadLock::signalLowestSiteFinished();
     }
-
+    LogManager::GLog("VoltDBEngine", "updateCatalog", 1975, "after SynchronizedThreadLock");
     if (processCatalogAdditions(timestamp, false, isStreamUpdate, purgedStreams) == false) {
         VOLT_ERROR("Error processing catalog additions.");
         purgedStreams.clear();
@@ -2800,18 +2807,20 @@ int VoltDBEngine::getStats(int selector, int locators[], int numLocators,
     std::vector<CatalogId> locatorIds;
 
     for (int ii = 0; ii < numLocators; ii++) {
-        CatalogId locator = static_cast<CatalogId>(locators[ii]);
-        Table* t = getTableById(locator);
-        if (!t) {
-            throwSerializableEEException(
-                    "getStats() called with selector %d, and an invalid locator %d that does not correspond to a table",
-                    selector, locator);
-        }
-        auto streamTable = dynamic_cast<StreamedTable*>(t);
-        if (streamTable == NULL || streamTable->getWrapper() == NULL) {
-            // skip stats for stream tables with ExportTupleStreams
-            locatorIds.push_back(locator);
-        }
+        // CatalogId locator = static_cast<CatalogId>(locators[ii]);
+        // Table* t = getTableById(locator);
+        // LogManager::GLog("VoltDBEngine", "getStats", 2806, std::to_string(selector) + ", " + std::to_string(locator));
+        // LX: bw-graph comment the rest for now
+        // if (!t) {
+        //     throwSerializableEEException(
+        //             "getStats() called with selector %d, and an invalid locator %d that does not correspond to a table",
+        //             selector, locator);
+        // }
+        // auto streamTable = dynamic_cast<StreamedTable*>(t);
+        // if (streamTable == NULL || streamTable->getWrapper() == NULL) {
+        //     // skip stats for stream tables with ExportTupleStreams
+        //     locatorIds.push_back(locator);
+        // }
     }
     size_t lengthPosition = m_resultOutput.reserveBytes(sizeof(int32_t));
 
@@ -3324,6 +3333,7 @@ void VoltDBEngine::executePurgeFragment(PersistentTable* table) {
     pev->setupContext(m_executorContext);
 
     try {
+        LogManager::GLog("VoltDBEngine", "executePurgeFragment", 3336, "here?");
         m_executorContext->executeExecutors(0);
     } catch (const SerializableEEException &e) {
         // restore original DML statement state.

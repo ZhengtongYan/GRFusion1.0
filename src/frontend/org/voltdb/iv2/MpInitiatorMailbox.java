@@ -44,6 +44,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
     private static class TerminateThreadException extends RuntimeException {};
     private long m_taskThreadId = 0;
     private final MpRestartSequenceGenerator m_restartSeqGenerator;
+    // LX: this task thread is used by MpInitiator to deliver msg
     private final Thread m_taskThread = new Thread(null,
                     new Runnable() {
                         @Override
@@ -51,7 +52,10 @@ public class MpInitiatorMailbox extends InitiatorMailbox
                             m_taskThreadId = Thread.currentThread().getId();
                             while (true) {
                                 try {
+                                    // LX: take() is a blocking operation
+                                    org.voltdb.VLog.GLog("MpInitiatorMailbox", "run", 55, "current size = " + m_taskQueue.size() + ", " + Thread.currentThread().getName() + " sleep or run");
                                     m_taskQueue.take().run();
+                                    org.voltdb.VLog.GLog("MpInitiatorMailbox", "run", 57, "task thread done running??");
                                 } catch (TerminateThreadException e) {
                                     break;
                                 } catch (Exception e) {
@@ -69,7 +73,9 @@ public class MpInitiatorMailbox extends InitiatorMailbox
                         public void run() {
                             while (true) {
                                 try {
+                                    org.voltdb.VLog.GLog("MpInitiatorMailbox", "run", 74, "current size = " + m_sendQueue.size() + ", " + Thread.currentThread().getName() + " sleep or run");
                                     m_sendQueue.take().run();
+                                    org.voltdb.VLog.GLog("MpInitiatorMailbox", "run", 78, "send thread done running??");
                                 } catch (TerminateThreadException e) {
                                     break;
                                 } catch (Exception e) {
@@ -108,6 +114,8 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     public void setLeaderState(final long maxSeenTxnId, final long repairTruncationHandle)
     {
+        // LX: this permits only one at a time??
+        org.voltdb.VLog.GLog("MpInitiator", "setLeaderState", 115, "insert into taskQueue");
         final CountDownLatch cdl = new CountDownLatch(1);
         m_taskQueue.offer(new Runnable() {
             @Override
@@ -130,6 +138,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     @Override
     public void setMaxLastSeenMultipartTxnId(final long txnId) {
+        org.voltdb.VLog.GLog("MpInitiator", "setMaxLastSeenMultipartTxnId", 138, "insert into taskQueue");
         final CountDownLatch cdl = new CountDownLatch(1);
         m_taskQueue.offer(new Runnable() {
             @Override
@@ -151,6 +160,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     @Override
     public void setMaxLastSeenTxnId(final long txnId) {
+        org.voltdb.VLog.GLog("MpInitiator", "setMaxLastSeenTxnId", 160, "insert into taskQueue");
         final CountDownLatch cdl = new CountDownLatch(1);
         m_taskQueue.offer(new Runnable() {
             @Override
@@ -171,6 +181,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     @Override
     public void enableWritingIv2FaultLog() {
+        org.voltdb.VLog.GLog("MpInitiator", "enableWritingIv2FaultLog", 181, "insert into taskQueue");
         final CountDownLatch cdl = new CountDownLatch(1);
         m_taskQueue.offer(new Runnable() {
             @Override
@@ -197,12 +208,14 @@ public class MpInitiatorMailbox extends InitiatorMailbox
     {
         super(partitionId, scheduler, messenger, repairLog, rejoinProducer);
         m_restartSeqGenerator = new MpRestartSequenceGenerator(scheduler.getLeaderId(), false);
+        org.voltdb.VLog.GLog("MpInitiatorMailbox", "MpInitiatorMailbox", 200, "taskThread and sendThread created\n");
         m_taskThread.start();
         m_sendThread.start();
     }
 
     @Override
     public void shutdown() throws InterruptedException {
+        org.voltdb.VLog.GLog("MpInitiator", "shutdown", 215, "insert into taskQueue/sendQueue");
         m_taskQueue.offer(new Runnable() {
             @Override
             public void run() {
@@ -232,6 +245,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
     @Override
     public long[] updateReplicas(final List<Long> replicas, final Map<Integer, Long> partitionMasters,
             TransactionState snapshotTransactionState) {
+        org.voltdb.VLog.GLog("MpInitiator", "updateReplicas", 245, "insert into taskQueue");
         m_taskQueue.offer(new Runnable() {
             @Override
             public void run() {
@@ -243,6 +257,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     public void updateReplicas(final List<Long> replicas, final Map<Integer, Long> partitionMasters,
             boolean balanceSPI) {
+        org.voltdb.VLog.GLog("MpInitiator", "updateReplicas", 257, "insert into taskQueue");
         m_taskQueue.offer(new Runnable() {
             @Override
             public void run() {
@@ -260,12 +275,15 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     @Override
     public void deliver(final VoltMessage message) {
+        org.voltdb.VLog.GLog("MpInitiatorMailbox", "deliver", 275, "taskQueueSize = " + m_taskQueue.size());
         m_taskQueue.offer(new Runnable() {
             @Override
             public void run() {
+                org.voltdb.VLog.GLog("MpInitiatorMailbox", "deliver", 266, "before deliverInternal");
                 deliverInternal(message);
             }
         });
+        org.voltdb.VLog.GLog("MpInitiatorMailbox", "deliver", 283, "taskQueueSize = " + m_taskQueue.size());
     }
 
     @Override
@@ -275,6 +293,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
             //When called from MpPromoteAlgo which should be entered from deliver
             repairReplicasWithInternal(needsRepair, repairWork);
         } else {
+            org.voltdb.VLog.GLog("MpInitiatorMailbox", "repairReplicasWith", 292, "insert into taskQueue");
             //When called from MpInitiator.acceptPromotion
             final CountDownLatch cdl = new CountDownLatch(1);
             m_taskQueue.offer(new Runnable() {
@@ -298,6 +317,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
 
     private void repairReplicasWithInternal(List<Long> needsRepair, VoltMessage repairWork) {
         assert(lockingVows());
+        org.voltdb.VLog.GLog("MpInitiatorMailbox", "repairReplicasWithInternal", 301, "");
         if (repairWork instanceof Iv2InitiateTaskMessage) {
             Iv2InitiateTaskMessage m = (Iv2InitiateTaskMessage)repairWork;
             Iv2InitiateTaskMessage work = new Iv2InitiateTaskMessage(m.getInitiatorHSId(), getHSId(), m);
@@ -332,6 +352,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
     @Override
     public void send(final long destHSId, final VoltMessage message)
     {
+        org.voltdb.VLog.GLog("MpInitiatorMailbox", "send", 351, "insert into sendQueue");
         m_sendQueue.offer(new Runnable() {
             @Override
             public void run() {
@@ -349,6 +370,7 @@ public class MpInitiatorMailbox extends InitiatorMailbox
     @Override
     public void send(final long[] destHSIds, final VoltMessage message)
     {
+        org.voltdb.VLog.GLog("MpInitiatorMailbox", "send", 369, "insert into sendQueue");
         m_sendQueue.offer(new Runnable() {
             @Override
             public void run() {

@@ -3081,7 +3081,6 @@ inline void NValue::deserializeFromAllocateForStorage(ValueType type, SerializeI
        default:
            break;
    }
-
    throwDynamicSQLException("NValue::deserializeFromAllocateForStorage() unrecognized type '%s'",
          getTypeName(type).c_str());
 }

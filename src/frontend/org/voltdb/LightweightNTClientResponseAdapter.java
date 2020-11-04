@@ -77,6 +77,8 @@ public class LightweightNTClientResponseAdapter implements Connection, WriteStre
         m_callbacks.put(handle, cb);
 
         ClientResponseImpl r = m_dispatcher.dispatch(task, kattrs, LightweightNTClientResponseAdapter.this, user, null, true /* nt priority */);
+        org.voltdb.VLog.GLog("LightweightNTClientResponseAdapter", "createTransaction", 80, "after dispatch?");
+
         if (r != null) {
             try {
                 cb.clientCallback(r);

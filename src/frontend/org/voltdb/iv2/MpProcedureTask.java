@@ -69,6 +69,7 @@ public class MpProcedureTask extends ProcedureTask
               new MpTransactionState(mailbox, msg, pInitiators, partitionMasters,
                                      buddyHSId, isRestart, nPartTxn),
               queue);
+        org.voltdb.VLog.GLog("MpProcedureTask", "MpProcedureTask", 72, queue.toString());
         m_isRestart = isRestart;
         m_msg = msg;
         m_initiatorHSIds.addAll(pInitiators);
@@ -103,11 +104,134 @@ public class MpProcedureTask extends ProcedureTask
         m_restartMastersMap.set(Maps.newHashMap(partitionMasters));
     }
 
+    // LX bw-graph
+    public void dummyRun(SiteProcedureConnection siteConnection)
+    {
+        final String threadName = Thread.currentThread().getName(); // Thread name has to be materialized here
+        org.voltdb.VLog.GLog("MpProcedureTask", "dummyRun", 111, "threadId = " + threadName);
+
+        // Cast up. Could avoid ugliness with Iv2TransactionClass baseclass
+        MpTransactionState txn = (MpTransactionState)m_txnState;
+        // Check for restarting sysprocs
+        String spName = txn.m_initiationMsg.getStoredProcedureName();
+        // could be null if not a sysproc
+        final SystemProcedureCatalog.Config sysproc = SystemProcedureCatalog.listing.get(spName);
+
+        // For MP system procs can't be restarted, flush the queue and
+        // return a proper response to client.
+        if (m_isRestart && sysproc != null && !sysproc.isRestartable())
+        {
+            InitiateResponseMessage errorResp = new InitiateResponseMessage(txn.m_initiationMsg);
+            errorResp.setResults(new ClientResponseImpl(ClientResponse.UNEXPECTED_FAILURE,
+                        new VoltTable[] {},
+                        "Failure while running system procedure " + txn.m_initiationMsg.getStoredProcedureName() +
+                        ", and system procedures can not be restarted."));
+            errorResp.m_isFromNonRestartableSysproc = true;
+            errorResp.m_sourceHSId = m_initiator.getHSId();
+            m_txnState.setDone();
+            m_queue.flush(getTxnId());
+            m_initiator.deliver(errorResp);
+
+            if (hostLog.isDebugEnabled()) {
+                hostLog.debug("SYSPROCFAIL: " + this);
+            }
+            return;
+        }
+
+        // Let's ensure that we flush any previous attempts of this transaction
+        // at the masters we're going to try to use this time around.
+        if (m_isRestart) {
+            CompleteTransactionMessage restart = new CompleteTransactionMessage(
+                    m_initiator.getHSId(), // who is the "initiator" now??
+                    m_initiator.getHSId(),
+                    m_txnState.txnId,
+                    m_txnState.isReadOnly(),
+                    0,
+                    true,   // rollback
+                    false,  // really don't want to have ack the ack.
+                    true,   // Don't clear/flush the txn because we are restarting it
+                    m_msg.isForReplay(),
+                    txn.isNPartTxn(),
+                    false,
+                    false);
+            // TransactionTaskQueue uses it to find matching CompleteTransactionMessage
+            long ts = m_restartSeqGenerator.getNextSeqNum();
+            restart.setTimestamp(ts);
+            // Update the timestamp to txnState so following restarted fragments could use it
+            m_txnState.setTimestamp(ts);
+            restart.setTruncationHandle(m_msg.getTruncationHandle());
+            if (hostLog.isDebugEnabled()) {
+                hostLog.debug("MP restart cleanup CompleteTransactionMessage "+ MpRestartSequenceGenerator.restartSeqIdToString(ts) +
+                        " to: " + CoreUtils.hsIdCollectionToString(m_initiatorHSIds));
+            }
+            m_initiator.send(com.google_voltpatches.common.primitives.Longs.toArray(m_initiatorHSIds), restart);
+        }
+        if (hostLog.isDebugEnabled()) {
+            hostLog.debug("[MpProcedureTask] STARTING: " + this);
+        }
+
+        final long truncationHandle = Math.max(((MpTransactionTaskQueue)m_queue).getRepairLogTruncationHandle(),
+                m_msg.getTruncationHandle());
+        txn.m_initiationMsg.setTruncationHandle(truncationHandle);
+        m_msg.setTruncationHandle(truncationHandle);
+        final InitiateResponseMessage response = dummyProcessInitiateTask(txn.m_initiationMsg, siteConnection);
+        // We currently don't want to restart read-only MP transactions because:
+        // 1) We're not writing the Iv2InitiateTaskMessage to the first
+        // FragmentTaskMessage in read-only case in the name of some unmeasured
+        // performance impact,
+        // 2) We don't want to perturb command logging and/or DR this close to the 3.0 release
+        // 3) We don't guarantee the restarted results returned to the client
+        // anyway, so not restarting the read is currently harmless.
+        // We could actually restart this here, since we have the invocation, but let's be consistent?
+        int status = response.getClientResponseData().getStatus();
+        if (status == ClientResponse.TXN_MISROUTED) {
+            if (m_msg.isReadOnly()) {
+                if (!response.shouldCommit()) {
+                    txn.setNeedsRollback(true);
+                }
+                completeInitiateTask(siteConnection);
+                response.m_sourceHSId = m_initiator.getHSId();
+                response.setMisrouted(m_msg.getStoredProcedureInvocation());
+                m_initiator.deliver(response);
+            } else {
+                restartTransaction();
+            }
+            if (hostLog.isDebugEnabled()) {
+                hostLog.debug("[MpProcedureTask] MISROUTED-RESTART: " + this);
+            }
+        } else {
+            if (status != ClientResponse.TXN_RESTART || (status == ClientResponse.TXN_RESTART && m_msg.isReadOnly())) {
+                if (!response.shouldCommit()) {
+                    txn.setNeedsRollback(true);
+                }
+                else {
+                    // rollback responses won't advance the truncation point so skip the update
+                    response.setMpFragmentSent(txn.haveSentFragment());
+                }
+                completeInitiateTask(siteConnection);
+                // Set the source HSId (ugh) to ourselves so we track the message path correctly
+                response.m_sourceHSId = m_initiator.getHSId();
+                m_initiator.deliver(response);
+                execLog.l7dlog( Level.TRACE, LogKeys.org_voltdb_ExecutionSite_SendingCompletedWUToDtxn.name(), null);
+                if (hostLog.isDebugEnabled()) {
+                    hostLog.debug("[MpProcedureTask] COMPLETE: " + this);
+                }
+            } else {
+                restartTransaction();
+                if (hostLog.isDebugEnabled()) {
+                    hostLog.debug("[MpProcedureTask] RESTART: " + this);
+                }
+            }
+        }
+
+    }
+
     /** Run is invoked by a run-loop to execute this transaction. */
     @Override
     public void run(SiteProcedureConnection siteConnection)
     {
         final String threadName = Thread.currentThread().getName(); // Thread name has to be materialized here
+        org.voltdb.VLog.GLog("MpProcedureTask", "run", 111, "threadId = " + threadName);
         final VoltTrace.TraceEventBatch traceLog = VoltTrace.log(VoltTrace.Category.MPSITE);
         if (traceLog != null) {
             traceLog.add(() -> VoltTrace.meta("thread_name", "name", threadName))

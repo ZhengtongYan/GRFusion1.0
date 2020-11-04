@@ -276,6 +276,34 @@ public class ProcedureRunner {
         return m_cachedRNG;
     }
 
+    // LX bw-graph
+    public ClientResponseImpl dummyCall(Object... paramListIn) {
+        m_perCallStats = m_statsCollector.beginProcedure();
+
+        // if we're keeping track, calculate parameter size
+        if (m_perCallStats != null) {
+            StoredProcedureInvocation invoc = (m_txnState != null ? m_txnState.getInvocation() : null);
+            ParameterSet params = (invoc != null ? invoc.getParams() : ParameterSet.fromArrayNoCopy(paramListIn));
+            m_perCallStats.setParameterSize(params.getSerializedSize());
+        }
+        org.voltdb.VLog.GLog("ProcedureRunner", "dummyCall", 291, "going into coreCall(..)");
+        ClientResponseImpl result = dummyCoreCall(paramListIn);
+
+        // if we're keeping track, calculate result size
+        if (m_perCallStats != null) {
+            m_perCallStats.setResultSize(result.getResults());
+        }
+
+        m_statsCollector.endProcedure(result.getStatus() == ClientResponse.USER_ABORT,
+                                      (result.getStatus() != ClientResponse.USER_ABORT) &&
+                                      (result.getStatus() != ClientResponse.SUCCESS),
+                                      m_perCallStats);
+        // allow the GC to collect per-call stats if this proc isn't called for a while
+        m_perCallStats = null;
+
+        return result;
+    }
+
     /**
      * Wraps coreCall with statistics code.
      */
@@ -288,7 +316,7 @@ public class ProcedureRunner {
             ParameterSet params = (invoc != null ? invoc.getParams() : ParameterSet.fromArrayNoCopy(paramListIn));
             m_perCallStats.setParameterSize(params.getSerializedSize());
         }
-
+        org.voltdb.VLog.GLog("ProcedureRunner", "call", 291, "going into coreCall(..)");
         ClientResponseImpl result = coreCall(paramListIn);
 
         // if we're keeping track, calculate result size
@@ -313,6 +341,78 @@ public class ProcedureRunner {
         return m_txnState == null ? 0 :
             m_txnState.getInvocation() == null ? 0 :
                 m_txnState.getInvocation().getBatchTimeout();
+    }
+
+    // LX bw-graph
+    private ClientResponseImpl dummyCoreCall(Object... paramListIn) {
+        // verify per-txn state has been reset
+        assert(m_statusCode == ClientResponse.SUCCESS);
+        assert(m_statusString == null);
+        assert(m_appStatusCode == ClientResponse.UNINITIALIZED_APP_STATUS_CODE);
+        assert(m_appStatusString == null);
+        assert(m_cachedRNG == null);
+
+        // reset batch context info
+        m_batchIndex = -1;
+
+        // reset the beginning big batch undo token
+        m_spBigBatchBeginToken = -1;
+
+        // set procedure name in the site/ee
+        m_site.setupProcedure(m_procedureName);
+
+        // use local var to avoid warnings about reassigning method argument
+        Object[] paramList = paramListIn;
+
+        // catalog version and statement count are part of the CRC, reset them for a new call
+        m_determinismHash.reset(m_site.getSystemProcedureExecutionContext().getCatalogVersion());
+
+        ClientResponseImpl retval = null;
+        // assert no sql is queued
+        assert(m_batch.size() == 0);
+
+        try {
+            VoltTable[] results = new VoltTable[0];
+
+            if (retval == null) {
+                retval = new ClientResponseImpl(
+                        m_statusCode,
+                        m_appStatusCode,
+                        m_appStatusString,
+                        results,
+                        m_statusString);
+            }
+
+            // Even when the transaction fails, the computed hashes are valuable for diagnostic purpose,
+            // so always return the hashes.
+            int[] hashes = m_determinismHash.get();
+            retval.setHashes(hashes);
+        } finally {
+            // finally at the call(..) scope to ensure params can be
+            // garbage collected and that the queue will be empty for
+            // the next call
+            m_batch.clear();
+            for ( QueuedSQL stmt: m_sqlStmts ) {
+                stmt.params = null;
+                stmt.expectation = null;
+            }
+            org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 500, "clear txn state");
+
+            // reset other per-txn state
+            m_txnState = null;
+            m_statusCode = ClientResponse.SUCCESS;
+            m_statusString = null;
+            m_appStatusCode = ClientResponse.UNINITIALIZED_APP_STATUS_CODE;
+            m_appStatusString = null;
+            m_cachedRNG = null;
+            m_cachedSingleStmt.params = null;
+            m_cachedSingleStmt.expectation = null;
+            m_seenFinalBatch = false;
+
+            m_site.completeProcedure();
+        }
+
+        return retval;
     }
 
     @SuppressWarnings("finally")
@@ -379,14 +479,17 @@ public class ProcedureRunner {
 
             // run a regular java class
             if (m_hasJava) {
+                org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 382, "");
+
                 try {
                     if (HOST_TRACE_ENABLED) {
                         log.trace("invoking... procMethod=" + m_procMethod.getName() + ", class=" + m_procMethod.getDeclaringClass().getName());
                     }
                     try {
                         Object rawResult = m_procMethod.invoke(m_procedure, paramList);
-
+                        org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 390, "threadN:" + Thread.currentThread().getName());
                         results = ParameterConverter.getResultsFromRawResults(m_procedureName, rawResult);
+                        // org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 392, Boolean.toString(results==null));
                     } catch (IllegalAccessException e) {
                         // If reflection fails, invoke the same error handling that other exceptions do
                         throw new InvocationTargetException(e);
@@ -394,6 +497,7 @@ public class ProcedureRunner {
                     log.trace("invoked");
                 }
                 catch (InvocationTargetException itex) {
+                    org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 400, "");
                     Throwable ex = itex.getCause();
                     if (CoreUtils.isStoredProcThrowableFatalToServer(ex)) {
                         // If the stored procedure attempted to do something other than linklibraray or instantiate
@@ -422,7 +526,7 @@ public class ProcedureRunner {
             // single statement only work - now extended to multiple statements
             // (this could be made faster, but with less code re-use)
             else {
-                 assert(m_catProc.getStatements().size() >= 1);
+                assert(m_catProc.getStatements().size() >= 1);
                 int curParamOffset = 0;
                 try {
                     // get all the statements and their corresponding parameters
@@ -445,6 +549,7 @@ public class ProcedureRunner {
                     }
                     if (getNonVoltDBBackendIfExists() == null) {
                         m_batch.addAll(m_sqlStmts);
+                        org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 448, "threadId = " + Thread.currentThread().getId());
                         results = voltExecuteSQL(true);
                         results = convertTablesToHeapBuffers(results);
                     }
@@ -494,6 +599,7 @@ public class ProcedureRunner {
                 stmt.params = null;
                 stmt.expectation = null;
             }
+            org.voltdb.VLog.GLog("ProcedureRunner", "coreCall", 500, "clear txn state");
 
             // reset other per-txn state
             m_txnState = null;
@@ -769,6 +875,7 @@ public class ProcedureRunner {
     }
 
     public VoltTable[] voltExecuteSQL(boolean isFinalSQL) {
+        org.voltdb.VLog.GLog("ProcedureRunner", "voltExecuteSQL", 772, "threadN = " + Thread.currentThread().getName());
         try {
             if (m_seenFinalBatch) {
                 throw new RuntimeException("Procedure " + m_procedureName +
@@ -857,8 +964,10 @@ public class ProcedureRunner {
                         qs.stmt, qs.params, qs.stmt.statementParamTypes);
             }
         } else if (m_isSinglePartition) {
+            org.voltdb.VLog.GLog("ProcedureRunner", "executeQueriesInABatch", 860, "single-par yeah\n");
             results = fastPath(batch, isFinalSQL);
         } else {
+            org.voltdb.VLog.GLog("ProcedureRunner", "executeQueriesInABatch", 863, "multi-par bad\n");
             results = slowPath(batch, isFinalSQL);
         }
 
@@ -1349,8 +1458,10 @@ public class ProcedureRunner {
          * so we have to do each statement individually.
          */
         if (hasRead && hasWrite) {
+            org.voltdb.VLog.GLog("ProcedureRunner", "slowPath", 1352, "R&&W");
             return executeQueriesInIndividualBatches(batch, finalTask);
         } else {
+            org.voltdb.VLog.GLog("ProcedureRunner", "slowPath", 1355, "R||W");
             return executeSlowHomogeneousBatch(batch, finalTask);
         }
     }
@@ -1530,7 +1641,7 @@ public class ProcedureRunner {
 
         // recursively call recursableRun and don't allow it to shutdown
         Map<Integer, List<VoltTable>> mapResults = m_site.recursableRun(m_txnState);
-
+        org.voltdb.VLog.GLog("ProcedureRunner", "executeSlowHomogeneousBatch", 1533, "threadName = " + Thread.currentThread().getName());
         assert (mapResults != null);
         assert (state.m_depsToResume != null);
         assert (state.m_depsToResume.length == batch.size());
@@ -1548,6 +1659,7 @@ public class ProcedureRunner {
 
     // Batch up pre-planned fragments, but handle ad hoc independently.
     private VoltTable[] fastPath(List<QueuedSQL> batch, final boolean finalTask) {
+        org.voltdb.VLog.GLog("ProcedureRunner", "fastPath", 1562, "");
         final int batchSize = batch.size();
         Object[] params = new Object[batchSize];
         long[] fragmentIds = new long[batchSize];

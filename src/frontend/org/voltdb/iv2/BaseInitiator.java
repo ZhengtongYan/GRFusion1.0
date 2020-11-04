@@ -60,6 +60,7 @@ public abstract class BaseInitiator<S extends Scheduler> implements Initiator
     protected Term m_term = null;
     protected Site m_executionSite = null;
     protected Thread m_siteThread = null;
+    protected Thread m_siteThread2 = null; // LX
     protected final RepairLog m_repairLog = new RepairLog();
     protected final boolean m_isEnterpriseLicense;
 
@@ -159,9 +160,25 @@ public abstract class BaseInitiator<S extends Scheduler> implements Initiator
             m_scheduler.setProcedureSet(procSet);
             m_scheduler.setCommandLog(cl);
             m_scheduler.setIsLowestSiteId(isLowestSiteId);
-            m_siteThread = new Thread(m_executionSite);
-            m_siteThread.setDaemon(false);
-            m_siteThread.start();
+            // LX: is this the place where one thread per EE is set??
+            // m_siteThread = new Thread(m_executionSite);
+            // m_siteThread.setDaemon(false);
+            // m_siteThread.start();
+
+            if (m_partitionId == MpInitiator.MP_INIT_PID) {
+                m_siteThread = new Thread(m_executionSite, "MP Site - " + CoreUtils.hsIdToString(m_initiatorMailbox.getHSId()));
+                m_siteThread.setDaemon(false);
+                m_siteThread.start();
+            }
+            else {
+                // LX: bw-graph use two threads for one site
+                m_siteThread = new Thread(m_executionSite, "e1");
+                m_siteThread.setDaemon(false);
+                m_siteThread.start();
+                m_siteThread2 = new Thread(m_executionSite, "e2");
+                m_siteThread2.setDaemon(false);
+                m_siteThread2.start();
+            }    
     }
 
     @Override

@@ -164,7 +164,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
         // base class loads the volt shared library.
         super(siteId, partitionId);
         // Add LX
-        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "Constructor", 125, "initialize the native Engine object.");
+        org.voltdb.VLog.GLog("ExecutionEngineJNI", "Constructor", 167, "initialize the native Engine object." + "threadN:" + Thread.currentThread().getName());
         // m_mailbox = mailbox;
         // End LX
         //exceptionBuffer.order(ByteOrder.nativeOrder());
@@ -360,11 +360,12 @@ public class ExecutionEngineJNI extends ExecutionEngine {
     @Override
     protected void coreLoadCatalog(long timestamp, final byte[] catalogBytes) throws EEException {
         LOG.trace("Loading Application Catalog...");
-        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "loadCatalog", 234,  "Loading Application Catalog."); // Add LX
+        org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreLoadCatalog", 363, "threadN:" + Thread.currentThread().getName()); // Add LX
         int errorCode = 0;
         errorCode = nativeLoadCatalog(pointer, timestamp, catalogBytes);
         checkErrorCode(errorCode);
         //LOG.info("Loaded Catalog.");
+        org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreLoadCatalog", 368, "threadN:" + Thread.currentThread().getName());
     }
 
     /**
@@ -374,7 +375,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
     @Override
     public void coreUpdateCatalog(long timestamp, boolean isStreamUpdate, final String catalogDiffs) throws EEException {
         LOG.trace("Loading Application Catalog...");
-        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "updateCatalog", 249,  "timestamp =  " + timestamp +", diff = " + catalogDiffs); // Add LX
+        org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreUpdateCatalog", 249, ""); // Add LX
         int errorCode = 0;
         errorCode = nativeUpdateCatalog(pointer, timestamp, isStreamUpdate, getStringBytes(catalogDiffs));
         checkErrorCode(errorCode);
@@ -401,7 +402,11 @@ public class ExecutionEngineJNI extends ExecutionEngine {
                 executionTimesOut[i] = m_perFragmentStatsBuffer.getLong();
             }
             // This is the time for the failed fragment.
+
             if (succeededFragmentsCount < executionTimesOut.length) {
+                // LX bw-graph modify for now
+                if (succeededFragmentsCount < 0)
+                    return -1;
                 executionTimesOut[succeededFragmentsCount] = m_perFragmentStatsBuffer.getLong();
             }
         }
@@ -418,7 +423,6 @@ public class ExecutionEngineJNI extends ExecutionEngine {
             final Object[] parameterSets, DeterminismHash determinismHash, boolean[] isWriteFrags, int[] sqlCRCs,
             final long txnId, final long spHandle, final long lastCommittedSpHandle, long uniqueId,
             final long undoToken, final boolean traceOn) throws EEException {
-        // org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreExecutePlanFragments", 269, "unique id = " + uniqueId); // Add LX
         // plan frag zero is invalid
         assert((numFragmentIds == 0) || (planFragmentIds[0] != 0));
 
@@ -474,6 +478,7 @@ public class ExecutionEngineJNI extends ExecutionEngine {
         FastDeserializer targetDeserializer = (batchIndex == 0) ? m_firstDeserializer : m_nextDeserializer;
         targetDeserializer.clear();
 
+        org.voltdb.VLog.GLog("ExecutionEngineJNI", "coreExecutePlanFragments", 477, "threadName = " + Thread.currentThread().getName());
         final int errorCode = nativeExecutePlanFragments(
                 pointer, batchIndex, numFragmentIds, planFragmentIds, inputDepIds, txnId, spHandle,
                 lastCommittedSpHandle, uniqueId, undoToken, traceOn);

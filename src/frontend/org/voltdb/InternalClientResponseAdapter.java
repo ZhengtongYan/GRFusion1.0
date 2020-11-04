@@ -213,6 +213,7 @@ public class InternalClientResponseAdapter implements Connection, WriteStream {
                     m_callbacks.put(handle, cb);
 
                     ClientResponseImpl r = dispatcher.dispatch(task, kattrs, InternalClientResponseAdapter.this, user, null, ntPriority);
+                    // org.voltdb.VLog.GLog("InternalClientResponseAdapter", "createTransaction", 216, "after dispatch?");
                     if (r != null) {
                         try {
                             cb.handleResponse(r);
